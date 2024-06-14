@@ -1,0 +1,19 @@
+{
+  "name": "xr_backend_v1",
+  "version": "1.0.0",
+  "description": "XR_WEBSITE_BACKEND",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/thakurdinker/xr_backend_v1.git"
+  },
+  "author": "Dinker Singh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thakurdinker/xr_backend_v1/issues"
+  },
+  "homepage": "https://github.com/thakurdinker/xr_backend_v1#readme"
+}

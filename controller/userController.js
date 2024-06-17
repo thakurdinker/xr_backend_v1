@@ -108,7 +108,7 @@ module.exports.getUserById = catchAsync(async (req, res) => {
 
   const user = await User.findById(id).populate({
     path: "role",
-    select: "-_id role_name permissons",
+    select: "_id role_name permissons",
     populate: {
       path: "permissions",
       select: "permission_name",

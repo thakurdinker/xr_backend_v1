@@ -15,6 +15,7 @@ const app = express();
 const permissionsRouter = require("./routes/permissions");
 const rolesRouter = require("./routes/roles");
 const userRouter = require("./routes/user");
+const propertyRouter = require("./routes/properties");
 const User = require("./models/user");
 
 const PORT = process.env.PORT;
@@ -80,6 +81,7 @@ passport.deserializeUser(User.deserializeUser());
 app.use(permissionsRouter);
 app.use(rolesRouter);
 app.use(userRouter);
+app.use(propertyRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

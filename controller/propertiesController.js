@@ -122,7 +122,21 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       });
     }
 
-    updates.forEach((update) => (property[update] = req.body[update]));
+    // Checking for nested objects in the request
+    // If we find any, the update only that specific field in the object in the db instead of replacing the whole object
+    updates.forEach((update) => {
+      if (
+        typeof req.body[update] === "object" &&
+        !Array.isArray(req.body[update])
+      ) {
+        Object.keys(req.body[update]).forEach((nestedUpdate) => {
+          property[update][nestedUpdate] = req.body[update][nestedUpdate];
+        });
+      } else {
+        property[update] = req.body[update];
+      }
+    });
+
     await property.save();
     res
       .status(200)

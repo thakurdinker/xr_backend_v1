@@ -10,16 +10,19 @@ const newPropertySchema = new Schema(
     price: String,
     type: [String], // e.g., "townhouse", "semi-detached home"
     location: {
+      _id: false,
       address: String,
       city: String,
       state: String,
       country: String,
       coordinates: {
+        _id: false,
         lat: String,
         lng: String,
       },
     },
     features: {
+      _id: false,
       bedrooms: String,
       bathrooms: String,
       area: String, // in square feet or meters
@@ -28,12 +31,14 @@ const newPropertySchema = new Schema(
     },
     images: [
       {
+        _id: false,
         url: String,
         description: String, // optional
       },
     ],
     gallery: [
       {
+        _id: false,
         url: String,
         description: String, // optional
       },
@@ -42,6 +47,7 @@ const newPropertySchema = new Schema(
     community_name: String,
     community_name_slug: String,
     community_features: {
+      _id: false,
       project_overview: String,
       nearby_facilities: [String], // e.g., ["hospital", "school"]
       transportation: [String], // e.g., ["Al Maktoum Intl' Airport", "District 2020"]

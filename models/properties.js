@@ -43,7 +43,7 @@ const newPropertySchema = new Schema(
         description: String, // optional
       },
     ],
-    status: [String], // e.g., "available", "sold", "pending"
+    status: [String], // e.g., "for sale", "latest", "off-plan"
     community_name: String,
     community_name_slug: String,
     community_features: {

@@ -40,8 +40,8 @@ const propertySchemaValidation = Joi.object({
     .required(),
   status: Joi.array().items(Joi.string()).required(),
   community_name: Joi.string().required(),
-  community_name_slug: Joi.string().required(),
-  property_name_slug: Joi.string().required(),
+  community_name_slug: Joi.string().optional(),
+  property_name_slug: Joi.string().optional(),
   community_features: Joi.object({
     project_overview: Joi.string().required(),
     nearby_facilities: Joi.array().items(Joi.string()).required(),

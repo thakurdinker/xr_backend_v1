@@ -109,7 +109,6 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
     "community_name_slug",
     "property_name_slug",
     "community_features",
-    "starting_price",
     "show_property",
     "featured",
   ];

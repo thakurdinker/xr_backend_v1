@@ -46,7 +46,6 @@ const newPropertySchema = new Schema(
       nearby_facilities: [String], // e.g., ["hospital", "school"]
       transportation: [String], // e.g., ["Al Maktoum Intl' Airport", "District 2020"]
     },
-    starting_price: String,
     show_property: Boolean, // true or false
     featured: Boolean, // true or false
   },

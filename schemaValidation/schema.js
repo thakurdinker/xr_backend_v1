@@ -47,7 +47,6 @@ const propertySchemaValidation = Joi.object({
     nearby_facilities: Joi.array().items(Joi.string()).required(),
     transportation: Joi.array().items(Joi.string()).required(),
   }).required(),
-  starting_price: Joi.string().required(),
   show_property: Joi.boolean().required(),
   featured: Joi.boolean().required(),
 });
@@ -99,7 +98,6 @@ const propertySchemaValidationUpdate = Joi.object({
     nearby_facilities: Joi.array().items(Joi.string()).optional(),
     transportation: Joi.array().items(Joi.string()).optional(),
   }).optional(),
-  starting_price: Joi.string().optional(),
   show_property: Joi.boolean().optional(),
   featured: Joi.boolean().optional(),
 });

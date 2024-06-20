@@ -10,7 +10,7 @@ const DB_URL = process.env.DB_URL;
 
 const dummyProperties = [
   {
-    title: "Luxury Townhouse",
+    property_name: "Luxury Townhouse",
     description: "A beautiful luxury townhouse with modern amenities.",
     price: "500000",
     type: ["townhouse"],

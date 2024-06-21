@@ -207,6 +207,7 @@ const agentValidationSchema = Joi.object({
     twitter: Joi.string().optional(),
     facebook: Joi.string().optional(),
   }).optional(),
+  video_links: Joi.array().items(Joi.string()).optional(),
   seo: Joi.object({
     meta_title: Joi.string().required(),
     meta_description: Joi.string().required(),
@@ -240,6 +241,7 @@ const agentUpdateValidationSchema = Joi.object({
     twitter: Joi.string().optional(),
     facebook: Joi.string().optional(),
   }).optional(),
+  video_links: Joi.array().items(Joi.string()).optional(),
   seo: Joi.object({
     meta_title: Joi.string().optional(),
     meta_description: Joi.string().optional(),

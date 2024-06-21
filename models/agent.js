@@ -18,6 +18,7 @@ const agentSchema = new mongoose.Schema({
     twitter: { type: String },
     facebook: { type: String },
   },
+  video_links: [{ type: String }],
   seo: {
     _id: false,
     meta_title: { type: String, required: true },

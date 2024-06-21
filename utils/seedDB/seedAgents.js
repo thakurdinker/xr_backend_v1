@@ -26,6 +26,12 @@ const dummyAgents = [
       twitter: "http://twitter.com/johndoe",
       facebook: "http://facebook.com/johndoe",
     },
+    video_links: [
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+    ],
     seo: {
       meta_title: "John Doe - Experienced Real Estate Agent",
       meta_description:
@@ -56,6 +62,12 @@ const dummyAgents = [
       twitter: "http://twitter.com/janesmith",
       facebook: "http://facebook.com/janesmith",
     },
+    video_links: [
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+    ],
     seo: {
       meta_title: "Jane Smith - Commercial Real Estate Expert",
       meta_description:
@@ -86,6 +98,12 @@ const dummyAgents = [
       twitter: "http://twitter.com/alicejohnson",
       facebook: "http://facebook.com/alicejohnson",
     },
+    video_links: [
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+    ],
     seo: {
       meta_title: "Alice Johnson - Luxury Real Estate Specialist",
       meta_description:
@@ -116,6 +134,12 @@ const dummyAgents = [
       twitter: "http://twitter.com/bobbrown",
       facebook: "http://facebook.com/bobbrown",
     },
+    video_links: [
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+    ],
     seo: {
       meta_title: "Bob Brown - Industrial Real Estate Expert",
       meta_description:
@@ -146,6 +170,12 @@ const dummyAgents = [
       twitter: "http://twitter.com/chrisdavis",
       facebook: "http://facebook.com/chrisdavis",
     },
+    video_links: [
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+      "https://www.youtube.com/watch?v=KJwYBJMSbPI",
+    ],
     seo: {
       meta_title: "Chris Davis - Rental Property Specialist",
       meta_description:

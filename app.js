@@ -17,6 +17,8 @@ const rolesRouter = require("./routes/roles");
 const userRouter = require("./routes/user");
 const propertyRouter = require("./routes/properties");
 const contentRouter = require("./routes/content");
+const agentRouter = require("./routes/agent");
+
 const User = require("./models/user");
 
 const PORT = process.env.PORT;
@@ -84,6 +86,7 @@ app.use(rolesRouter);
 app.use(userRouter);
 app.use(propertyRouter);
 app.use(contentRouter);
+app.use(agentRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

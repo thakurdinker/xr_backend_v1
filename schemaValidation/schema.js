@@ -169,8 +169,8 @@ const contentUpdateValidationSchema = Joi.object({
   faqs: Joi.array()
     .items(
       Joi.object({
-        question: Joi.string().required(),
-        answer: Joi.string().required(),
+        question: Joi.string().optional(),
+        answer: Joi.string().optional(),
       })
     )
     .optional(),
@@ -189,9 +189,78 @@ const contentUpdateValidationSchema = Joi.object({
   }).optional(),
 });
 
+// Agent validation
+const agentValidationSchema = Joi.object({
+  name: Joi.string().required(),
+  name_slug: Joi.string().required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().required(),
+  profile_picture: Joi.string().required(),
+  bio: Joi.string().required(),
+  personal_info: Joi.string().optional(),
+  education: Joi.string().required(),
+  experience: Joi.number().required(),
+  specialties: Joi.array().items(Joi.string()).optional(),
+  languages: Joi.array().items(Joi.string()).required(),
+  social_links: Joi.object({
+    linkedin: Joi.string().optional(),
+    twitter: Joi.string().optional(),
+    facebook: Joi.string().optional(),
+  }).optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().required(),
+    meta_description: Joi.string().required(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).required(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Person"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+  }).optional(),
+});
+
+const agentUpdateValidationSchema = Joi.object({
+  name: Joi.string().optional(),
+  name_slug: Joi.string().optional(),
+  email: Joi.string().email().optional(),
+  phone: Joi.string().optional(),
+  profile_picture: Joi.string().optional(),
+  bio: Joi.string().optional(),
+  personal_info: Joi.string().optional(),
+  education: Joi.string().optional(),
+  experience: Joi.number().optional(),
+  specialties: Joi.array().items(Joi.string()).optional(),
+  languages: Joi.array().items(Joi.string()).optional(),
+  social_links: Joi.object({
+    linkedin: Joi.string().optional(),
+    twitter: Joi.string().optional(),
+    facebook: Joi.string().optional(),
+  }).optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Person"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+  }).optional(),
+});
+
 module.exports = {
   propertySchemaValidation,
   propertySchemaValidationUpdate,
   contentValidationSchema,
   contentUpdateValidationSchema,
+  agentValidationSchema,
+  agentUpdateValidationSchema,
 };

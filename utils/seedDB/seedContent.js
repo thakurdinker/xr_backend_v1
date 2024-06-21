@@ -4,7 +4,6 @@ const path = require("path");
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
 const mongoose = require("mongoose");
-const Property = require("../../models/properties");
 const Content = require("../../models/content");
 
 const DB_URL = process.env.DB_URL;

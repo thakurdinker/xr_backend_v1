@@ -102,4 +102,96 @@ const propertySchemaValidationUpdate = Joi.object({
   featured: Joi.boolean().optional(),
 });
 
-module.exports = { propertySchemaValidation, propertySchemaValidationUpdate };
+// Content Schema validation
+const contentValidationSchema = Joi.object({
+  title: Joi.string().required(),
+  slug: Joi.string().optional(),
+  content: Joi.string().required(), // HTML content
+  author: Joi.object({
+    name: Joi.string().optional(),
+    email: Joi.string().optional(),
+  }).optional(),
+  category: Joi.string().required(),
+  tags: Joi.array().items(Joi.string()).optional(),
+  publish_date: Joi.date().optional(),
+  status: Joi.string().valid("draft", "published").default("draft"),
+  images: Joi.array()
+    .items(
+      Joi.object({
+        url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  faqs: Joi.array()
+    .items(
+      Joi.object({
+        question: Joi.string().required(),
+        answer: Joi.string().required(),
+      })
+    )
+    .optional(),
+  meta_title: Joi.string().required(),
+  meta_description: Joi.string().required(),
+  keywords: Joi.array().items(Joi.string()).optional(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Article"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+    type: Joi.string().default("article"),
+  }).optional(),
+});
+
+const contentUpdateValidationSchema = Joi.object({
+  title: Joi.string().optional(),
+  slug: Joi.string().optional(),
+  content: Joi.string().optional(), // HTML content
+  author: Joi.object({
+    name: Joi.string().optional(),
+    email: Joi.string().optional(),
+  }).optional(),
+  category: Joi.string().optional(),
+  tags: Joi.array().items(Joi.string()).optional(),
+  publish_date: Joi.date().optional(),
+  status: Joi.string().valid("draft", "published").default("draft"),
+  images: Joi.array()
+    .items(
+      Joi.object({
+        url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  faqs: Joi.array()
+    .items(
+      Joi.object({
+        question: Joi.string().required(),
+        answer: Joi.string().required(),
+      })
+    )
+    .optional(),
+  meta_title: Joi.string().optional(),
+  meta_description: Joi.string().optional(),
+  keywords: Joi.array().items(Joi.string()).optional(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Article"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+    type: Joi.string().default("article"),
+  }).optional(),
+});
+
+module.exports = {
+  propertySchemaValidation,
+  propertySchemaValidationUpdate,
+  contentValidationSchema,
+  contentUpdateValidationSchema,
+};

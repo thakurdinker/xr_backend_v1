@@ -87,9 +87,9 @@ module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
 
 module.exports.deleteHomePageVideo = catchAsync(async (req, res) => {
   try {
-    const deletedHomePageVideo = await HomePageVideos.findByIdAndRemove(
-      req.params.id
-    ).exec();
+    const deletedHomePageVideo = await HomePageVideos.deleteOne({
+      _id: req.params.id,
+    }).exec();
     if (!deletedHomePageVideo) {
       return res.status(200).json({
         success: false,

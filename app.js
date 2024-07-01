@@ -18,6 +18,7 @@ const userRouter = require("./routes/user");
 const propertyRouter = require("./routes/properties");
 const contentRouter = require("./routes/content");
 const agentRouter = require("./routes/agent");
+const homePageRouter = require("./routes/homePageVideo");
 
 const User = require("./models/user");
 
@@ -87,6 +88,7 @@ app.use(userRouter);
 app.use(propertyRouter);
 app.use(contentRouter);
 app.use(agentRouter);
+app.use(homePageRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

@@ -5,6 +5,8 @@ const propertySchemaValidation = Joi.object({
   description: Joi.string().required(),
   price: Joi.string().required(),
   type: Joi.array().items(Joi.string()).required(),
+  developer: Joi.string().optional(),
+  developer_name_slug: Joi.string().optional(),
   location: Joi.object({
     address: Joi.string().required(),
     city: Joi.string().required(),
@@ -56,6 +58,8 @@ const propertySchemaValidationUpdate = Joi.object({
   description: Joi.string().optional(),
   price: Joi.string().optional(),
   type: Joi.array().items(Joi.string()).optional(),
+  developer: Joi.string().optional(),
+  developer_name_slug: Joi.string().optional(),
   location: Joi.object({
     address: Joi.string().optional(),
     city: Joi.string().optional(),

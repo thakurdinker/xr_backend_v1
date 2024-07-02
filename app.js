@@ -19,6 +19,7 @@ const propertyRouter = require("./routes/properties");
 const contentRouter = require("./routes/content");
 const agentRouter = require("./routes/agent");
 const homePageRouter = require("./routes/homePageVideo");
+const developerPageRouter = require("./routes/developerPage");
 
 const homePageDataRouter = require("./routes/homepage");
 
@@ -86,6 +87,7 @@ passport.deserializeUser(User.deserializeUser());
 
 // Public Routes
 app.use("/", homePageDataRouter);
+app.use("/label/:developerNameSlug", developerPageRouter);
 
 app.use(permissionsRouter);
 app.use(rolesRouter);

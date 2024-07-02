@@ -8,6 +8,8 @@ const newPropertySchema = new Schema(
     property_name_slug: String,
     description: String,
     price: String,
+    developer: String,
+    developer_name_slug: String,
     type: [String], // e.g., "townhouse", "semi-detached home"
     location: {
       _id: false,

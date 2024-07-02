@@ -14,6 +14,8 @@ const dummyProperties = [
     description: "A beautiful luxury townhouse with modern amenities.",
     price: "500000",
     type: ["townhouse"],
+    developer: "Emaar",
+    developer_name_slug: "emaar",
     location: {
       address: "123 Main St",
       city: "Dubai",
@@ -57,6 +59,8 @@ const dummyProperties = [
     description: "A spacious modern apartment in the heart of the city.",
     price: "300000",
     type: ["apartment"],
+    developer: "Nakheel",
+    developer_name_slug: "nakheel",
     location: {
       address: "456 Central Ave",
       city: "Dubai",
@@ -104,6 +108,8 @@ const dummyProperties = [
     description: "A luxurious villa with private garden and pool.",
     price: "800000",
     type: ["villa"],
+    developer: "Emaar",
+    developer_name_slug: "emaar",
     location: {
       address: "789 Palm St",
       city: "Dubai",

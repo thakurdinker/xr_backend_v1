@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Apartments",
+    "name_slug": "apartments",
+    "page_slug": "apartments-for-sale-in-dubai"
+  },
+  {
+    "name": "Townhouses",
+    "name_slug": "townhouses",
+    "page_slug": "townhouses-for-sale-in-dubai"
+  },
+  {
+    "name": "Villas",
+    "name_slug": "villas",
+    "page_slug": "villas-for-sale-in-dubai"
+  },
+  {
+    "name": "Penthouse",
+    "name_slug": "penthouse",
+    "page_slug": "penthouse-for-sale-in-dubai"
+  },
+  {
+    "name": "Duplex Apartments",
+    "name_slug": "duplex-apartments",
+    "page_slug": "duplex-apartments-for-sale-in-dubai"
+  },
+  {
+    "name": "Twin Villas",
+    "name_slug": "twin-villas",
+    "page_slug": "twin-villas-for-sale-in-dubai"
+  }
+]

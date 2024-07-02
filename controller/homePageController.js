@@ -23,7 +23,8 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
   //News and Insights
   const content = await Content.find({})
     .sort("-createdAt")
-    .select("_id title slug images featured_image createdAt");
+    .select("_id title slug images featured_image createdAt")
+    .limit(3);
 
   return res.status(200).json({
     success: true,

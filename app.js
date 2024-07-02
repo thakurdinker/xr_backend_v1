@@ -20,8 +20,12 @@ const contentRouter = require("./routes/content");
 const agentRouter = require("./routes/agent");
 const homePageRouter = require("./routes/homePageVideo");
 const developerPageRouter = require("./routes/developerPage");
+const propertyTypeRouter = require("./routes/propertyType");
+const communityRouter = require("./routes/community");
 
 const homePageDataRouter = require("./routes/homepage");
+const agentsPageRouter = require("./routes/agentPage");
+const agentDetailRouter = require("./routes/agentDetailPage");
 
 const User = require("./models/user");
 
@@ -88,6 +92,8 @@ passport.deserializeUser(User.deserializeUser());
 // Public Routes
 app.use("/", homePageDataRouter);
 app.use("/label/:developerNameSlug", developerPageRouter);
+app.use("/meet-the-xr", agentsPageRouter);
+app.use("/agent", agentDetailRouter);
 
 app.use(permissionsRouter);
 app.use(rolesRouter);
@@ -96,6 +102,8 @@ app.use(propertyRouter);
 app.use(contentRouter);
 app.use(agentRouter);
 app.use(homePageRouter);
+app.use(propertyTypeRouter);
+app.use(communityRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

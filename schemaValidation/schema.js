@@ -264,6 +264,118 @@ const agentUpdateValidationSchema = Joi.object({
   }).optional(),
 });
 
+// Community Validation
+
+const communityValidationSchema = Joi.object({
+  name: Joi.string().required(),
+  slug: Joi.string().required(),
+  description: Joi.string().optional(),
+  location: Joi.object({
+    address: Joi.string().optional(),
+    city: Joi.string().optional(),
+    state: Joi.string().optional(),
+    country: Joi.string().optional(),
+    coordinates: Joi.object({
+      lat: Joi.number().optional(),
+      lng: Joi.number().optional(),
+    }).optional(),
+  }).optional(),
+  amenities: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().optional(),
+        icon_url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  images: Joi.array()
+    .items(
+      Joi.object({
+        url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  faqs: Joi.array()
+    .items(
+      Joi.object({
+        question: Joi.string().optional(),
+        answer: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Place"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+  }).optional(),
+});
+
+const communityUpdateValidationSchema = Joi.object({
+  name: Joi.string().optional(),
+  slug: Joi.string().optional(),
+  description: Joi.string().optional(),
+  location: Joi.object({
+    address: Joi.string().optional(),
+    city: Joi.string().optional(),
+    state: Joi.string().optional(),
+    country: Joi.string().optional(),
+    coordinates: Joi.object({
+      lat: Joi.number().optional(),
+      lng: Joi.number().optional(),
+    }).optional(),
+  }).optional(),
+  amenities: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().optional(),
+        icon_url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  images: Joi.array()
+    .items(
+      Joi.object({
+        url: Joi.string().optional(),
+        description: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  faqs: Joi.array()
+    .items(
+      Joi.object({
+        question: Joi.string().optional(),
+        answer: Joi.string().optional(),
+      })
+    )
+    .optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
+  schema_org: Joi.object({
+    type: Joi.string().default("Place"),
+    properties: Joi.object().optional(),
+  }).optional(),
+  open_graph: Joi.object({
+    title: Joi.string().optional(),
+    description: Joi.string().optional(),
+    image: Joi.string().optional(),
+  }).optional(),
+});
+
 module.exports = {
   propertySchemaValidation,
   propertySchemaValidationUpdate,
@@ -271,4 +383,6 @@ module.exports = {
   contentUpdateValidationSchema,
   agentValidationSchema,
   agentUpdateValidationSchema,
+  communityUpdateValidationSchema,
+  communityValidationSchema,
 };

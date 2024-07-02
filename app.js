@@ -22,6 +22,7 @@ const homePageRouter = require("./routes/homePageVideo");
 const developerPageRouter = require("./routes/developerPage");
 const propertyTypeRouter = require("./routes/propertyType");
 const communityRouter = require("./routes/community");
+const communityPageRouter = require("./routes/communityPage");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -94,6 +95,7 @@ app.use("/", homePageDataRouter);
 app.use("/label/:developerNameSlug", developerPageRouter);
 app.use("/meet-the-xr", agentsPageRouter);
 app.use("/agent", agentDetailRouter);
+app.use("/area", communityPageRouter);
 
 app.use(permissionsRouter);
 app.use(rolesRouter);

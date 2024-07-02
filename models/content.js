@@ -5,6 +5,9 @@ const contentSchema = new mongoose.Schema(
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     content: { type: String, required: true }, // HTML content
+    featured_image: {
+      type: String,
+    },
     author: {
       _id: false,
       name: { type: String },

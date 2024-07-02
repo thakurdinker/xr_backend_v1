@@ -20,6 +20,8 @@ const contentRouter = require("./routes/content");
 const agentRouter = require("./routes/agent");
 const homePageRouter = require("./routes/homePageVideo");
 
+const homePageDataRouter = require("./routes/homepage");
+
 const User = require("./models/user");
 
 const PORT = process.env.PORT;
@@ -81,6 +83,9 @@ passport.deserializeUser(User.deserializeUser());
 //   console.log(req.session);
 //   next();
 // });
+
+// Public Routes
+app.use("/", homePageDataRouter);
 
 app.use(permissionsRouter);
 app.use(rolesRouter);

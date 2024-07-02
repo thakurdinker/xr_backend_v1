@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const HomePageVideos = require("../models/homepageVideo");
 const catchAsync = require("../utils/seedDB/catchAsync");
 
@@ -44,6 +45,11 @@ module.exports.createHomePageVideo = catchAsync(async (req, res) => {
 module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
   try {
     const { mainVideoUrl, mainVideoAgentId, additionalVideos } = req.body;
+
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(200).json({ success: false, message: "Invalid ID" });
+    }
+
     const updatedHomePageVideo = await HomePageVideos.findByIdAndUpdate(
       req.params.id,
       {
@@ -60,6 +66,8 @@ module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
     )
       .populate("mainVideo.agent videos.agent")
       .exec();
+
+    console.log(updatedHomePageVideo);
     if (!updatedHomePageVideo) {
       return res.status(200).json({
         success: false,

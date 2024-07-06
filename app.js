@@ -27,6 +27,8 @@ const communityPageRouter = require("./routes/communityPage");
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
 const agentDetailRouter = require("./routes/agentDetailPage");
+const propertyPageRouter = require("./routes/propertyPage");
+const allProperties = require("./routes/allPropertiesPage");
 
 const User = require("./models/user");
 
@@ -96,7 +98,10 @@ app.use("/label/:developerNameSlug", developerPageRouter);
 app.use("/meet-the-xr", agentsPageRouter);
 app.use("/agent", agentDetailRouter);
 app.use("/area", communityPageRouter);
+app.use("/property/:propertySlug", propertyPageRouter);
+app.use("/dubai-properties", allProperties);
 
+// Admin Routes
 app.use(permissionsRouter);
 app.use(rolesRouter);
 app.use(userRouter);

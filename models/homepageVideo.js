@@ -4,9 +4,13 @@ const Schema = mongoose.Schema;
 
 const newhomePageVideoSchema = new Schema({
   mainVideo: {
+    _id: false,
     url: {
       type: String,
       required: true,
+    },
+    title: {
+      type: String,
     },
     agent: {
       type: mongoose.Types.ObjectId,
@@ -15,9 +19,13 @@ const newhomePageVideoSchema = new Schema({
   },
   videos: [
     {
+      _id: false,
       url: {
         type: String,
         required: true,
+      },
+      title: {
+        type: String,
       },
       agent: {
         type: mongoose.Types.ObjectId,

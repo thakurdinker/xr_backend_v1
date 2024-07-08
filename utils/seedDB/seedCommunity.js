@@ -8,139 +8,105 @@ const Community = require("../../models/community");
 
 const DB_URL = process.env.DB_URL;
 
-const dummyCommunities = [
+// Array of sample community data
+const communities = [
   {
-    name: "Greenwood Heights",
-    slug: "greenwood-heights",
-    description:
-      "Greenwood Heights is a serene community with lush green parks and modern amenities.",
+    name: "Sample Community 1",
+    slug: "sample-community-1",
+    description: "This is a detailed description for Sample Community 1.",
     location: {
-      address: "123 Elm Street",
-      city: "Greenwood",
-      state: "CA",
-      country: "USA",
+      address: "123 Sample Street",
+      city: "Sample City",
+      state: "Sample State",
+      country: "Sample Country",
       coordinates: {
-        lat: 37.7749,
-        lng: -122.4194,
+        lat: 25.276987,
+        lng: 55.296249,
       },
     },
     amenities: [
-      {
-        name: "Swimming Pool",
-        icon_url: "http://example.com/icons/pool.png",
-        description: "Olympic-sized swimming pool.",
-      },
-      {
-        name: "Gym",
-        icon_url: "http://example.com/icons/gym.png",
-        description: "State-of-the-art fitness center.",
-      },
       {
         name: "Park",
-        icon_url: "http://example.com/icons/park.png",
-        description: "Beautifully landscaped park.",
+        icon_url: "https://example.com/icons/park.png",
+        description: "A beautiful park for residents.",
       },
     ],
     images: [
       {
-        url: "http://example.com/images/community1.jpg",
-        description: "Community overview.",
-      },
-      {
-        url: "http://example.com/images/community2.jpg",
-        description: "Park area.",
+        url: "https://example.com/images/community1.jpg",
+        description: "Community Image 1",
       },
     ],
     faqs: [
       {
-        question: "What are the community fees?",
-        answer: "Community fees are $150 per month.",
-      },
-      {
-        question: "Are pets allowed?",
-        answer: "Yes, pets are allowed in the community.",
+        question: "What are the community amenities?",
+        answer: "Park, Pool, Gym",
       },
     ],
     seo: {
-      meta_title: "Greenwood Heights - Serene Community with Modern Amenities",
-      meta_description:
-        "Discover Greenwood Heights, a serene community offering lush parks and modern amenities.",
-      keywords: ["Greenwood Heights", "community", "modern amenities"],
+      meta_title: "Sample Community 1",
+      meta_description: "Detailed SEO description for Sample Community 1.",
+      keywords: ["community", "sample", "example"],
     },
-    schema_org: { type: "Place", properties: {} },
+    schema_org: {
+      type: "Place",
+      properties: { name: "Sample Community 1" },
+    },
     open_graph: {
-      title: "Greenwood Heights",
-      description: "Serene community with modern amenities.",
-      image: "http://example.com/images/community1.jpg",
+      title: "Sample Community 1",
+      description: "Open Graph description for Sample Community 1.",
+      image: "https://example.com/images/community1-og.jpg",
     },
   },
-  {
-    name: "Lakeside Villas",
-    slug: "lakeside-villas",
-    description:
-      "Lakeside Villas offers luxurious living with stunning lake views and top-notch facilities.",
+  // Add 19 more sample documents here...
+];
+
+// Repeat the above object 19 times with different values
+for (let i = 2; i <= 20; i++) {
+  communities.push({
+    name: `Sample Community ${i}`,
+    slug: `sample-community-${i}`,
+    description: `This is a detailed description for Sample Community ${i}.`,
     location: {
-      address: "456 Lakeview Drive",
-      city: "Lakeside",
-      state: "NY",
-      country: "USA",
+      address: `123 Sample Street ${i}`,
+      city: "Sample City",
+      state: "Sample State",
+      country: "Sample Country",
       coordinates: {
-        lat: 40.7128,
-        lng: -74.006,
+        lat: 25.276987 + i * 0.01,
+        lng: 55.296249 + i * 0.01,
       },
     },
     amenities: [
       {
-        name: "Boat Dock",
-        icon_url: "http://example.com/icons/boat.png",
-        description: "Private boat dock.",
-      },
-      {
-        name: "Tennis Courts",
-        icon_url: "http://example.com/icons/tennis.png",
-        description: "Professional-grade tennis courts.",
-      },
-      {
-        name: "Clubhouse",
-        icon_url: "http://example.com/icons/clubhouse.png",
-        description: "Exclusive community clubhouse.",
+        name: `Amenity ${i}`,
+        icon_url: `https://example.com/icons/amenity${i}.png`,
+        description: `Description for Amenity ${i}.`,
       },
     ],
     images: [
       {
-        url: "http://example.com/images/community3.jpg",
-        description: "Lake view.",
-      },
-      {
-        url: "http://example.com/images/community4.jpg",
-        description: "Tennis courts.",
+        url: `https://example.com/images/community${i}.jpg`,
+        description: `Community Image ${i}`,
       },
     ],
-    faqs: [
-      {
-        question: "Is there a clubhouse?",
-        answer: "Yes, there is an exclusive clubhouse for residents.",
-      },
-      {
-        question: "What are the lake access rules?",
-        answer: "Residents have private access to the lake.",
-      },
-    ],
+    faqs: [{ question: `FAQ question ${i}?`, answer: `FAQ answer ${i}.` }],
     seo: {
-      meta_title: "Lakeside Villas - Luxurious Living with Stunning Lake Views",
-      meta_description:
-        "Experience luxurious living at Lakeside Villas with stunning lake views and top-notch facilities.",
-      keywords: ["Lakeside Villas", "luxury living", "lake views"],
+      meta_title: `Sample Community ${i}`,
+      meta_description: `Detailed SEO description for Sample Community ${i}.`,
+      keywords: ["community", "sample", "example"],
     },
-    schema_org: { type: "Place", properties: {} },
+    schema_org: {
+      type: "Place",
+      properties: { name: `Sample Community ${i}` },
+    },
     open_graph: {
-      title: "Lakeside Villas",
-      description: "Luxurious living with stunning lake views.",
-      image: "http://example.com/images/community3.jpg",
+      title: `Sample Community ${i}`,
+      description: `Open Graph description for Sample Community ${i}.`,
+      image: `https://example.com/images/community${i}-og.jpg`,
     },
-  },
-  // Add 3 more communities similarly
-];
+  });
+}
 
 const connectToDB = async () => {
   mongoose.connect(DB_URL);
@@ -154,7 +120,7 @@ const connectToDB = async () => {
 const seedCommunity = async () => {
   try {
     await Community.deleteMany({});
-    await Community.insertMany(dummyCommunities);
+    await Community.insertMany(communities);
     console.log("Database seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);

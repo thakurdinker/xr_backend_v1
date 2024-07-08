@@ -8,19 +8,21 @@ const Property = require("../../models/properties");
 
 const DB_URL = process.env.DB_URL;
 
-const dummyProperties = [
+// Array of sample property data
+const properties = [
   {
-    property_name: "Luxury Townhouse",
-    description: "A beautiful luxury townhouse with modern amenities.",
-    price: "500000",
+    property_name: "Sample Property 1",
+    property_name_slug: "sample-property-1",
+    description: "This is a sample description for property 1",
+    price: "1000000",
+    developer: "Developer 1",
+    developer_name_slug: "developer-1",
     type: ["townhouse"],
-    developer: "Emaar",
-    developer_name_slug: "emaar",
     location: {
-      address: "123 Main St",
-      city: "Dubai",
-      state: "Dubai",
-      country: "UAE",
+      address: "123 Sample Street",
+      city: "Sample City",
+      state: "Sample State",
+      country: "Sample Country",
       coordinates: {
         lat: "25.276987",
         lng: "55.296249",
@@ -29,128 +31,76 @@ const dummyProperties = [
     features: {
       bedrooms: "3",
       bathrooms: "2",
-      area: "1500",
-      year_built: "2019",
-      amenities: ["swimming pool", "gym"],
+      area: "1500 sq ft",
+      year_built: "2020",
+      amenities: ["kids' play area", "skate park"],
     },
-    images: [
-      { url: "http://example.com/image1.jpg", description: "Front view" },
-      { url: "http://example.com/image2.jpg", description: "Living room" },
-    ],
+    images: [{ url: "https://example.com/image1.jpg", description: "Image 1" }],
     gallery: [
-      { url: "http://example.com/gallery1.jpg", description: "Bedroom" },
-      { url: "http://example.com/gallery2.jpg", description: "Kitchen" },
+      { url: "https://example.com/gallery1.jpg", description: "Gallery 1" },
     ],
-    status: ["available"],
-    community_name: "Greenway",
-    community_name_slug: "greenway",
-    property_name_slug: "luxury-townhouse",
+    status: ["for sale", "latest"],
+    community_name: "Sample Community 1",
+    community_name_slug: "sample-community-1",
     community_features: {
-      project_overview: "A vibrant community with all modern facilities.",
-      nearby_facilities: ["school", "hospital"],
-      transportation: ["Metro station", "Bus stop"],
+      project_overview: "This is a sample project overview for community 1",
+      nearby_facilities: ["hospital", "school"],
+      transportation: ["Al Maktoum Intl' Airport", "District 2020"],
     },
-    starting_price: "450000",
-    show_property: true,
-    featured: true,
-  },
-  {
-    title: "Modern Apartment",
-    description: "A spacious modern apartment in the heart of the city.",
-    price: "300000",
-    type: ["apartment"],
-    developer: "Nakheel",
-    developer_name_slug: "nakheel",
-    location: {
-      address: "456 Central Ave",
-      city: "Dubai",
-      state: "Dubai",
-      country: "UAE",
-      coordinates: {
-        lat: "25.204849",
-        lng: "55.270782",
-      },
-    },
-    features: {
-      bedrooms: "2",
-      bathrooms: "2",
-      area: "1000",
-      year_built: "2018",
-      amenities: ["gym", "parking"],
-    },
-    images: [
-      {
-        url: "http://example.com/image3.jpg",
-        description: "Building exterior",
-      },
-      { url: "http://example.com/image4.jpg", description: "Living room" },
-    ],
-    gallery: [
-      { url: "http://example.com/gallery3.jpg", description: "Bedroom" },
-      { url: "http://example.com/gallery4.jpg", description: "Kitchen" },
-    ],
-    status: ["available"],
-    community_name: "City Heights",
-    community_name_slug: "city-heights",
-    property_name_slug: "modern-apartment",
-    community_features: {
-      project_overview: "A bustling urban community.",
-      nearby_facilities: ["mall", "park"],
-      transportation: ["Metro station", "Bus stop"],
-    },
-    starting_price: "290000",
     show_property: true,
     featured: false,
   },
-  // Add 8 more properties similarly
-  {
-    title: "Elegant Villa",
-    description: "A luxurious villa with private garden and pool.",
-    price: "800000",
-    type: ["villa"],
-    developer: "Emaar",
-    developer_name_slug: "emaar",
+  // Add 19 more sample documents here...
+];
+
+// Repeat the above object 19 times with different values
+for (let i = 2; i <= 20; i++) {
+  properties.push({
+    property_name: `Sample Property ${i}`,
+    property_name_slug: `sample-property-${i}`,
+    description: `This is a sample description for property ${i}`,
+    price: `${1000000 + i * 10000}`,
+    developer: `Developer ${i}`,
+    developer_name_slug: `developer-${i}`,
+    type: i % 3 === 0 ? ["semi-detached home"] : ["townhouse"],
     location: {
-      address: "789 Palm St",
-      city: "Dubai",
-      state: "Dubai",
-      country: "UAE",
+      address: `123 Sample Street ${i}`,
+      city: "Sample City",
+      state: "Sample State",
+      country: "Sample Country",
       coordinates: {
-        lat: "25.15053",
-        lng: "55.205307",
+        lat: `${25.276987 + i * 0.01}`,
+        lng: `${55.296249 + i * 0.01}`,
       },
     },
     features: {
-      bedrooms: "5",
-      bathrooms: "4",
-      area: "2500",
-      year_built: "2020",
-      amenities: ["pool", "garden", "garage"],
+      bedrooms: `${2 + (i % 3)}`,
+      bathrooms: `${1 + (i % 2)}`,
+      area: `${1500 + i * 50} sq ft`,
+      year_built: `${2020 + (i % 5)}`,
+      amenities: ["kids' play area", "skate park"],
     },
     images: [
-      { url: "http://example.com/image5.jpg", description: "Front view" },
-      { url: "http://example.com/image6.jpg", description: "Living room" },
+      { url: `https://example.com/image${i}.jpg`, description: `Image ${i}` },
     ],
     gallery: [
-      { url: "http://example.com/gallery5.jpg", description: "Bedroom" },
-      { url: "http://example.com/gallery6.jpg", description: "Kitchen" },
+      {
+        url: `https://example.com/gallery${i}.jpg`,
+        description: `Gallery ${i}`,
+      },
     ],
-    status: ["available"],
-    community_name: "Palm Villas",
-    community_name_slug: "palm-villas",
-    property_name_slug: "elegant-villa",
+    status: i % 2 === 0 ? ["for sale"] : ["off-plan"],
+    community_name: `Sample Community ${i}`,
+    community_name_slug: `sample-community-${i}`,
     community_features: {
-      project_overview: "A serene villa community.",
-      nearby_facilities: ["beach", "school"],
-      transportation: ["Taxi service"],
+      project_overview: `This is a sample project overview for community ${i}`,
+      nearby_facilities: ["hospital", "school"],
+      transportation: ["Al Maktoum Intl' Airport", "District 2020"],
     },
-    starting_price: "750000",
-    show_property: true,
-    featured: true,
-  },
-  // ...6 more properties
-];
-
+    show_property: i % 2 === 0,
+    featured: i % 3 === 0,
+  });
+}
 const connectToDB = async () => {
   mongoose.connect(DB_URL);
   const db = mongoose.connection;
@@ -164,7 +114,7 @@ const seedProperties = async () => {
   try {
     await Property.deleteMany({});
     console.log("Properties deleted Successfully");
-    await Property.insertMany(dummyProperties);
+    await Property.insertMany(properties);
     console.log("Properties seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);

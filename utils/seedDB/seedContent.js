@@ -8,106 +8,62 @@ const Content = require("../../models/content");
 
 const DB_URL = process.env.DB_URL;
 
-const dummyContents = [
+// Array of sample content data
+const contents = [
   {
-    title: "Understanding JavaScript",
-    slug: "understanding-javascript",
-    content: "<p>This is an article about JavaScript.</p>",
-    author: { name: "John Doe", email: "john@example.com" },
+    title: "Sample Title 1",
+    slug: "sample-title-1",
+    content: "<p>This is a sample content 1</p>",
+    featured_image: "https://example.com/image1.jpg",
+    author: { name: "Author 1", email: "author1@example.com" },
     category: "blog",
-    tags: ["JavaScript", "Programming"],
+    tags: ["sample", "content"],
     publish_date: new Date(),
     status: "published",
-    images: [
-      { url: "http://example.com/js.jpg", description: "JavaScript logo" },
-    ],
-    faqs: [
-      {
-        question: "What is JavaScript?",
-        answer: "JavaScript is a programming language.",
-      },
-      {
-        question: "Why use JavaScript?",
-        answer: "It is versatile and widely used.",
-      },
-    ],
-    meta_title: "Understanding JavaScript",
-    meta_description: "An in-depth article about JavaScript.",
-    keywords: ["JavaScript", "Programming"],
-    schema_org: { type: "Article", properties: {} },
+    images: [{ url: "https://example.com/image1.jpg", description: "Image 1" }],
+    faqs: [{ question: "FAQ 1?", answer: "Answer 1" }],
+    meta_title: "Sample Meta Title 1",
+    meta_description: "Sample Meta Description 1",
+    keywords: ["keyword1", "keyword2"],
+    schema_org: { type: "Article", properties: { author: "Author 1" } },
     open_graph: {
-      title: "Understanding JavaScript",
-      description: "An in-depth article about JavaScript.",
-      image: "http://example.com/js.jpg",
+      title: "Open Graph Title 1",
+      description: "Open Graph Description 1",
+      image: "https://example.com/image1.jpg",
+      type: "article",
     },
   },
-  {
-    title: "Getting Started with Python",
-    slug: "getting-started-with-python",
-    content: "<p>This is an article about Python.</p>",
-    author: { name: "Jane Smith", email: "jane@example.com" },
-    category: "blog",
-    tags: ["Python", "Programming"],
-    publish_date: new Date(),
-    status: "published",
-    images: [
-      { url: "http://example.com/python.jpg", description: "Python logo" },
-    ],
-    faqs: [
-      {
-        question: "What is Python?",
-        answer: "Python is a programming language.",
-      },
-      {
-        question: "Why use Python?",
-        answer: "It is easy to learn and powerful.",
-      },
-    ],
-    meta_title: "Getting Started with Python",
-    meta_description: "An in-depth article about Python.",
-    keywords: ["Python", "Programming"],
-    schema_org: { type: "Article", properties: {} },
-    open_graph: {
-      title: "Getting Started with Python",
-      description: "An in-depth article about Python.",
-      image: "http://example.com/python.jpg",
-    },
-  },
-  // Add 8 more contents similarly
-  {
-    title: "Exploring Node.js",
-    slug: "exploring-nodejs",
-    content: "<p>This is an article about Node.js.</p>",
-    author: { name: "Alice Johnson", email: "alice@example.com" },
-    category: "news",
-    tags: ["Node.js", "JavaScript"],
-    publish_date: new Date(),
-    status: "published",
-    images: [
-      { url: "http://example.com/nodejs.jpg", description: "Node.js logo" },
-    ],
-    faqs: [
-      {
-        question: "What is Node.js?",
-        answer: "Node.js is a JavaScript runtime.",
-      },
-      {
-        question: "Why use Node.js?",
-        answer: "It allows JavaScript to run on the server.",
-      },
-    ],
-    meta_title: "Exploring Node.js",
-    meta_description: "An in-depth article about Node.js.",
-    keywords: ["Node.js", "JavaScript"],
-    schema_org: { type: "Article", properties: {} },
-    open_graph: {
-      title: "Exploring Node.js",
-      description: "An in-depth article about Node.js.",
-      image: "http://example.com/nodejs.jpg",
-    },
-  },
-  // Add 7 more contents similarly
+  // Add 19 more sample documents here...
 ];
+
+// Repeat the above object 19 times with different values
+for (let i = 2; i <= 20; i++) {
+  contents.push({
+    title: `Sample Title ${i}`,
+    slug: `sample-title-${i}`,
+    content: `<p>This is a sample content ${i}</p>`,
+    featured_image: `https://example.com/image${i}.jpg`,
+    author: { name: `Author ${i}`, email: `author${i}@example.com` },
+    category: i % 3 === 0 ? "news" : i % 3 === 1 ? "article" : "blog",
+    tags: ["sample", "content"],
+    publish_date: new Date(),
+    status: i % 2 === 0 ? "draft" : "published",
+    images: [
+      { url: `https://example.com/image${i}.jpg`, description: `Image ${i}` },
+    ],
+    faqs: [{ question: `FAQ ${i}?`, answer: `Answer ${i}` }],
+    meta_title: `Sample Meta Title ${i}`,
+    meta_description: `Sample Meta Description ${i}`,
+    keywords: ["keyword1", "keyword2"],
+    schema_org: { type: "Article", properties: { author: `Author ${i}` } },
+    open_graph: {
+      title: `Open Graph Title ${i}`,
+      description: `Open Graph Description ${i}`,
+      image: `https://example.com/image${i}.jpg`,
+      type: "article",
+    },
+  });
+}
 
 const connectToDB = async () => {
   mongoose.connect(DB_URL);
@@ -122,7 +78,7 @@ const seedContent = async () => {
   try {
     await Content.deleteMany({});
     console.log("Content deleted Successfully");
-    await Content.insertMany(dummyContents);
+    await Content.insertMany(contents);
     console.log("Content seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);

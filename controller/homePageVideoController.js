@@ -21,15 +21,18 @@ module.exports.getAllHomePageVideos = catchAsync(async (req, res) => {
 
 module.exports.createHomePageVideo = catchAsync(async (req, res) => {
   try {
-    const { mainVideoUrl, mainVideoAgentId, additionalVideos } = req.body;
+    const { mainVideoUrl, mainVideoAgentId, additionalVideos, mainVideoTitle } =
+      req.body;
     const newHomePageVideo = new HomePageVideos({
       mainVideo: {
-        url: mainVideoUrl,
-        agent: mainVideoAgentId,
+        url: mainVideoUrl || "",
+        title: mainVideoTitle || "",
+        agent: mainVideoAgentId || "",
       },
       videos: additionalVideos.map((video) => ({
-        url: video.url,
-        agent: video.agentId,
+        url: video.url || "",
+        title: video.title || "",
+        agent: video.agentId || "",
       })),
     });
     const result = await newHomePageVideo.save();
@@ -44,7 +47,8 @@ module.exports.createHomePageVideo = catchAsync(async (req, res) => {
 
 module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
   try {
-    const { mainVideoUrl, mainVideoAgentId, additionalVideos } = req.body;
+    const { mainVideoUrl, mainVideoAgentId, additionalVideos, mainVideoTitle } =
+      req.body;
 
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(200).json({ success: false, message: "Invalid ID" });
@@ -54,12 +58,14 @@ module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
       req.params.id,
       {
         mainVideo: {
-          url: mainVideoUrl,
-          agent: mainVideoAgentId,
+          url: mainVideoUrl || "",
+          title: mainVideoTitle || "",
+          agent: mainVideoAgentId || "",
         },
         videos: additionalVideos.map((video) => ({
-          url: video.url,
-          agent: video.agentId,
+          url: video.url || "",
+          title: video.title || "",
+          agent: video.agentId || "",
         })),
       },
       { new: true }

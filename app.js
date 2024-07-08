@@ -29,6 +29,7 @@ const agentsPageRouter = require("./routes/agentPage");
 const agentDetailRouter = require("./routes/agentDetailPage");
 const propertyPageRouter = require("./routes/propertyPage");
 const allProperties = require("./routes/allPropertiesPage");
+const newsPageRouter = require("./routes/newsPage");
 
 const User = require("./models/user");
 
@@ -100,6 +101,7 @@ app.use("/agent", agentDetailRouter);
 app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
+app.use("/", newsPageRouter);
 
 // Admin Routes
 app.use(permissionsRouter);

@@ -104,15 +104,15 @@ app.use("/dubai-properties", allProperties);
 app.use("/", newsPageRouter);
 
 // Admin Routes
-app.use(permissionsRouter);
-app.use(rolesRouter);
-app.use(userRouter);
-app.use(propertyRouter);
-app.use(contentRouter);
-app.use(agentRouter);
-app.use(homePageRouter);
-app.use(propertyTypeRouter);
-app.use(communityRouter);
+app.use("/admin", permissionsRouter);
+app.use("/admin", rolesRouter);
+app.use("/admin", userRouter);
+app.use("/admin", propertyRouter);
+app.use("/admin", contentRouter);
+app.use("/admin", agentRouter);
+app.use("/admin", homePageRouter);
+app.use("/admin", propertyTypeRouter);
+app.use("/admin", communityRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

@@ -35,6 +35,25 @@ async function seedHomePageVideos() {
     return agentIds[Math.floor(Math.random() * agentIds.length)];
   }
 
+  // Array of sample YouTube video URLs
+  const youtubeUrls = [
+    "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "https://www.youtube.com/embed/3JZ_D3ELwOQ",
+    "https://www.youtube.com/embed/lWA2pjMjpBs",
+    "https://www.youtube.com/embed/e-ORhEE9VVg",
+    "https://www.youtube.com/embed/OPf0YbXqDm0",
+    "https://www.youtube.com/embed/2Vv-BfVoq4g",
+    "https://www.youtube.com/embed/KQ6zr6kCPj8",
+    "https://www.youtube.com/embed/9bZkp7q19f0",
+    "https://www.youtube.com/embed/CevxZvSJLk8",
+    "https://www.youtube.com/embed/7PCkvCPvDXk",
+  ];
+
+  // Function to get a random YouTube URL from the list
+  function getRandomYoutubeUrl() {
+    return youtubeUrls[Math.floor(Math.random() * youtubeUrls.length)];
+  }
+
   // Array of sample homepage video data
   const homePageVideos = [];
 
@@ -42,18 +61,18 @@ async function seedHomePageVideos() {
   for (let i = 1; i <= 20; i++) {
     homePageVideos.push({
       mainVideo: {
-        url: `https://example.com/mainvideo${i}.mp4`,
+        url: getRandomYoutubeUrl(),
         title: `Main Video ${i}`,
         agent: getRandomAgentId(),
       },
       videos: [
         {
-          url: `https://example.com/video${i}a.mp4`,
+          url: getRandomYoutubeUrl(),
           title: `Video ${i}a`,
           agent: getRandomAgentId(),
         },
         {
-          url: `https://example.com/video${i}b.mp4`,
+          url: getRandomYoutubeUrl(),
           title: `Video ${i}b`,
           agent: getRandomAgentId(),
         },
@@ -62,8 +81,8 @@ async function seedHomePageVideos() {
   }
 
   try {
-    await HomePageVideos.deleteMany({});
     // Insert the sample homepage video data into the collection
+    await HomePageVideos.deleteMany({});
     await HomePageVideos.insertMany(homePageVideos);
     console.log("HomePageVideos collection seeded successfully!");
   } catch (error) {

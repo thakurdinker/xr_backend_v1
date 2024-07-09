@@ -11,165 +11,243 @@ const DB_URL = process.env.DB_URL;
 const { faker } = require("@faker-js/faker");
 
 // Array of sample property data
-const properties = [
-  {
-    property_name: "Sample Property 1",
-    property_name_slug: "sample-property-1",
-    description: "This is a sample description for property 1",
-    price: "1000000",
-    developer: "Developer 1",
-    developer_name_slug: "developer-1",
-    type: ["townhouse"],
-    location: {
-      address: "123 Sample Street",
-      city: "Sample City",
-      state: "Sample State",
-      country: "Sample Country",
-      coordinates: {
-        lat: "25.276987",
-        lng: "55.296249",
-      },
+// const properties = [
+//   {
+//     property_name: "Sample Property 1",
+//     property_name_slug: "sample-property-1",
+//     description: "This is a sample description for property 1",
+//     price: "1000000",
+//     developer: "Developer 1",
+//     developer_name_slug: "developer-1",
+//     type: ["townhouse"],
+//     location: {
+//       address: "123 Sample Street",
+//       city: "Sample City",
+//       state: "Sample State",
+//       country: "Sample Country",
+//       coordinates: {
+//         lat: "25.276987",
+//         lng: "55.296249",
+//       },
+//     },
+//     features: {
+//       bedrooms: "3",
+//       bathrooms: "2",
+//       area: "1500 sq ft",
+//       year_built: "2020",
+//       amenities: ["kids' play area", "skate park"],
+//     },
+//     images: [{ url: "https://example.com/image1.jpg", description: "Image 1" }],
+//     gallery: [
+//       { url: "https://example.com/gallery1.jpg", description: "Gallery 1" },
+//     ],
+//     status: ["for sale", "latest"],
+//     community_name: "Sample Community 1",
+//     community_name_slug: "sample-community-1",
+//     community_features: {
+//       project_overview: "This is a sample project overview for community 1",
+//       nearby_facilities: ["hospital", "school"],
+//       transportation: ["Al Maktoum Intl' Airport", "District 2020"],
+//     },
+//     show_property: true,
+//     featured: false,
+//   },
+//   // Add 19 more sample documents here...
+// ];
+
+const propertyTemplate = {
+  property_name: "Sunset Villa",
+  property_name_slug: "sunset-villa",
+  description: "A beautiful villa with stunning sunset views.",
+  price: "AED 3,500,000",
+  developer: "Sunrise Developments",
+  developer_name_slug: "sunrise-developments",
+  type: ["villa"],
+  location: {
+    address: "123 Sunset Blvd",
+    city: "Dubai",
+    state: "Dubai",
+    country: "UAE",
+    coordinates: {
+      lat: "25.2048",
+      lng: "55.2708",
     },
-    features: {
-      bedrooms: "3",
-      bathrooms: "2",
-      area: "1500 sq ft",
-      year_built: "2020",
-      amenities: ["kids' play area", "skate park"],
-    },
-    images: [{ url: "https://example.com/image1.jpg", description: "Image 1" }],
-    gallery: [
-      { url: "https://example.com/gallery1.jpg", description: "Gallery 1" },
-    ],
-    status: ["for sale", "latest"],
-    community_name: "Sample Community 1",
-    community_name_slug: "sample-community-1",
-    community_features: {
-      project_overview: "This is a sample project overview for community 1",
-      nearby_facilities: ["hospital", "school"],
-      transportation: ["Al Maktoum Intl' Airport", "District 2020"],
-    },
-    show_property: true,
-    featured: false,
   },
-  // Add 19 more sample documents here...
-];
+  features: {
+    bedrooms: "5",
+    bathrooms: "4",
+    area: "4500",
+    year_built: "2020",
+  },
 
-const unsplashImages = [
-  "https://picsum.photos/1920/1080",
-  "https://picsum.photos/1920/1080",
-  "https://picsum.photos/1920/1080",
-  "https://picsum.photos/1920/1080",
-  "https://picsum.photos/1920/1080",
-];
-
-const createProperty = () => {
-  return {
-    property_name: faker.commerce.productName(),
-    property_name_slug: faker.helpers.slugify(faker.commerce.productName()),
-    description: faker.lorem.paragraph(),
-    price: faker.commerce.price(),
-    developer: faker.company.name(),
-    developer_name_slug: faker.helpers.slugify(faker.company.name()),
-    type: [
-      faker.helpers.arrayElement([
-        "townhouse",
-        "semi-detached home",
-        "apartment",
-        "villa",
-      ]),
-    ],
-    location: {
-      address: faker.address.streetAddress(),
-      city: faker.address.city(),
-      state: faker.address.state(),
-      country: faker.address.country(),
-      coordinates: {
-        lat: faker.address.latitude(),
-        lng: faker.address.longitude(),
-      },
+  images: [
+    {
+      heading: "Front View",
+      url: "https://picsum.photos/1920/1080",
+      description: "Front view of the villa",
     },
-    features: {
-      bedrooms: faker.datatype.number({ min: 1, max: 5 }).toString(),
-      bathrooms: faker.datatype.number({ min: 1, max: 3 }).toString(),
-      area: faker.datatype.number({ min: 500, max: 5000 }).toString(),
-      year_built: faker.date.past(20).getFullYear().toString(),
+    {
+      heading: "Living Room",
+      url: "https://picsum.photos/1920/1080",
+      description: "Spacious living room",
     },
-    images: [
+    {
+      heading: "Kitchen",
+      url: "https://picsum.photos/1920/1080",
+      description: "Modern kitchen",
+    },
+    {
+      heading: "Bedroom 1",
+      url: "https://picsum.photos/1920/1080",
+      description: "Master bedroom",
+    },
+    {
+      heading: "Bedroom 2",
+      url: "https://picsum.photos/1920/1080",
+      description: "Guest bedroom",
+    },
+    {
+      heading: "Bathroom",
+      url: "https://picsum.photos/1920/1080",
+      description: "Luxury bathroom",
+    },
+    {
+      heading: "Pool",
+      url: "https://picsum.photos/1920/1080",
+      description: "Private pool",
+    },
+    {
+      heading: "Garden",
+      url: "https://picsum.photos/1920/1080",
+      description: "Beautiful garden",
+    },
+    {
+      heading: "Dining Area",
+      url: "https://picsum.photos/1920/1080",
+      description: "Dining area",
+    },
+    {
+      heading: "Terrace",
+      url: "https://picsum.photos/1920/1080",
+      description: "Terrace with a view",
+    },
+  ],
+  gallery_title_1: "Interior Views",
+  gallery_title_2: "Exterior Views",
+  gallery_description_1: "Beautifully designed interiors.",
+  gallery_description_2: "Stunning exteriors.",
+  gallery: [
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+    "https://picsum.photos/1920/1080",
+  ],
+  status: ["for sale"],
+  community_name: "Sunset Community",
+  community_name_slug: "sunset-community",
+  community_features: {
+    project_overview: "A community with all amenities and close to the beach.",
+    nearby_facilities: ["hospital", "school"],
+    transportation: ["Al Maktoum Intl' Airport"],
+  },
+  show_property: true,
+  featured: true,
+  section_1: {
+    heading: "About the Villa",
+    title: "Sunset Villa",
+    description: "Luxurious villa with all modern amenities.",
+  },
+  about_project: {
+    heading: "Project Overview",
+    title: "Sunset Villas Project",
+    description: "A premium villa project by Sunrise Developments.",
+  },
+  amenities: {
+    description: "Pool, Gym, Garden",
+    icons: [
       {
-        heading: faker.lorem.words(),
-        url: faker.helpers.arrayElement(unsplashImages),
-        description: faker.lorem.sentence(),
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "Pool",
       },
-    ],
-    gallery: [
       {
-        url: faker.helpers.arrayElement(unsplashImages),
-        title1: faker.lorem.words(),
-        title2: faker.lorem.words(),
-        description1: faker.lorem.sentence(),
-        description2: faker.lorem.sentence(),
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "Gym",
       },
-    ],
-    status: [faker.helpers.arrayElement(["for sale", "latest", "off-plan"])],
-    community_name: faker.address.city(),
-    community_name_slug: faker.helpers.slugify(faker.address.city()),
-    community_features: {
-      project_overview: faker.lorem.paragraph(),
-      nearby_facilities: [
-        faker.helpers.arrayElement(["hospital", "school", "mall", "park"]),
-      ],
-      transportation: [
-        faker.helpers.arrayElement([
-          "Al Maktoum Intl' Airport",
-          "District 2020",
-          "Metro Station",
-        ]),
-      ],
-    },
-    show_property: faker.datatype.boolean(),
-    featured: faker.datatype.boolean(),
-    section_1: {
-      heading: faker.lorem.words(),
-      title: faker.lorem.words(),
-      description: faker.lorem.paragraph(),
-    },
-    about_project: {
-      heading: faker.lorem.words(),
-      title: faker.lorem.words(),
-      description: faker.lorem.paragraph(),
-    },
-    amenities: {
-      description: faker.lorem.paragraph(),
-      icons: {
-        icon_url: faker.helpers.arrayElement(unsplashImages),
-        icon_text: faker.lorem.words(),
-      },
-    },
-    faqs: [
       {
-        question: faker.lorem.sentence(),
-        answer: faker.lorem.paragraph(),
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "Garden",
+      },
+      {
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "Parking",
+      },
+      {
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "Security",
+      },
+      {
+        icon_url: "https://picsum.photos/800/600",
+        icon_text: "WiFi",
       },
     ],
-    meta_title: faker.lorem.words(),
-    meta_description: faker.lorem.sentence(),
-    keywords: [faker.lorem.word(), faker.lorem.word(), faker.lorem.word()],
-    schema_org: {
-      type: "Article",
-      properties: {
-        additionalType: "Property",
-      },
+  },
+  faqs: [
+    {
+      question: "What is the price?",
+      answer: "AED 3,500,000",
     },
-    open_graph: {
-      title: faker.lorem.words(),
-      description: faker.lorem.sentence(),
-      image: faker.helpers.arrayElement(unsplashImages),
-      type: "article",
+    {
+      question: "How many bedrooms?",
+      answer: "5 bedrooms",
     },
-  };
+  ],
+  meta_title: "Sunset Villa for Sale in Dubai",
+  meta_description:
+    "Luxurious 5 bedroom villa for sale in Sunset Community, Dubai.",
+  keywords: ["villa", "dubai", "real estate", "luxury"],
+  schema_org: {
+    type: "House",
+    properties: {
+      name: "Sunset Villa",
+      description: "Luxurious villa for sale",
+      price: "AED 3,500,000",
+    },
+  },
+  open_graph: {
+    title: "Sunset Villa for Sale in Dubai",
+    description:
+      "Luxurious 5 bedroom villa for sale in Sunset Community, Dubai.",
+    image: "https://picsum.photos/800/600",
+    type: "website",
+  },
 };
 
+const properties = [];
+
+for (let i = 1; i <= 20; i++) {
+  let property = { ...propertyTemplate };
+  property.property_name = `Property ${i}`;
+  property.property_name_slug = `property-${i}`;
+  property.location.address = `Address ${i}`;
+  property.images = property.images.map((image, index) => ({
+    ...image,
+    url: "https://picsum.photos/1920/1080",
+  }));
+  property.gallery = property.gallery.map(
+    (url, index) => "https://picsum.photos/1920/1080"
+  );
+  property.amenities.icons = property.amenities.icons.map((icon, index) => ({
+    ...icon,
+    icon_url: "https://picsum.photos/800/600",
+  }));
+  properties.push(property);
+}
 // Repeat the above object 19 times with different values
 // for (let i = 2; i <= 20; i++) {
 //   properties.push({
@@ -231,11 +309,11 @@ const seedProperties = async () => {
   try {
     await Property.deleteMany({});
     console.log("Properties deleted Successfully");
-    for (let i = 0; i < 20; i++) {
-      const property = createProperty();
-      await Property.create(property);
-    }
-    // await Property.insertMany(properties);
+    // for (let i = 0; i < 20; i++) {
+    //   const property = createProperty();
+    //   await Property.create(property);
+    // }
+    await Property.insertMany(properties);
     console.log("Properties seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);

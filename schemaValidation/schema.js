@@ -33,17 +33,11 @@ const propertySchemaValidation = Joi.object({
       })
     )
     .optional(),
-  gallery: Joi.array()
-    .items(
-      Joi.object({
-        url: Joi.string().optional(),
-        title1: Joi.string().optional(),
-        title2: Joi.string().optional(),
-        description1: Joi.string().optional(),
-        description2: Joi.string().optional(),
-      })
-    )
-    .optional(),
+  gallery_title_1: Joi.string().optional(),
+  gallery_title_2: Joi.string().optional(),
+  gallery_description_1: Joi.string().optional(),
+  gallery_description_2: Joi.string().optional(),
+  gallery: Joi.array().items(Joi.string().optional()).optional(),
   status: Joi.array().items(Joi.string()).optional(),
   community_name: Joi.string().optional(),
   community_name_slug: Joi.string().optional(),
@@ -66,10 +60,14 @@ const propertySchemaValidation = Joi.object({
   }).optional(),
   amenities: Joi.object({
     description: Joi.string().optional(),
-    icons: Joi.object({
-      icon_url: Joi.string().optional(),
-      icon_text: Joi.string().optional(),
-    }).optional(),
+    icons: Joi.array
+      .items(
+        Joi.object({
+          icon_url: Joi.string().optional(),
+          icon_text: Joi.string().optional(),
+        }).optional()
+      )
+      .optional(),
   }).optional(),
   faqs: Joi.array()
     .items(

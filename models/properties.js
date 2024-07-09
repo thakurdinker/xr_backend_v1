@@ -38,16 +38,11 @@ const newPropertySchema = new Schema(
         description: String, // optional
       },
     ],
-    gallery: [
-      {
-        _id: false,
-        url: String,
-        title1: String,
-        title2: String,
-        description1: String,
-        description2: String, // optional
-      },
-    ],
+    gallery_title_1: String,
+    gallery_title_2: String,
+    gallery_description_1: String,
+    gallery_description_2: String,
+    gallery: [String],
     status: [String], // e.g., "for sale", "latest", "off-plan"
     community_name: String,
     community_name_slug: String,
@@ -76,11 +71,13 @@ const newPropertySchema = new Schema(
     amenities: {
       _id: false,
       description: String,
-      icons: {
-        _id: false,
-        icon_url: String,
-        icon_text: String,
-      },
+      icons: [
+        {
+          _id: false,
+          icon_url: String,
+          icon_text: String,
+        },
+      ],
     },
     faqs: [
       {

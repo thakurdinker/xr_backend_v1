@@ -29,11 +29,11 @@ const newPropertySchema = new Schema(
       bathrooms: String,
       area: String, // in square feet or meters
       year_built: String,
-      amenities: [String], // e.g., ["kids' play area", "skate park"]
     },
     images: [
       {
         _id: false,
+        heading: String,
         url: String,
         description: String, // optional
       },
@@ -42,7 +42,10 @@ const newPropertySchema = new Schema(
       {
         _id: false,
         url: String,
-        description: String, // optional
+        title1: String,
+        title2: String,
+        description1: String,
+        description2: String, // optional
       },
     ],
     status: [String], // e.g., "for sale", "latest", "off-plan"
@@ -56,6 +59,52 @@ const newPropertySchema = new Schema(
     },
     show_property: Boolean, // true or false
     featured: Boolean, // true or false
+    section_1: {
+      _id: false,
+      heading: String,
+      title: String,
+      description: String,
+    },
+
+    about_project: {
+      _id: false,
+      heading: String,
+      title: String,
+      description: String,
+    },
+
+    amenities: {
+      _id: false,
+      description: String,
+      icons: {
+        _id: false,
+        icon_url: String,
+        icon_text: String,
+      },
+    },
+    faqs: [
+      {
+        _id: false,
+        question: { type: String, required: true },
+        answer: { type: String, required: true },
+      },
+    ],
+    // SEO fields
+    meta_title: { type: String, required: true },
+    meta_description: { type: String, required: true },
+    keywords: [{ type: String }],
+    schema_org: {
+      _id: false,
+      type: { type: String, default: "" }, // Example schema.org type
+      properties: { type: Object }, // Additional properties for schema.org
+    },
+    open_graph: {
+      _id: false,
+      title: { type: String },
+      description: { type: String },
+      image: { type: String },
+      type: { type: String, default: "" },
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

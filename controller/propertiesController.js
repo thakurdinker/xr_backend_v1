@@ -84,7 +84,7 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       .json({ success: false, isUpdated: false, message: "Invalid Id" });
   }
 
-  const { error } = propertySchemaValidationUpdate.validate(req.body);
+  const { error } = propertySchemaValidation.validate(req.body);
 
   if (error) {
     return res.status(200).json({
@@ -95,32 +95,32 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
   }
   const updates = Object.keys(req.body);
 
-  const allowedUpdates = [
-    "property_name",
-    "description",
-    "price",
-    "type",
-    "location",
-    "features",
-    "images",
-    "gallery",
-    "status",
-    "community_name",
-    "community_name_slug",
-    "property_name_slug",
-    "community_features",
-    "show_property",
-    "featured",
-  ];
-  const isValidOperation = updates.every((update) =>
-    allowedUpdates.includes(update)
-  );
+  // const allowedUpdates = [
+  //   "property_name",
+  //   "description",
+  //   "price",
+  //   "type",
+  //   "location",
+  //   "features",
+  //   "images",
+  //   "gallery",
+  //   "status",
+  //   "community_name",
+  //   "community_name_slug",
+  //   "property_name_slug",
+  //   "community_features",
+  //   "show_property",
+  //   "featured",
+  // ];
+  // const isValidOperation = updates.every((update) =>
+  //   allowedUpdates.includes(update)
+  // );
 
-  if (!isValidOperation) {
-    return res
-      .status(200)
-      .json({ success: false, isUpdated: false, message: "Invalid updates!" });
-  }
+  // if (!isValidOperation) {
+  //   return res
+  //     .status(200)
+  //     .json({ success: false, isUpdated: false, message: "Invalid updates!" });
+  // }
 
   try {
     const property = await Property.findById(req.params.id);

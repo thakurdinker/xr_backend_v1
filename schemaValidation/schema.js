@@ -60,7 +60,7 @@ const propertySchemaValidation = Joi.object({
   }).optional(),
   amenities: Joi.object({
     description: Joi.string().optional(),
-    icons: Joi.array
+    icons: Joi.array()
       .items(
         Joi.object({
           icon_url: Joi.string().optional(),

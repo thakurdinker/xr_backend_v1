@@ -77,9 +77,11 @@ const propertySchemaValidation = Joi.object({
       })
     )
     .optional(),
-  meta_title: Joi.string().optional(),
-  meta_description: Joi.string().optional(),
-  keywords: Joi.array().items(Joi.string()).optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
   schema_org: Joi.object({
     type: Joi.string().default(""),
     properties: Joi.object().optional(),
@@ -174,9 +176,11 @@ const contentValidationSchema = Joi.object({
       })
     )
     .optional(),
-  meta_title: Joi.string().required(),
-  meta_description: Joi.string().required(),
-  keywords: Joi.array().items(Joi.string()).optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
   schema_org: Joi.object({
     type: Joi.string().default("Article"),
     properties: Joi.object().optional(),
@@ -218,9 +222,12 @@ const contentUpdateValidationSchema = Joi.object({
       })
     )
     .optional(),
-  meta_title: Joi.string().optional(),
-  meta_description: Joi.string().optional(),
-  keywords: Joi.array().items(Joi.string()).optional(),
+  seo: Joi.object({
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
+    keywords: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
+
   schema_org: Joi.object({
     type: Joi.string().default("Article"),
     properties: Joi.object().optional(),
@@ -253,10 +260,10 @@ const agentValidationSchema = Joi.object({
   }).optional(),
   video_links: Joi.array().items(Joi.string()).optional(),
   seo: Joi.object({
-    meta_title: Joi.string().required(),
-    meta_description: Joi.string().required(),
+    meta_title: Joi.string().optional(),
+    meta_description: Joi.string().optional(),
     keywords: Joi.array().items(Joi.string()).optional(),
-  }).required(),
+  }).optional(),
   schema_org: Joi.object({
     type: Joi.string().default("Person"),
     properties: Joi.object().optional(),

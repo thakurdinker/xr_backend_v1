@@ -33,9 +33,12 @@ const contentSchema = new mongoose.Schema(
     ],
 
     // SEO fields
-    meta_title: { type: String, required: true },
-    meta_description: { type: String, required: true },
-    keywords: [{ type: String }],
+    seo: {
+      _id: false,
+      meta_title: { type: String, required: true },
+      meta_description: { type: String, required: true },
+      keywords: [{ type: String }],
+    },
     schema_org: {
       _id: false,
       type: { type: String, default: "Article" }, // Example schema.org type

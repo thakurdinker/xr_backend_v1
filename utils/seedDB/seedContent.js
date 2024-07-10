@@ -24,9 +24,11 @@ const contents = [
       { url: "https://picsum.photos/1920/1080", description: "Image 1" },
     ],
     faqs: [{ question: "FAQ 1?", answer: "Answer 1" }],
-    meta_title: "Sample Meta Title 1",
-    meta_description: "Sample Meta Description 1",
-    keywords: ["keyword1", "keyword2"],
+    seo: {
+      meta_title: "Sample Meta Title 1",
+      meta_description: "Sample Meta Description 1",
+      keywords: ["keyword1", "keyword2"],
+    },
     schema_org: { type: "Article", properties: { author: "Author 1" } },
     open_graph: {
       title: "Open Graph Title 1",
@@ -54,9 +56,11 @@ for (let i = 2; i <= 20; i++) {
       { url: `https://picsum.photos/1920/1080`, description: `Image ${i}` },
     ],
     faqs: [{ question: `FAQ ${i}?`, answer: `Answer ${i}` }],
-    meta_title: `Sample Meta Title ${i}`,
-    meta_description: `Sample Meta Description ${i}`,
-    keywords: ["keyword1", "keyword2"],
+    seo: {
+      meta_title: `Sample Meta Title ${i}`,
+      meta_description: `Sample Meta Description ${i}`,
+      keywords: ["keyword1", "keyword2"],
+    },
     schema_org: { type: "Article", properties: { author: `Author ${i}` } },
     open_graph: {
       title: `Open Graph Title ${i}`,

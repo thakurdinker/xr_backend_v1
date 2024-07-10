@@ -207,10 +207,12 @@ const propertyTemplate = {
       answer: "5 bedrooms",
     },
   ],
-  meta_title: "Sunset Villa for Sale in Dubai",
-  meta_description:
-    "Luxurious 5 bedroom villa for sale in Sunset Community, Dubai.",
-  keywords: ["villa", "dubai", "real estate", "luxury"],
+  seo: {
+    meta_title: "Sunset Villa for Sale in Dubai",
+    meta_description:
+      "Luxurious 5 bedroom villa for sale in Sunset Community, Dubai.",
+    keywords: ["villa", "dubai", "real estate", "luxury"],
+  },
   schema_org: {
     type: "House",
     properties: {

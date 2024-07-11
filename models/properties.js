@@ -59,6 +59,7 @@ const newPropertySchema = new Schema(
       heading: String,
       title: String,
       description: String,
+      image: String,
     },
 
     about_project: {

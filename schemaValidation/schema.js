@@ -52,6 +52,7 @@ const propertySchemaValidation = Joi.object({
     heading: Joi.string().optional(),
     title: Joi.string().optional(),
     description: Joi.string().optional(),
+    image: Joi.string().optional(),
   }).optional(),
   about_project: Joi.object({
     heading: Joi.string().optional(),
@@ -92,11 +93,11 @@ const propertySchemaValidation = Joi.object({
     image: Joi.string().optional(),
     type: Joi.string().default(""),
   }).optional(),
-  _id:Joi.string().optional(),
-  id:Joi.string().optional(),
-  __v:Joi.number().optional(),
-  createdAt:Joi.date().optional(),
-  updatedAt:Joi.date().optional(),
+  _id: Joi.string().optional(),
+  id: Joi.string().optional(),
+  __v: Joi.number().optional(),
+  createdAt: Joi.date().optional(),
+  updatedAt: Joi.date().optional(),
 });
 const propertySchemaValidationUpdate = Joi.object({
   property_name: Joi.string().optional(),

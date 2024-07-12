@@ -8,6 +8,7 @@ module.exports.isLoggedIn = catchAsync(async (req, res, next) => {
       message: "You are not logged in",
     });
   }
+  next();
 });
 
 module.exports.isAdmin = catchAsync(async (req, res, next) => {

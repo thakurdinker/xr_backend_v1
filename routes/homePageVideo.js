@@ -2,15 +2,16 @@ const express = require("express");
 
 const router = express.Router({ mergeParams: true });
 const homePageVideoController = require("../controller/homePageVideoController");
+const { isLoggedIn } = require("../middleware/middleware");
 
 router
   .route("/homepageVideo")
-  .get(homePageVideoController.getAllHomePageVideos)
-  .post(homePageVideoController.createHomePageVideo);
+  .get(isLoggedIn, homePageVideoController.getAllHomePageVideos)
+  .post(isLoggedIn, homePageVideoController.createHomePageVideo);
 
 router
   .route("/homepageVideo/:id")
-  .put(homePageVideoController.updateHomePageVideo)
-  .delete(homePageVideoController.deleteHomePageVideo);
+  .put(isLoggedIn, homePageVideoController.updateHomePageVideo)
+  .delete(isLoggedIn, homePageVideoController.deleteHomePageVideo);
 
 module.exports = router;

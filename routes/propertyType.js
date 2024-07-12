@@ -3,10 +3,12 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 
 const fs = require("fs");
 const path = require("path");
+const { isLoggedIn } = require("../middleware/middleware");
 
 const router = express.Router({ mergeParams: true });
 
 router.route("/propertyType").get(
+  isLoggedIn,
   catchAsync(async (req, res) => {
     let data = null;
 

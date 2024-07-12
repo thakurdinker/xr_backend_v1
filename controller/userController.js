@@ -83,18 +83,26 @@ module.exports.register = catchAsync(async (req, res) => {
 
   const registeredUser = await User.register(newUser, password);
 
-  req.login(registeredUser, (err) => {
-    if (err) return res.send("Failed Logging In");
-    return res.send("User Registered");
-  });
+  return res
+    .status(200)
+    .json({ success: true, isRegistered: true, message: "DONE" });
+
+  // req.login(registeredUser, (err) => {
+  //   if (err) return res.send("Failed Logging In");
+  //   return res.send("User Registered");
+  // });
 });
 
 module.exports.logout = catchAsync(async (req, res) => {
   req.logout((err) => {
     if (!err) {
-      return res.send("Logged Out");
+      return res
+        .status(200)
+        .json({ success: true, isLoggedOut: true, message: "Logged Out" });
     } else {
-      return res.send("Failed Logging Out");
+      return res
+        .status(200)
+        .json({ success: true, isLoggedOut: false, message: err });
     }
   });
 });
@@ -204,5 +212,5 @@ module.exports.currentUser = catchAsync(async (req, res) => {
   });
   return res
     .status(200)
-    .json({ success: false, isLoggedIn: true, user, message: "DONE" });
+    .json({ success: true, isLoggedIn: true, user, message: "DONE" });
 });

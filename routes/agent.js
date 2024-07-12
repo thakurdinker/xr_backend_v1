@@ -1,16 +1,17 @@
 const express = require("express");
 const router = express.Router({ mergeParams: true });
 const agentController = require("../controller/agentController");
+const { isLoggedIn } = require("../middleware/middleware");
 
 router
   .route("/agents")
-  .get(agentController.getAll)
-  .post(agentController.createAgent);
+  .get(isLoggedIn, agentController.getAll)
+  .post(isLoggedIn, agentController.createAgent);
 
 router
   .route("/agents/:id")
-  .get(agentController.getById)
-  .put(agentController.updateAgent)
-  .delete(agentController.delete);
+  .get(isLoggedIn, agentController.getById)
+  .put(isLoggedIn, agentController.updateAgent)
+  .delete(isLoggedIn, agentController.delete);
 
 module.exports = router;

@@ -2,18 +2,21 @@ const express = require("express");
 
 const router = express.Router({ mergeParams: true });
 const contentController = require("../controller/contentController.js");
+const { isLoggedIn } = require("../middleware/middleware.js");
 
 router
   .route("/content")
-  .get(contentController.getContent)
-  .post(contentController.addContent);
+  .get(isLoggedIn, contentController.getContent)
+  .post(isLoggedIn, contentController.addContent);
 
-router.route("/content/filter").get(contentController.getContentByFilter);
+router
+  .route("/content/filter")
+  .get(isLoggedIn, contentController.getContentByFilter);
 
 router
   .route("/content/:id")
-  .get(contentController.getById)
-  .put(contentController.updateContent)
-  .delete(contentController.delete);
+  .get(isLoggedIn, contentController.getById)
+  .put(isLoggedIn, contentController.updateContent)
+  .delete(isLoggedIn, contentController.delete);
 
 module.exports = router;

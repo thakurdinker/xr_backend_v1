@@ -15,7 +15,7 @@ router
   .put(isLoggedIn, isAdmin, userController.updateUser)
   .delete(isLoggedIn, isAdmin, userController.deleteUser);
 
-router.route("/register").post(userController.register);
+router.route("/register").post(isLoggedIn, isAdmin, userController.register);
 
 router.route("/currentuser").get(userController.currentUser);
 

@@ -11,7 +11,6 @@ router.route("/real-estate-news").get(
     const newsAndBlogs = await Content.find({ status: "published" })
       .sort("-createdAt")
       .limit(20);
-
     return res
       .status(200)
       .json({ success: true, categories, newsAndBlogs, message: "DONE" });

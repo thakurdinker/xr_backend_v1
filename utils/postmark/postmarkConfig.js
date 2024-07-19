@@ -7,11 +7,11 @@ var client = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
 
 const sendResetEmail = ({ email, content }) => {
   client.sendEmail({
-    From: "marketing@propertyinvestmenthub.com",
+    From: "Xperience Realty donotreply@xrealty.ae",
     To: "dinker.s@xrealty.ae",
-    Subject: "Hello from Postmark",
-    HtmlBody: "<strong>Hello</strong> dear Postmark user.",
-    TextBody: "Hello from Postmark!",
+    Subject: "Password Reset",
+    HtmlBody: content,
+    TextBody: "Reset Password Link",
     MessageStream: "reset-links",
   });
 };

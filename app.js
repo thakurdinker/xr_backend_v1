@@ -94,16 +94,6 @@ passport.deserializeUser(User.deserializeUser());
 //   next();
 // });
 
-// Public Routes
-app.use("/", homePageDataRouter);
-app.use("/label/:developerNameSlug", developerPageRouter);
-app.use("/meet-the-xr", agentsPageRouter);
-app.use("/agent", agentDetailRouter);
-app.use("/area", communityPageRouter);
-app.use("/property/:propertySlug", propertyPageRouter);
-app.use("/dubai-properties", allProperties);
-app.use("/", newsPageRouter);
-
 // Admin Routes
 app.use("/admin", permissionsRouter);
 app.use("/admin", rolesRouter);
@@ -115,6 +105,16 @@ app.use("/admin", homePageRouter);
 app.use("/admin", propertyTypeRouter);
 app.use("/admin", communityRouter);
 app.use("/admin", resetPassRouter);
+
+// Public Routes
+app.use("/", homePageDataRouter);
+app.use("/label/:developerNameSlug", developerPageRouter);
+app.use("/meet-the-xr", agentsPageRouter);
+app.use("/agent", agentDetailRouter);
+app.use("/area", communityPageRouter);
+app.use("/property/:propertySlug", propertyPageRouter);
+app.use("/dubai-properties", allProperties);
+app.use("/", newsPageRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

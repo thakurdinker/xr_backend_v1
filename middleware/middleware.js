@@ -33,7 +33,7 @@ module.exports.isAdmin = catchAsync(async (req, res, next) => {
 
 module.exports.resetPassRequestMiddleWare = catchAsync(
   async (req, res, next) => {
-    const { error } = resetPasswordRequestValidation(req.body);
+    const { error } = resetPasswordRequestValidation.validate(req.body);
 
     if (error) {
       return res.status(200).json({
@@ -59,7 +59,7 @@ module.exports.resetPassRequestMiddleWare = catchAsync(
 );
 
 module.exports.resetPasswordMiddleware = catchAsync(async (req, res, next) => {
-  const { errors } = resetPasswordValidation(req.body);
+  const { errors } = resetPasswordValidation.validate(req.body);
   if (errors) {
     return res.status(422).json({ errors: errors });
   }

@@ -22,7 +22,7 @@ router.route("/currentuser").get(userController.currentUser);
 router
   .route("/login")
   .post(
-    passport.authenticate("local", { failureRedirect: "/failedLogin" }),
+    passport.authenticate("local", { failureRedirect: "/admin/failedLogin" }),
     function (req, res) {
       res.status(200).json({ success: true, message: "DONE" });
     }

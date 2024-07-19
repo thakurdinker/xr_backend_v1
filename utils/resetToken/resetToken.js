@@ -71,7 +71,7 @@ const verifyJWTToken = (token) => {
   }
 };
 
-const resetPassword = catchAsync(async ({ user, newPassword }) => {
+const resetPassword = async (user, newPassword) => {
   //reset the users password
   let userToReset = await User.findOne({ _id: user });
   if (!userToReset) {
@@ -94,7 +94,7 @@ const resetPassword = catchAsync(async ({ user, newPassword }) => {
     message: "password successfully reset",
     error: false,
   };
-});
+};
 
 module.exports = {
   generateJWTToken,

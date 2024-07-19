@@ -1,9 +1,10 @@
 require("dotenv").config({ path: "../../vars/.env" });
-import jwt from "jsonwebtoken";
-import User from "../../models/user";
-import ResetToken from "../../models/resettoken";
+const jwt = require("jsonwebtoken");
+const ResetToken = require("../../models/resettoken");
+const User = require("../../models/user");
+const catchAsync = require("../seedDB/catchAsync");
 
-export const generateJWTToken = (user) => {
+const generateJWTToken = (user) => {
   let payload = {
     user: {
       id: user._id,
@@ -13,7 +14,7 @@ export const generateJWTToken = (user) => {
   return token;
 };
 
-export const createResetToken = async ({ email, username }) => {
+const createResetToken = async ({ email, username }) => {
   //check if the user exists by email or username
   let user;
   if (email) {
@@ -50,7 +51,7 @@ export const createResetToken = async ({ email, username }) => {
   };
 };
 
-export const verifyJWTToken = (token) => {
+const verifyJWTToken = (token) => {
   console.log("decoding token");
   try {
     let decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -68,4 +69,36 @@ export const verifyJWTToken = (token) => {
       message: err.message,
     };
   }
+};
+
+const resetPassword = catchAsync(async ({ user, newPassword }) => {
+  //reset the users password
+  let userToReset = await User.findOne({ _id: user });
+  if (!userToReset) {
+    return {
+      message: "user not found",
+      error: true,
+    };
+  }
+  userToReset.setPassword(newPassword, (err) => {
+    if (err) {
+      return {
+        message: "error resetting password",
+        error: true,
+      };
+    }
+    userToReset.save();
+  });
+  console.log("password reset");
+  return {
+    message: "password successfully reset",
+    error: false,
+  };
+});
+
+module.exports = {
+  generateJWTToken,
+  createResetToken,
+  verifyJWTToken,
+  resetPassword,
 };

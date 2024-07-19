@@ -1,10 +1,11 @@
-// Require:
+require("dotenv").config({ path: "../../vars/.env" });
+
 var postmark = require("postmark");
 
 // Send an email:
-var client = new postmark.ServerClient("a508600e-13d9-42be-8820-98639764fcc0");
+var client = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
 
-export function sendResetEmail(content, receiver) {
+const sendResetEmail = ({ email, content }) => {
   client.sendEmail({
     From: "marketing@propertyinvestmenthub.com",
     To: "dinker.s@xrealty.ae",
@@ -13,4 +14,8 @@ export function sendResetEmail(content, receiver) {
     TextBody: "Hello from Postmark!",
     MessageStream: "reset-links",
   });
-}
+};
+
+module.exports = {
+  sendResetEmail,
+};

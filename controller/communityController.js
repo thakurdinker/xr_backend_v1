@@ -37,11 +37,19 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
 
 // Read all communities
 module.exports.getAll = catchAsync(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
   try {
-    const communities = await Community.find({});
+    const communities = await Community.find({})
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const count = await Community.countDocuments();
     return res.status(200).json({
       success: true,
       communities,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
       message: "DONE",
     });
   } catch (error) {

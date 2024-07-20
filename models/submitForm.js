@@ -10,7 +10,7 @@ const contactSchema = new mongoose.Schema({
   lastname: {
     type: String,
     required: true,
-    minlength: 2,
+    minlength: 1,
     maxlength: 30
   },
   email: {
@@ -25,7 +25,6 @@ const contactSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true,
     maxlength: 500
   },
 }, {

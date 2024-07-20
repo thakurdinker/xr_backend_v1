@@ -31,6 +31,7 @@ const agentDetailRouter = require("./routes/agentDetailPage");
 const propertyPageRouter = require("./routes/propertyPage");
 const allProperties = require("./routes/allPropertiesPage");
 const newsPageRouter = require("./routes/newsPage");
+const submitForm = require("./routes/submitForm");
 
 const User = require("./models/user");
 
@@ -115,6 +116,7 @@ app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
 app.use("/", newsPageRouter);
+app.use("/", submitForm);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

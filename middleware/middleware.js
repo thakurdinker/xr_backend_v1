@@ -59,6 +59,7 @@ module.exports.resetPassRequestMiddleWare = catchAsync(
 );
 
 module.exports.resetPasswordMiddleware = catchAsync(async (req, res, next) => {
+
   const { errors } = resetPasswordValidation.validate(req.body);
   if (errors) {
     return res.status(422).json({ errors: errors });
@@ -81,6 +82,7 @@ module.exports.resetPasswordMiddleware = catchAsync(async (req, res, next) => {
       error: true,
     });
   }
+
   //can add any other checks here if needed such as
   //checking if the user exists in the database
   //checking the ip address of the user who requested the reset

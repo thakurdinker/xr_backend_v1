@@ -18,10 +18,8 @@ const createResetToken = async ({ email, username }) => {
   //check if the user exists by email or username
   let user;
   if (email) {
-    console.log("recieved email");
     user = await User.findOne({ email: email });
   } else if (username) {
-    console.log("recieved username");
     user = await User.findOne({ username: username });
   }
   if (!user) {

@@ -35,19 +35,11 @@ module.exports.verifyResetToken = catchAsync(async (req, res) => {
   }
 
   let verifiedResetToken = await ResetToken.findOne({ resetToken: resetToken });
-
+  
   if (verifiedResetToken) {
-    return res.status(200).send({
-      verified: true,
-      message: "token verified",
-      user: verifiedResetToken.user,
-    });
+    return res.redirect(`${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(verifiedResetToken.user.email)}`);
   } else {
-    return res.status(400).send({
-      verified: false,
-      message: "invalid token or token expired",
-      error: true,
-    });
+    return res.redirect(`${process.env.FRONTEND_URL}/pages/error-page`);
   }
 });
 

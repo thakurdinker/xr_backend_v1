@@ -7,17 +7,25 @@ const router = express.Router({ mergeParams: true });
 function extractPublicIdfromUrl(url) {
   // Extract the desired part by splitting the pathname
   const parts = url.split("/");
-
   // Return the last two parts joined by a slash
-  return parts.slice(-2).join("/").split(".")[0];
+  try {
+    return parts.slice(-2).join("/").split(".")[0];
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
 }
 
 router.route("/deleteAsset").post(isLoggedIn, async (req, res) => {
-  const { assetUrl } = req.body;
+  const public_id = extractPublicIdfromUrl(req.body.assetUrl);
 
-  const public_id = extractPublicIdfromUrl(assetUrl);
+  if (public_id === null) {
+    return res
+      .status(200)
+      .json({ success: false, isDeleted: false, message: "No a valid url" });
+  }
 
-  //   return res.send(public_id);
+  console.log(public_id);
 
   try {
     const result = await cloudinary.uploader.destroy(public_id, {

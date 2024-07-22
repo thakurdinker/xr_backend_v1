@@ -5,6 +5,8 @@ const {
   communityUpdateValidationSchema,
 } = require("../schemaValidation/schema");
 const catchAsync = require("../utils/seedDB/catchAsync");
+const cloudinary = require("../cloudinary/cloudinaryConfig");
+const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
@@ -146,12 +148,30 @@ module.exports.delete = catchAsync(async (req, res) => {
         message: "Community Not available",
       });
     }
+
+    let public_ids = [];
+
+    for (let image of community.images) {
+      public_ids.push(extractPublicIdfromUrl(image.url));
+    }
+
+    try {
+      const result = await cloudinary.uploader.destroy(public_ids, {
+        resource_type: "image",
+        invalidate: true,
+      });
+      console.log(result);
+    } catch (err) {
+      console.log(err);
+    }
+
     return res.status(200).json({
       success: true,
       isDeleted: true,
       message: "DONE",
     });
   } catch (error) {
+    console.log(error);
     return res.status(200).json({
       success: false,
       isDeleted: false,

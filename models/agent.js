@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const cloudinary = require("../cloudinary/cloudinaryConfig");
+const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 const agentSchema = new mongoose.Schema({
   name: { type: String, required: true },

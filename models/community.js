@@ -58,7 +58,6 @@ const communitySchema = new mongoose.Schema(
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-  
 );
 
 const Community = mongoose.model("Community", communitySchema);

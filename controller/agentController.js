@@ -5,6 +5,8 @@ const {
   agentUpdateValidationSchema,
 } = require("../schemaValidation/schema");
 const catchAsync = require("../utils/seedDB/catchAsync");
+const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
+const cloudinary = require("../cloudinary/cloudinaryConfig");
 
 // Create a new agent
 module.exports.createAgent = catchAsync(async (req, res) => {
@@ -141,10 +143,23 @@ module.exports.delete = catchAsync(async (req, res) => {
         message: "No agent Found",
       });
     }
+    const public_id = extractPublicIdfromUrl(agent.profile_picture);
+
+    try {
+      const result = await cloudinary.uploader.destroy(public_id, {
+        resource_type: "image",
+        invalidate: true,
+      });
+      console.log(result);
+    } catch (err) {
+      console.log(err);
+    }
+
     return res
       .status(200)
       .json({ success: true, isDeleted: true, agent, message: "DONE" });
   } catch (error) {
+    console.log(error);
     return res.status(200).json({ success: false, message: error });
   }
 });

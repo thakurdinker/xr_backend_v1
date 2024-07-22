@@ -5,6 +5,8 @@ const {
   propertySchemaValidationUpdate,
 } = require("../schemaValidation/schema");
 const catchAsync = require("../utils/seedDB/catchAsync");
+const cloudinary = require("../cloudinary/cloudinaryConfig");
+const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 // Create a new property
 module.exports.createProperty = catchAsync(async (req, res) => {
@@ -174,6 +176,26 @@ module.exports.delete = catchAsync(async (req, res) => {
         isDeleted: false,
         message: "Property Not available",
       });
+    }
+
+    let public_ids = [];
+
+    for (let image of property.images) {
+      public_ids.push(extractPublicIdfromUrl(image.url));
+    }
+
+    for (let image of property.gallery) {
+      public_ids.push(extractPublicIdfromUrl(image));
+    }
+
+    try {
+      const result = await cloudinary.uploader.destroy(public_ids, {
+        resource_type: "image",
+        invalidate: true,
+      });
+      console.log(result);
+    } catch (err) {
+      console.log(err);
     }
 
     return res.status(200).json({

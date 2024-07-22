@@ -24,6 +24,7 @@ const propertyTypeRouter = require("./routes/propertyType");
 const communityRouter = require("./routes/community");
 const communityPageRouter = require("./routes/communityPage");
 const resetPassRouter = require("./routes/resetPassword");
+const assestsDeleteRouter = require("./routes/assetsDelete");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -106,6 +107,7 @@ app.use("/admin", homePageRouter);
 app.use("/admin", propertyTypeRouter);
 app.use("/admin", communityRouter);
 app.use("/admin", resetPassRouter);
+app.use("/admin", assestsDeleteRouter);
 
 // Public Routes
 app.use("/", homePageDataRouter);

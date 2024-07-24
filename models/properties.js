@@ -80,6 +80,11 @@ const newPropertySchema = new Schema(
         },
       ],
     },
+    amenities: {
+      _id: false,
+      description: String,
+      icons: [{ type: mongoose.Types.ObjectId, ref: "Icon" }],
+    },
     faqs: [
       {
         _id: false,

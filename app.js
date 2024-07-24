@@ -121,6 +121,7 @@ app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
 app.use("/", newsPageRouter);
 app.use("/", submitForm);
+app.use('/', iconRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

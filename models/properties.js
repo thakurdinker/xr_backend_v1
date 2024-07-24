@@ -69,17 +69,17 @@ const newPropertySchema = new Schema(
       description: String,
     },
 
-    amenities: {
-      _id: false,
-      description: String,
-      icons: [
-        {
-          _id: false,
-          icon_url: String,
-          icon_text: String,
-        },
-      ],
-    },
+    // amenities: {
+    //   _id: false,
+    //   description: String,
+    //   icons: [
+    //     {
+    //       _id: false,
+    //       icon_url: String,
+    //       icon_text: String,
+    //     },
+    //   ],
+    // },
     amenities: {
       _id: false,
       description: String,

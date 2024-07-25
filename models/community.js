@@ -17,14 +17,11 @@ const communitySchema = new mongoose.Schema(
         lng: { type: Number },
       },
     },
-    amenities: [
-      {
-        _id: false,
-        name: { type: String },
-        icon_url: { type: String },
-        description: { type: String },
-      },
-    ],
+    amenities: {
+      _id: false,
+      description: String,
+      icons: [{ type: mongoose.Types.ObjectId, ref: "Icon" }],
+    },
     images: [
       {
         _id: false,

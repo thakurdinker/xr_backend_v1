@@ -337,15 +337,10 @@ const communityValidationSchema = Joi.object({
       lng: Joi.number().optional(),
     }).optional(),
   }).optional(),
-  amenities: Joi.array()
-    .items(
-      Joi.object({
-        name: Joi.string().optional(),
-        icon_url: Joi.string().optional(),
-        description: Joi.string().optional(),
-      })
-    )
-    .optional(),
+  amenities: Joi.object({
+    description: Joi.string().optional(),
+    icons: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
   images: Joi.array()
     .items(
       Joi.object({
@@ -392,15 +387,10 @@ const communityUpdateValidationSchema = Joi.object({
       lng: Joi.number().optional(),
     }).optional(),
   }).optional(),
-  amenities: Joi.array()
-    .items(
-      Joi.object({
-        name: Joi.string().optional(),
-        icon_url: Joi.string().optional(),
-        description: Joi.string().optional(),
-      })
-    )
-    .optional(),
+  amenities: Joi.object({
+    description: Joi.string().optional(),
+    icons: Joi.array().items(Joi.string()).optional(),
+  }).optional(),
   images: Joi.array()
     .items(
       Joi.object({

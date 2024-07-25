@@ -121,7 +121,11 @@ const propertySchemaValidationUpdate = Joi.object({
     bathrooms: Joi.string().optional(),
     area: Joi.string().optional(),
     year_built: Joi.string().optional(),
-    amenities: Joi.array().items(Joi.string()).optional(),
+    // amenities: Joi.array().items(Joi.string()).optional(),
+    amenities: Joi.array().items(Joi.object({
+      description: Joi.string().optional(),
+      icons: Joi.array().items(Joi.string()).optional(),
+    })).optional(),
   }).optional(),
   images: Joi.array()
     .items(

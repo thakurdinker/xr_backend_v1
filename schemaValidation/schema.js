@@ -7,7 +7,15 @@ const propertySchemaValidation = Joi.object({
   price: Joi.string().optional(),
   developer: Joi.string().optional(),
   developer_name_slug: Joi.string().optional(),
-  type: Joi.array().items(Joi.string()).optional(),
+  type: Joi.array()
+    .items(
+      Joi.object({
+        _id: false,
+        name: Joi.string().optional(),
+        bedrooms: Joi.string().optional(),
+      })
+    )
+    .optional(),
   location: Joi.object({
     address: Joi.string().optional(),
     city: Joi.string().optional(),
@@ -19,7 +27,7 @@ const propertySchemaValidation = Joi.object({
     }).optional(),
   }).optional(),
   features: Joi.object({
-    bedrooms: Joi.string().optional(),
+    // bedrooms: Joi.string().optional(),
     bathrooms: Joi.string().optional(),
     area: Joi.string().optional(), // in square feet or meters
     year_built: Joi.string().optional(),

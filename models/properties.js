@@ -10,7 +10,7 @@ const newPropertySchema = new Schema(
     price: String,
     developer: String,
     developer_name_slug: String,
-    type: [String], // e.g., "townhouse", "semi-detached home"
+    type: [{ _id: false, name: String, bedrooms: String }], // e.g., "townhouse", "semi-detached home"
     location: {
       _id: false,
       address: String,
@@ -25,7 +25,7 @@ const newPropertySchema = new Schema(
     },
     features: {
       _id: false,
-      bedrooms: String,
+      // bedrooms: String,
       bathrooms: String,
       area: String, // in square feet or meters
       year_built: String,

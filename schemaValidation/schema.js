@@ -61,14 +61,7 @@ const propertySchemaValidation = Joi.object({
   }).optional(),
   amenities: Joi.object({
     description: Joi.string().optional(),
-    icons: Joi.array()
-      .items(
-        Joi.object({
-          icon_url: Joi.string().optional(),
-          icon_text: Joi.string().optional(),
-        }).optional()
-      )
-      .optional(),
+    icons: Joi.array().items(Joi.string()).optional(),
   }).optional(),
   faqs: Joi.array()
     .items(
@@ -99,62 +92,63 @@ const propertySchemaValidation = Joi.object({
   createdAt: Joi.date().optional(),
   updatedAt: Joi.date().optional(),
 });
-const propertySchemaValidationUpdate = Joi.object({
-  property_name: Joi.string().optional(),
-  description: Joi.string().optional(),
-  price: Joi.string().optional(),
-  type: Joi.array().items(Joi.string()).optional(),
-  developer: Joi.string().optional(),
-  developer_name_slug: Joi.string().optional(),
-  location: Joi.object({
-    address: Joi.string().optional(),
-    city: Joi.string().optional(),
-    state: Joi.string().optional(),
-    country: Joi.string().optional(),
-    coordinates: Joi.object({
-      lat: Joi.string().optional(),
-      lng: Joi.string().optional(),
-    }).optional(),
-  }).optional(),
-  features: Joi.object({
-    bedrooms: Joi.string().optional(),
-    bathrooms: Joi.string().optional(),
-    area: Joi.string().optional(),
-    year_built: Joi.string().optional(),
-    // amenities: Joi.array().items(Joi.string()).optional(),
-    amenities: Joi.array().items(Joi.object({
-      description: Joi.string().optional(),
-      icons: Joi.array().items(Joi.string()).optional(),
-    })).optional(),
-  }).optional(),
-  images: Joi.array()
-    .items(
-      Joi.object({
-        url: Joi.string().optional(),
-        description: Joi.string().optional(),
-      })
-    )
-    .optional(),
-  gallery: Joi.array()
-    .items(
-      Joi.object({
-        url: Joi.string().optional(),
-        description: Joi.string().optional(),
-      })
-    )
-    .optional(),
-  status: Joi.array().items(Joi.string()).optional(),
-  community_name: Joi.string().optional(),
-  community_name_slug: Joi.string().optional(),
-  property_name_slug: Joi.string().optional(),
-  community_features: Joi.object({
-    project_overview: Joi.string().optional(),
-    nearby_facilities: Joi.array().items(Joi.string()).optional(),
-    transportation: Joi.array().items(Joi.string()).optional(),
-  }).optional(),
-  show_property: Joi.boolean().optional(),
-  featured: Joi.boolean().optional(),
-});
+
+// const propertySchemaValidationUpdate = Joi.object({
+//   property_name: Joi.string().optional(),
+//   description: Joi.string().optional(),
+//   price: Joi.string().optional(),
+//   type: Joi.array().items(Joi.string()).optional(),
+//   developer: Joi.string().optional(),
+//   developer_name_slug: Joi.string().optional(),
+//   location: Joi.object({
+//     address: Joi.string().optional(),
+//     city: Joi.string().optional(),
+//     state: Joi.string().optional(),
+//     country: Joi.string().optional(),
+//     coordinates: Joi.object({
+//       lat: Joi.string().optional(),
+//       lng: Joi.string().optional(),
+//     }).optional(),
+//   }).optional(),
+//   features: Joi.object({
+//     bedrooms: Joi.string().optional(),
+//     bathrooms: Joi.string().optional(),
+//     area: Joi.string().optional(),
+//     year_built: Joi.string().optional(),
+//     // amenities: Joi.array().items(Joi.string()).optional(),
+//     amenities: Joi.object({
+//       description: Joi.string().optional(),
+//       icons: Joi.array().items(Joi.string()).optional(),
+//     }).optional(),
+//   }).optional(),
+//   images: Joi.array()
+//     .items(
+//       Joi.object({
+//         url: Joi.string().optional(),
+//         description: Joi.string().optional(),
+//       })
+//     )
+//     .optional(),
+//   gallery: Joi.array()
+//     .items(
+//       Joi.object({
+//         url: Joi.string().optional(),
+//         description: Joi.string().optional(),
+//       })
+//     )
+//     .optional(),
+//   status: Joi.array().items(Joi.string()).optional(),
+//   community_name: Joi.string().optional(),
+//   community_name_slug: Joi.string().optional(),
+//   property_name_slug: Joi.string().optional(),
+//   community_features: Joi.object({
+//     project_overview: Joi.string().optional(),
+//     nearby_facilities: Joi.array().items(Joi.string()).optional(),
+//     transportation: Joi.array().items(Joi.string()).optional(),
+//   }).optional(),
+//   show_property: Joi.boolean().optional(),
+//   featured: Joi.boolean().optional(),
+// });
 
 // Content Schema validation
 const contentValidationSchema = Joi.object({
@@ -433,7 +427,6 @@ const communityUpdateValidationSchema = Joi.object({
 
 module.exports = {
   propertySchemaValidation,
-  propertySchemaValidationUpdate,
   contentValidationSchema,
   contentUpdateValidationSchema,
   agentValidationSchema,

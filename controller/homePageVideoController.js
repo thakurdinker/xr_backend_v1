@@ -3,7 +3,6 @@ const HomePageVideos = require("../models/homepageVideo");
 const catchAsync = require("../utils/seedDB/catchAsync");
 
 module.exports.getAllHomePageVideos = catchAsync(async (req, res) => {
-  console.log("hi");
   try {
     const homePageVideos = await HomePageVideos.findOne()
       .populate("mainVideo.agent videos.agent")

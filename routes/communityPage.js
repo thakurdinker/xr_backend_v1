@@ -35,7 +35,9 @@ router.route("/:communitySlug").get(
         moreCommunities,
         message: "DONE",
       });
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   })
 );
 

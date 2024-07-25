@@ -4,6 +4,7 @@ const Property = require("../models/properties");
 
 const fs = require("fs");
 const path = require("path");
+const Developer = require("../models/developer");
 
 const router = express.Router({ mergeParams: true });
 
@@ -12,16 +13,24 @@ router.route("/").get(
     const { page = 1, limit = 10 } = req.query;
     const { developerNameSlug } = req.params;
 
-    let data = null;
-
     try {
-      const filePath = path.join(__dirname, `../seo/${developerNameSlug}.json`);
-      data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
-    } catch (e) {
-      console.log(e.message);
-    }
+      // Find the developer details from the database
+      const developer = await Developer.findOne({
+        developer_slug: developerNameSlug,
+      })
+        .select(
+          "logo_img_url developer_name developer_slug description heading"
+        )
+        .exec();
 
-    try {
+      if (!developer) {
+        return res.status(404).json({
+          success: false,
+          message: "Developer not found",
+        });
+      }
+
+      // Find the properties associated with the developer
       const developerProperties = await Property.find({
         developer_name_slug: developerNameSlug,
       })
@@ -32,18 +41,26 @@ router.route("/").get(
         )
         .exec();
 
+      // Get the count of properties for pagination
       const count = await Property.countDocuments({
         developer_name_slug: developerNameSlug,
       });
+
       return res.status(200).json({
         success: true,
-        aboutDeveloper: JSON.parse(data),
+        aboutDeveloper: developer, // Developer information
         developerProperties,
         message: "DONE",
         totalPages: Math.ceil(count / limit),
-        currentPage: page,
+        currentPage: Number(page),
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
   })
 );
 

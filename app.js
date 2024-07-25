@@ -26,6 +26,7 @@ const communityPageRouter = require("./routes/communityPage");
 const resetPassRouter = require("./routes/resetPassword");
 const assestsDeleteRouter = require("./routes/assetsDelete");
 const iconRouter = require("./routes/icons");
+const developerRouter = require("./routes/developer");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -110,6 +111,7 @@ app.use("/admin", communityRouter);
 app.use("/admin", resetPassRouter);
 app.use("/admin", assestsDeleteRouter);
 app.use("/admin", iconRouter);
+app.use("/admin", developerRouter);
 
 // Public Routes
 app.use("/", homePageDataRouter);
@@ -121,7 +123,7 @@ app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
 app.use("/", newsPageRouter);
 app.use("/", submitForm);
-app.use('/', iconRouter);
+app.use("/", iconRouter);
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

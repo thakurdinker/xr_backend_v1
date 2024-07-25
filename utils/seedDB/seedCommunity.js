@@ -121,7 +121,6 @@ const seedCommunity = async () => {
   try {
     await Community.deleteMany({});
     await Community.insertMany(communities);
-    console.log("Database seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);
   }

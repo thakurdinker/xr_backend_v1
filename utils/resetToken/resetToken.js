@@ -40,8 +40,6 @@ const createResetToken = async ({ email, username }) => {
     resetToken: generateJWTToken(user),
   });
   //save the new reset token
-  console.log("saving new reset token");
-  console.log(newResetToken);
   await newResetToken.save();
 
   return {
@@ -50,18 +48,13 @@ const createResetToken = async ({ email, username }) => {
 };
 
 const verifyJWTToken = (token) => {
-  console.log("decoding token");
   try {
     let decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("decoded token");
-    console.log(decoded);
     return {
       error: false,
       decoded: decoded,
     };
   } catch (err) {
-    console.log("error decoding token");
-    console.log(err);
     return {
       error: true,
       message: err.message,

@@ -83,9 +83,7 @@ const connectToDB = async () => {
 const seedContent = async () => {
   try {
     await Content.deleteMany({});
-    console.log("Content deleted Successfully");
     await Content.insertMany(contents);
-    console.log("Content seeded successfully");
   } catch (error) {
     console.error("Error seeding the database", error);
   }

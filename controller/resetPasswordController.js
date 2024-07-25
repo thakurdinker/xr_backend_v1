@@ -25,7 +25,6 @@ module.exports.resetPasswordRequest = catchAsync(async (req, res) => {
 
 module.exports.verifyResetToken = catchAsync(async (req, res) => {
   const { resetToken } = req.params;
-  console.log("received request to verify reset token: ", resetToken);
   let verified = verifyJWTToken(resetToken);
   if (verified.error) {
     return res.status(400).send({
@@ -45,7 +44,6 @@ module.exports.verifyResetToken = catchAsync(async (req, res) => {
 
 module.exports.resetUserPass = catchAsync(async (req, res) => {
   const { password, user } = req.body;
-  console.log("received request to reset password for user: ", user);
   let updated = await resetPassword(user, password);
   if (updated.error) {
     return res.status(400).send(updated);

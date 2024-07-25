@@ -73,7 +73,6 @@ module.exports.updateHomePageVideo = catchAsync(async (req, res) => {
       .populate("mainVideo.agent videos.agent")
       .exec();
 
-    console.log(updatedHomePageVideo);
     if (!updatedHomePageVideo) {
       return res.status(200).json({
         success: false,

@@ -160,7 +160,6 @@ module.exports.delete = catchAsync(async (req, res) => {
         resource_type: "image",
         invalidate: true,
       });
-      console.log(result);
     } catch (err) {
       console.log(err);
     }

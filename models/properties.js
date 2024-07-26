@@ -77,15 +77,15 @@ const newPropertySchema = new Schema(
     faqs: [
       {
         _id: false,
-        question: { type: String, required: true },
-        answer: { type: String, required: true },
+        question: { type: String },
+        answer: { type: String },
       },
     ],
     // SEO fields
     seo: {
       _id: false,
-      meta_title: { type: String, required: true },
-      meta_description: { type: String, required: true },
+      meta_title: { type: String },
+      meta_description: { type: String },
       keywords: [{ type: String }],
     },
     schema_org: {

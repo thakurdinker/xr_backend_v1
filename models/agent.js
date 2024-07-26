@@ -4,17 +4,17 @@ const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 const agentSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    name_slug: { type: String, required: true, unique: true }, // Name Slug for SEO-friendly URLs
-    email: { type: String, required: true, unique: true },
-    phone: { type: String, required: true },
-    profile_picture: { type: String, required: true },
-    bio: { type: String, required: true }, // Professional Snapshot
-    personal_info: { type: String }, // Personal Information
-    education: { type: String, required: true }, // Education Qualification
-    experience: { type: Number, required: true }, // Years of Experience
+    name: { type: String },
+    name_slug: { type: String, unique: true }, // Name Slug for SEO-friendly URLs
+    email: { type: String,  unique: true },
+    phone: { type: String },
+    profile_picture: { type: String },
+    bio: { type: String }, // Professional Snapshot
+    personal_info: { type: String }, //   Personal Information
+    education: { type: String }, // Education Qualification
+    experience: { type: Number }, // Years of Experience
     specialties: [{ type: String }], // Specialization
-    languages: [{ type: String, required: true }], // Languages
+    languages: [{ type: String }], // Languages
     social_links: {
       _id: false,
       linkedin: { type: String },
@@ -24,8 +24,8 @@ const agentSchema = new mongoose.Schema(
     video_links: [{ type: String }],
     seo: {
       _id: false,
-      meta_title: { type: String, required: true },
-      meta_description: { type: String, required: true },
+      meta_title: { type: String },
+      meta_description: { type: String },
       keywords: [{ type: String }],
     },
     schema_org: {

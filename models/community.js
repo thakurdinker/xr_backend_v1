@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const communitySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    slug: { type: String, required: true, unique: true }, // SEO-friendly URL
+    name: { type: String },
+    slug: { type: String, unique: true }, // SEO-friendly URL
     description: { type: String }, // Detailed description
     location: {
       _id: false,

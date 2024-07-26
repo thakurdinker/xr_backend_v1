@@ -10,14 +10,14 @@ const cloudinary = require("../cloudinary/cloudinaryConfig");
 
 // Create a new agent
 module.exports.createAgent = catchAsync(async (req, res) => {
-  const { error } = agentValidationSchema.validate(req.body);
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isCreated: false,
-      message: error.details[0].message,
-    });
-  }
+  // const { error } = agentValidationSchema.validate(req.body);
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isCreated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
   try {
     const agent = new Agent(req.body);
     await agent.save();
@@ -81,16 +81,16 @@ module.exports.updateAgent = catchAsync(async (req, res) => {
       message: "Not a valid agent id",
     });
   }
-  const { error } = agentUpdateValidationSchema.validate(req.body, {
-    allowUnknown: true,
-  });
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isUpdated: false,
-      message: error.details[0].message,
-    });
-  }
+  // const { error } = agentUpdateValidationSchema.validate(req.body, {
+  //   allowUnknown: true,
+  // });
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isUpdated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
 
   try {
     const agent = await Agent.findById(req.params.id);

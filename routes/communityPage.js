@@ -12,7 +12,7 @@ router.route("/:communitySlug").get(
     try {
       const community = await Community.findOne({
         slug: communitySlug,
-      });
+      }).populate({ path: "amenities.icons" });
 
       if (!community) {
         return res

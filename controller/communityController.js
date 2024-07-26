@@ -10,14 +10,14 @@ const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
-  const { error } = communityValidationSchema.validate(req.body);
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isCreated: false,
-      message: error.details[0].message,
-    });
-  }
+  // const { error } = communityValidationSchema.validate(req.body);
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isCreated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
 
   try {
     const community = new Community(req.body);
@@ -89,16 +89,16 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
       .json({ success: false, isUpdated: false, message: "Invalid Id" });
   }
 
-  const { error } = communityUpdateValidationSchema.validate(req.body, {
-    allowUnknown: true,
-  });
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isUpdated: false,
-      message: error.details[0].message,
-    });
-  }
+  // const { error } = communityUpdateValidationSchema.validate(req.body, {
+  //   allowUnknown: true,
+  // });
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isUpdated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
 
   try {
     const community = await Community.findById(req.params.id);

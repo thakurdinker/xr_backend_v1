@@ -10,15 +10,15 @@ const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 // Create a new property
 module.exports.createProperty = catchAsync(async (req, res) => {
-  const { error } = propertySchemaValidation.validate(req.body);
+  // const { error } = propertySchemaValidation.validate(req.body);
 
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isCreated: false,
-      message: error.details[0].message,
-    });
-  }
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isCreated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
   try {
     const property = new Property(req.body);
     await property.save();
@@ -86,15 +86,15 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       .json({ success: false, isUpdated: false, message: "Invalid Id" });
   }
 
-  const { error } = propertySchemaValidation.validate(req.body);
+  // const { error } = propertySchemaValidation.validate(req.body);
 
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isUpdated: false,
-      message: error.details[0].message,
-    });
-  }
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isUpdated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
   const updates = Object.keys(req.body);
 
   // const allowedUpdates = [

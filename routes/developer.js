@@ -1,10 +1,11 @@
 const express = require("express");
 const Developer = require("../models/developer");
+const { isLoggedIn } = require("../middleware/middleware");
 
 const router = express.Router({ mergeParams: true });
 
 // Create a new developer
-router.route("/developers").post(async (req, res) => {
+router.route("/developers").post(isLoggedIn, async (req, res) => {
   try {
     const developer = new Developer(req.body);
     await developer.save();
@@ -42,7 +43,7 @@ router.route("/developers").get(async (req, res) => {
 });
 
 // Get a developer by ID
-router.route("/developers/:id").get(async (req, res) => {
+router.route("/developers/:id").get(isLoggedIn, async (req, res) => {
   try {
     const developer = await Developer.findById(req.params.id);
     if (!developer) {
@@ -68,7 +69,7 @@ router.route("/developers/:id").get(async (req, res) => {
 });
 
 // Update a developer by ID
-router.route("/developers/:id").patch(async (req, res) => {
+router.route("/developers/:id").put(isLoggedIn, async (req, res) => {
   try {
     const developer = await Developer.findByIdAndUpdate(
       req.params.id,
@@ -101,7 +102,7 @@ router.route("/developers/:id").patch(async (req, res) => {
 });
 
 // Delete a developer by ID
-router.route("/developers/:id").delete(async (req, res) => {
+router.route("/developers/:id").delete(isLoggedIn, async (req, res) => {
   try {
     const developer = await Developer.findByIdAndDelete(req.params.id);
     if (!developer) {

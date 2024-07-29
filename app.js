@@ -39,7 +39,11 @@ const submitForm = require("./routes/submitForm");
 const User = require("./models/user");
 
 const PORT = process.env.PORT;
-const DB_URL = process.env.DB_URL;
+const DB_URL =
+  process.env.ENV === "development"
+    ? process.env.TEST_DB_URL
+    : process.env.DB_URL;
+
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 const store = MongoDBStore.create({
@@ -133,6 +137,6 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ success: false, message: err.message });
 });
 
-app.listen(PORT,'0.0.0.0',() => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Backend Server Started on PORT : ", PORT);
 });

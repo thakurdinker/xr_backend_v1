@@ -12,7 +12,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
 
   // Xperience New Projects
   const properties = await Property.find({ featured: true }).select(
-    "_id property_name property_name_slug price location features images"
+    "_id property_name property_name_slug price location features images type"
   );
 
   //   Xperience Stars

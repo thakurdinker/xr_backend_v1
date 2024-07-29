@@ -1,3 +1,7 @@
+const dotenv = require("dotenv");
+const path = require("path");
+
+dotenv.config({ path: path.resolve(__dirname, "../vars/.env") });
 const ResetToken = require("../models/resettoken");
 const { sendResetEmail } = require("../utils/postmark/postmarkConfig");
 const {
@@ -6,6 +10,11 @@ const {
   resetPassword,
 } = require("../utils/resetToken/resetToken");
 const catchAsync = require("../utils/seedDB/catchAsync");
+
+const FRONTEND_URL =
+  process.env.ENV === "development"
+    ? "http://localhost:5173"
+    : process.env.FRONTEND_URL;
 
 module.exports.resetPasswordRequest = catchAsync(async (req, res) => {
   const { email } = req.body;
@@ -34,11 +43,15 @@ module.exports.verifyResetToken = catchAsync(async (req, res) => {
   }
 
   let verifiedResetToken = await ResetToken.findOne({ resetToken: resetToken });
-  
+
   if (verifiedResetToken) {
-    return res.redirect(`${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(verifiedResetToken.user.email)}`);
+    return res.redirect(
+      `${FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(
+        verifiedResetToken.user.email
+      )}`
+    );
   } else {
-    return res.redirect(`${process.env.FRONTEND_URL}/pages/error-page`);
+    return res.redirect(`${FRONTEND_URL}/pages/error-page`);
   }
 });
 

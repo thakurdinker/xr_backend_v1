@@ -1,14 +1,22 @@
-require("dotenv").config({ path: "../../vars/.env" });
+const dotenv = require("dotenv");
+const path = require("path");
 
-var postmark = require("postmark");
+dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
+
+const postmark = require("postmark");
+
+const FRONTEND_URL =
+  process.env.ENV === "development"
+    ? "http://localhost:5173"
+    : process.env.FRONTEND_URL;
 
 // Send an email:
-var client = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
+const client = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
 
 const generateResetLink = (email, content) => {
   const resetToken = content; // Replace with actual token generation logic
-  const frontendUrl = process.env.FRONTEND_URL; // Ensure this is set in your .env file
-  console.log(frontendUrl,"------");
+  const frontendUrl = FRONTEND_URL; // Ensure this is set in your .env file
+  console.log(frontendUrl, "------");
   return `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(
     email
   )}`;

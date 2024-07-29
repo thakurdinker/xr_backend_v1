@@ -8,15 +8,15 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 
 // Add content
 module.exports.addContent = catchAsync(async (req, res) => {
-  const { error } = contentValidationSchema.validate(req.body);
+  // const { error } = contentValidationSchema.validate(req.body);
 
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isCreated: false,
-      message: error.details[0].message,
-    });
-  }
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isCreated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
   try {
     const content = new Content(req.body);
     await content.save();
@@ -81,16 +81,16 @@ module.exports.updateContent = catchAsync(async (req, res) => {
       message: "Not a valid content id",
     });
   }
-  const { error } = contentUpdateValidationSchema.validate(req.body, {
-    allowUnknown: true,
-  });
-  if (error) {
-    return res.status(200).json({
-      success: false,
-      isUpdated: false,
-      message: error.details[0].message,
-    });
-  }
+  // const { error } = contentUpdateValidationSchema.validate(req.body, {
+  //   allowUnknown: true,
+  // });
+  // if (error) {
+  //   return res.status(200).json({
+  //     success: false,
+  //     isUpdated: false,
+  //     message: error.details[0].message,
+  //   });
+  // }
 
   try {
     const content = await Content.findById(req.params.id);

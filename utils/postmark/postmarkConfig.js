@@ -8,6 +8,7 @@ var client = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
 const generateResetLink = (email, content) => {
   const resetToken = content; // Replace with actual token generation logic
   const frontendUrl = process.env.FRONTEND_URL; // Ensure this is set in your .env file
+  console.log(frontendUrl,"------");
   return `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(
     email
   )}`;

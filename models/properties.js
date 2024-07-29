@@ -42,7 +42,8 @@ const newPropertySchema = new Schema(
     gallery_title_2: String,
     gallery_description_1: String,
     gallery_description_2: String,
-    gallery: [String],
+    gallery1: [String],
+    gallery2: [String],
     status: [String], // e.g., "for sale", "latest", "off-plan"
     community_name: String,
     community_name_slug: String,

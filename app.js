@@ -133,6 +133,6 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ success: false, message: err.message });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0',() => {
   console.log("Backend Server Started on PORT : ", PORT);
 });

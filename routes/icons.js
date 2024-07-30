@@ -8,6 +8,7 @@ router.post("/icons", iconController.createIcon);
 
 // Get all icons
 router.get("/icons", iconController.getIcons);
+router.get("/getAllIcons", iconController.getAllIcons);
 
 // Get a single icon by ID
 router.get("/icons/:id", iconController.getIconById);

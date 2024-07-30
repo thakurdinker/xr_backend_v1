@@ -26,7 +26,7 @@ router.route("/:communitySlug").get(
       });
 
       const moreCommunities = shuffle(
-        await Community.find({ _id: { $ne: community._id } }).limit(5)
+        await Community.find({ _id: { $ne: community._id } }).limit(6)
       );
       return res.status(200).json({
         success: true,

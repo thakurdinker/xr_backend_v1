@@ -37,7 +37,7 @@ router.route("/").get(
         .limit(limit)
         .skip((page - 1) * limit)
         .select(
-          "_id property_name property_name_slug price location features images"
+          "_id property_name property_name_slug price location features images type"
         )
         .exec();
 

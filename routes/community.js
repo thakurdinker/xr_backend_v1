@@ -8,7 +8,12 @@ const { isLoggedIn } = require("../middleware/middleware");
 router
   .route("/communities")
   .get(isLoggedIn, communityController.getAll)
+
   .post(isLoggedIn, communityController.createCommunity);
+
+router
+  .route("/getAllCommunities")
+  .get(isLoggedIn, communityController.getAllCommunities);
 
 router
   .route("/communities/:id")

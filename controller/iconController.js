@@ -11,6 +11,20 @@ exports.createIcon = async (req, res) => {
   }
 };
 
+exports.getAllIcons = async (req, res) => {
+  try {
+    const icons = await Icon.find();
+
+    res.status(200).json({
+      success: true,
+      icons,
+      message: "DONE",
+    });
+  } catch (error) {
+    res.status(200).json({ success: false, message: error.message });
+  }
+};
+
 // Get all icons with pagination
 exports.getIcons = async (req, res) => {
   const { page = 1, limit = 10 } = req.query; // Default to page 1, limit 10

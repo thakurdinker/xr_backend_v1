@@ -63,6 +63,24 @@ module.exports.getAll = catchAsync(async (req, res) => {
   }
 });
 
+module.exports.getAllCommunities = catchAsync(async (req, res) => {
+  try {
+    const communities = await Community.find({});
+
+    return res.status(200).json({
+      success: true,
+      communities,
+      message: "DONE",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(200).json({
+      success: false,
+      message: "Error",
+    });
+  }
+});
+
 // Read a single community by ID
 module.exports.getById = catchAsync(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {

@@ -7,6 +7,9 @@ const newDeveloperSchema = new Schema(
     logo_img_url: {
       type: String,
     },
+    logo_img_url_alt: {
+      type: String,
+    },
     developer_name: {
       type: String,
     },

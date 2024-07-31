@@ -41,7 +41,8 @@ router.route("/").get(
         )
         .exec();
 
-      // Get the count of properties for pagination
+      // Get the count of properties for paginationclear
+
       const count = await Property.countDocuments({
         developer_name_slug: developerNameSlug,
       });

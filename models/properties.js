@@ -35,6 +35,7 @@ const newPropertySchema = new Schema(
         _id: false,
         heading: String,
         url: String,
+        alt: String,
         description: String, // optional
       },
     ],

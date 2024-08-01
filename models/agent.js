@@ -6,7 +6,7 @@ const agentSchema = new mongoose.Schema(
   {
     name: { type: String },
     name_slug: { type: String, unique: true }, // Name Slug for SEO-friendly URLs
-    email: { type: String,  unique: true },
+    email: { type: String, unique: true },
     phone: { type: String },
     profile_picture: { type: String },
     bio: { type: String }, // Professional Snapshot

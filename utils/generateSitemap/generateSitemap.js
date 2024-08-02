@@ -143,7 +143,7 @@ ${
     .map((agent) => {
       return `
                   <url>
-                      <loc>${`https://www.xrealty.ae/${agent.name_slug}`}</loc>
+                      <loc>${`https://www.xrealty.ae/agent/${agent.name_slug}`}</loc>
                       <lastmod>${new Date(
                         agent.updatedAt
                       ).toISOString()}</lastmod>

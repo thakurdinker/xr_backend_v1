@@ -11,7 +11,10 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     .exec();
 
   // Xperience New Projects
-  const properties = await Property.find({ featured: true }).select(
+  const properties = await Property.find({
+    featured: true,
+    show_property: true,
+  }).select(
     "_id property_name property_name_slug price location features images type"
   );
 
@@ -21,7 +24,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
   );
 
   //News and Insights
-  const content = await Content.find({})
+  const content = await Content.find({ status: "published" })
     .sort("-createdAt")
     .select("_id title slug images featured_image createdAt")
     .limit(3);

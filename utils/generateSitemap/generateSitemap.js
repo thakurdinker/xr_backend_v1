@@ -30,8 +30,8 @@ const generateSitemap = async () => {
   const developers = await Developer.find({});
 
   const communities = await Community.find({});
-  const properties = await Property.find({});
-  const newsAndArticles = await Content.find({});
+  const properties = await Property.find({ show_property: true });
+  const newsAndArticles = await Content.find({ status: true });
   const agents = await Agent.find({});
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

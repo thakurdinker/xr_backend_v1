@@ -23,6 +23,7 @@ router.route("/:communitySlug").get(
       // Properties in the community
       const properties = await Property.find({
         community_name_slug: communitySlug,
+        show_property: true,
       });
 
       const moreCommunities = shuffle(

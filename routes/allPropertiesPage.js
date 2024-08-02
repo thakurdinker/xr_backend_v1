@@ -6,6 +6,6 @@ const propertiesController = require("../controller/propertiesController");
 
 const router = express.Router({ mergeParams: true });
 
-router.route("/").get(propertiesController.getAllProperties);
+router.route("/").get(propertiesController.getAllPublicProperties);
 
 module.exports = router;

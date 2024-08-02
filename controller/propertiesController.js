@@ -38,12 +38,12 @@ module.exports.createProperty = catchAsync(async (req, res) => {
 module.exports.getAllProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   try {
-    const properties = await Property.find({})
+    const properties = await Property.find({ show_property: true })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
 
-    const count = await Property.countDocuments();
+    const count = await Property.countDocuments({ show_property: true });
     return res.status(200).json({
       success: true,
       properties,

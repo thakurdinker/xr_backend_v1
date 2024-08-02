@@ -54,6 +54,9 @@ const generateSitemap = async () => {
 <url>
     <loc>https://www.xrealty.ae/real-estate-news</loc>
 </url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties</loc>
+</url>
 
 
 
@@ -110,6 +113,8 @@ ${
     })
     .join("")
 }
+
+
 
 
 

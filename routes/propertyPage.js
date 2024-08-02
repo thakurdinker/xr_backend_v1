@@ -11,7 +11,8 @@ router.route("/").get(
     try {
       const property = await Property.findOne({
         property_name_slug: propertySlug,
-      }).populate({ path: "amenities.icons" });;
+        show_property: true,
+      }).populate({ path: "amenities.icons" });
       if (!property) {
         return res
           .status(200)

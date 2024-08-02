@@ -38,6 +38,31 @@ module.exports.createProperty = catchAsync(async (req, res) => {
 module.exports.getAllProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   try {
+    const properties = await Property.find({})
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const count = await Property.countDocuments();
+    return res.status(200).json({
+      success: true,
+      properties,
+      message: "DONE",
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    return res.status(200).json({
+      success: false,
+      message: error,
+    });
+  }
+});
+
+// Read all properties with pagination - For Public Route
+module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  try {
     const properties = await Property.find({ show_property: true })
       .limit(limit * 1)
       .skip((page - 1) * limit)

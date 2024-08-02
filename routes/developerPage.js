@@ -33,6 +33,7 @@ router.route("/").get(
       // Find the properties associated with the developer
       const developerProperties = await Property.find({
         developer_name_slug: developerNameSlug,
+        show_property: true,
       })
         .limit(limit)
         .skip((page - 1) * limit)

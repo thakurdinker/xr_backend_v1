@@ -10,6 +10,8 @@ const MongoDBStore = require("connect-mongo");
 const passportLocalMongoose = require("passport-local-mongoose");
 const cors = require("cors");
 
+const path = require("path");
+
 const app = express();
 
 const permissionsRouter = require("./routes/permissions");
@@ -27,6 +29,7 @@ const resetPassRouter = require("./routes/resetPassword");
 const assestsDeleteRouter = require("./routes/assetsDelete");
 const iconRouter = require("./routes/icons");
 const developerRouter = require("./routes/developer");
+const sitemapRouter = require("./routes/generateSitemap");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -84,6 +87,7 @@ db.once("open", () => {
 
 app.use(cors({ origin: true, credentials: true }));
 
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session(sessionConfig));
@@ -116,6 +120,7 @@ app.use("/admin", resetPassRouter);
 app.use("/admin", assestsDeleteRouter);
 app.use("/admin", iconRouter);
 app.use("/admin", developerRouter);
+app.use("/admin", sitemapRouter);
 
 // Public Routes
 app.use("/", homePageDataRouter);

@@ -34,10 +34,10 @@ module.exports.addContent = catchAsync(async (req, res) => {
 module.exports.getContent = catchAsync(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   try {
-  const contentList = await Content.find({})
-    .limit(limit)
-    .skip((page - 1) * limit)
-    .exec();
+    const contentList = await Content.find({})
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .exec();
 
     const count = await Content.countDocuments();
     return res.status(200).json({

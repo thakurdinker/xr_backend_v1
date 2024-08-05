@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const contentSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    slug: { type: String, required: true, unique: true },
-    content: { type: String, required: true }, // HTML content
+    title: { type: String },
+    slug: { type: String, unique: true },
+    content: { type: String }, // HTML content
     featured_image: {
       type: String,
     },
@@ -13,7 +13,7 @@ const contentSchema = new mongoose.Schema(
       name: { type: String },
       email: { type: String },
     },
-    category: { type: String, required: true }, // e.g., "blog", "news", "article"
+    category: { type: String }, // e.g., "blog", "news", "article"
     tags: [{ type: String }],
     publish_date: { type: Date, default: Date.now },
     status: { type: String, enum: ["draft", "published"], default: "draft" },
@@ -27,16 +27,16 @@ const contentSchema = new mongoose.Schema(
     faqs: [
       {
         _id: false,
-        question: { type: String, required: true },
-        answer: { type: String, required: true },
+        question: { type: String },
+        answer: { type: String },
       },
     ],
 
     // SEO fields
     seo: {
       _id: false,
-      meta_title: { type: String, required: true },
-      meta_description: { type: String, required: true },
+      meta_title: { type: String },
+      meta_description: { type: String },
       keywords: [{ type: String }],
     },
     schema_org: {

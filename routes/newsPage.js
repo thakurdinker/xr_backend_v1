@@ -11,12 +11,20 @@ const router = express.Router({ mergeParams: true });
 router.route("/real-estate-news").get(
   catchAsync(async (req, res) => {
     const { page = 1, limit = 20, category } = req.query;
+    // let query = {
+    //   status: "published",
+    // };
+
+    // if (category && category.trim() !== "") {
+    //   query.category = category.trim().toLowerCase();
+    // }
+
     let query = {
       status: "published",
     };
 
     if (category && category.trim() !== "") {
-      query.category = category.trim().toLowerCase();
+      query.category = { $regex: new RegExp(category.trim(), "i") };
     }
     try {
       const filePath = path.join(

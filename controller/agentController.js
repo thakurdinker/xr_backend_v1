@@ -100,7 +100,7 @@ module.exports.updateAgent = catchAsync(async (req, res) => {
         isUpdated: false,
         message: "No agent Found",
       });
-    }   
+    }
     Object.keys(req.body).forEach((update) => {
       if (
         typeof req.body[update] === "object" &&

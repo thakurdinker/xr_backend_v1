@@ -46,6 +46,7 @@ router.route("/").get(
 
       const count = await Property.countDocuments({
         developer_name_slug: developerNameSlug,
+        show_property: true,
       });
 
       return res.status(200).json({

@@ -20,6 +20,8 @@ const agentSchema = new mongoose.Schema(
       linkedin: { type: String },
       twitter: { type: String },
       facebook: { type: String },
+      instagram: { type: String },
+      youtube: { type: String },
     },
     video_links: [{ type: String }],
     seo: {

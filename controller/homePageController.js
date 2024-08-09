@@ -3,6 +3,7 @@ const Content = require("../models/content");
 const HomePageVideos = require("../models/homepageVideo");
 const Property = require("../models/properties");
 const catchAsync = require("../utils/seedDB/catchAsync");
+const shuffle = require("../utils/shuffleArray");
 
 module.exports.getHomePage = catchAsync(async (req, res) => {
   // Fetch the HomePage Video
@@ -19,8 +20,10 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
   );
 
   //   Xperience Stars
-  const agent = await Agent.find({}).select(
-    "_id name name_slug phone languages profile_picture"
+  const agent = shuffle(
+    await Agent.find({}).select(
+      "_id name name_slug phone languages profile_picture"
+    )
   );
 
   //News and Insights

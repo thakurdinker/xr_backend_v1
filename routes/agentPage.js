@@ -11,10 +11,12 @@ const router = express.Router({ mergeParams: true });
 router.route("/").get(
   catchAsync(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
-    const agents = shuffle(await Agent.find({}))
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .select("_id name name_slug phone languages profile_picture");
+    const agents = shuffle(
+      await Agent.find({})
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .select("_id name name_slug phone languages profile_picture")
+    );
 
     let data = null;
 

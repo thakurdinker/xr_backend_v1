@@ -31,12 +31,13 @@ router.route("/developers").get(async (req, res) => {
     let tempDevelopers = [];
 
     developers.map((developer) => {
-      tempDevelopers.push(developer);
       if (
         developer.developer_slug === "emaar-properties" ||
         developer.developer_slug === "emaar"
       ) {
         tempDevelopers.unshift(developer);
+      } else {
+        tempDevelopers.push(developer);
       }
     });
 

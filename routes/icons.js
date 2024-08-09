@@ -12,7 +12,7 @@ router.get("/icons", iconController.getIcons);
 router.get("/getAllIcons", iconController.getAllIcons);
 
 // Get a single icon by ID
-router.get("/icons/:id", isLoggedIn, iconController.getIconById);
+router.get("/icons/:id", iconController.getIconById);
 
 // Update an icon by ID
 router.put("/icons/:id", isLoggedIn, iconController.updateIcon);

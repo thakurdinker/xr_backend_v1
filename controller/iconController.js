@@ -7,7 +7,9 @@ exports.createIcon = async (req, res) => {
     await icon.save();
     res.status(200).json({ success: true, isCreated: true, message: "DONE" });
   } catch (error) {
-    res.status(200).json({ success: false, isCreated: false, message: error.message });
+    res
+      .status(200)
+      .json({ success: false, isCreated: false, message: error.message });
   }
 };
 
@@ -44,7 +46,7 @@ exports.getIcons = async (req, res) => {
       message: "DONE",
       totalPages: Math.ceil(count / limit),
       currentPage: page,
-      totalIcons: count
+      totalIcons: count,
     });
   } catch (error) {
     res.status(200).json({ success: false, message: error.message });
@@ -58,7 +60,9 @@ exports.getIconById = async (req, res) => {
     if (icon) {
       res.status(200).json({ success: true, icon, message: "DONE" });
     } else {
-      res.status(200).json({ success: false, icon: null, message: "Not Found" });
+      res
+        .status(200)
+        .json({ success: false, icon: null, message: "Not Found" });
     }
   } catch (error) {
     res.status(200).json({ success: false, message: error.message });
@@ -75,7 +79,9 @@ exports.updateIcon = async (req, res) => {
     if (icon) {
       res.status(200).json({ success: true, isUpdated: true, message: "DONE" });
     } else {
-      res.status(200).json({ success: false, isUpdated: false, message: "Not Found" });
+      res
+        .status(200)
+        .json({ success: false, isUpdated: false, message: "Not Found" });
     }
   } catch (error) {
     res.status(200).json({ success: false, message: error.message });
@@ -89,7 +95,9 @@ exports.deleteIcon = async (req, res) => {
     if (icon) {
       res.status(200).json({ success: true, isDeleted: true, message: "DONE" });
     } else {
-      res.status(200).json({ success: true, isDeleted: false, message: "Not Found" });
+      res
+        .status(200)
+        .json({ success: true, isDeleted: false, message: "Not Found" });
     }
   } catch (error) {
     res.status(200).json({ success: false, message: error.message });

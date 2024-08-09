@@ -27,11 +27,24 @@ router.route("/developers").post(isLoggedIn, async (req, res) => {
 router.route("/developers").get(async (req, res) => {
   try {
     const developers = await Developer.find({});
+
+    let tempDevelopers = [];
+
+    developers.map((developer) => {
+      tempDevelopers.push(developer);
+      if (
+        developer.developer_slug === "emaar-properties" ||
+        developer.developer_slug === "emaar"
+      ) {
+        tempDevelopers.unshift(developer);
+      }
+    });
+
     return res.status(200).json({
       success: true,
       isFetched: true,
       message: "DONE",
-      data: developers,
+      data: tempDevelopers,
     });
   } catch (error) {
     return res.status(200).json({

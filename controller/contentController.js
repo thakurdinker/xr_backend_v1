@@ -92,8 +92,13 @@ module.exports.updateContent = catchAsync(async (req, res) => {
   //   });
   // }
 
+  if (!req.body.publish_date) {
+    req.body.publish_date = Date.now();
+  }
+
   try {
     const content = await Content.findById(req.params.id);
+
     if (!content) {
       return res.status(200).json({
         success: false,
@@ -120,6 +125,7 @@ module.exports.updateContent = catchAsync(async (req, res) => {
       .status(200)
       .json({ success: true, isUpdated: true, content, message: "DONE" });
   } catch (error) {
+    console.log(error);
     return res.status(200).json({
       success: false,
       isUpdated: false,

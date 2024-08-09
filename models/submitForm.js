@@ -28,6 +28,10 @@ const contactSchema = new mongoose.Schema(
       type: String,
       maxlength: 500,
     },
+    pageUrl: {
+      type: String,
+      default: "https://www.xrealty.ae",
+    },
   },
   {
     timestamps: true,

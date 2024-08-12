@@ -69,6 +69,7 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
       .select(
         "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug"
       )
+      .sort("-createdAt")
       .exec();
 
     const count = await Property.countDocuments({ show_property: true });

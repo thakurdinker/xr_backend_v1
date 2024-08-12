@@ -29,7 +29,7 @@ module.exports.createAgent = catchAsync(async (req, res) => {
   }
 });
 
-// Read all agents
+// Read all agents with pagination
 module.exports.getAll = catchAsync(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   try {
@@ -44,6 +44,21 @@ module.exports.getAll = catchAsync(async (req, res) => {
       agents,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
+      message: "DONE",
+    });
+  } catch (error) {
+    res.status(200).json({ success: false, message: error });
+  }
+});
+
+// Read all agents without pagination
+module.exports.getAll = catchAsync(async (req, res) => {
+  try {
+    const agents = await Agent.find({}).exec();
+
+    res.status(200).json({
+      success: true,
+      agents,
       message: "DONE",
     });
   } catch (error) {

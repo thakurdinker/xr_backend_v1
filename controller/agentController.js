@@ -52,7 +52,7 @@ module.exports.getAll = catchAsync(async (req, res) => {
 });
 
 // Read all agents without pagination
-module.exports.getAll = catchAsync(async (req, res) => {
+module.exports.listAll = catchAsync(async (req, res) => {
   try {
     const agents = await Agent.find({}).exec();
 

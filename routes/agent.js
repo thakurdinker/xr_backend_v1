@@ -8,6 +8,8 @@ router
   .get(isLoggedIn, agentController.getAll)
   .post(isLoggedIn, agentController.createAgent);
 
+router.route("/agents/listAll").get(isLoggedIn, agentController.listAll);
+
 router
   .route("/agents/:id")
   .get(isLoggedIn, agentController.getById)

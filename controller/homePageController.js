@@ -17,9 +17,9 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     show_property: true,
   })
     .select(
-      "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug"
+      "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
     )
-    .sort("-createdAt");
+    .sort({ order: 1 });
 
   //   Xperience Stars
   const agent = shuffle(

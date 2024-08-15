@@ -5,6 +5,7 @@ const Property = require("../models/properties");
 const fs = require("fs");
 const path = require("path");
 const Developer = require("../models/developer");
+const Community = require("../models/community");
 
 const router = express.Router({ mergeParams: true });
 
@@ -31,28 +32,40 @@ router.route("/").get(
       }
 
       // Find the properties associated with the developer
-      const developerProperties = await Property.find({
+      // const developerProperties = await Property.find({
+      //   developer_name_slug: developerNameSlug,
+      //   show_property: true,
+      // })
+      //   .limit(limit)
+      //   .skip((page - 1) * limit)
+      //   .select(
+      //     "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug"
+      //   )
+      //   .exec();
+
+      const developerCommunities = await Community.find({
         developer_name_slug: developerNameSlug,
-        show_property: true,
+        // show_property: true,
       })
         .limit(limit)
         .skip((page - 1) * limit)
         .select(
-          "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug"
+         {}
         )
         .exec();
 
       // Get the count of properties for paginationclear
 
-      const count = await Property.countDocuments({
+      const count = await Community.countDocuments({
         developer_name_slug: developerNameSlug,
-        show_property: true,
+        // show_property: true,
       });
 
       return res.status(200).json({
         success: true,
         aboutDeveloper: developer, // Developer information
-        developerProperties,
+        // developerProperties,
+        developerCommunities,
         message: "DONE",
         totalPages: Math.ceil(count / limit),
         currentPage: Number(page),

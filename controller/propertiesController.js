@@ -88,6 +88,7 @@ module.exports.getAllProperties = catchAsync(async (req, res) => {
 
 // Read all properties with pagination - For Public Route
 module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
+
   const { page = 1, limit = 9, sortOrder = 1 } = req.query;
   try {
     const properties = await Property.find({ show_property: true })
@@ -250,7 +251,6 @@ module.exports.delete = catchAsync(async (req, res) => {
         resource_type: "image",
         invalidate: true,
       });
-      console.log(result);
     } catch (err) {
       console.log(err);
     }

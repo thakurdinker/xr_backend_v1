@@ -41,6 +41,7 @@ const agentSchema = new mongoose.Schema(
       description: { type: String },
       image: { type: String },
     },
+    starAgent: Boolean,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

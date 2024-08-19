@@ -36,7 +36,7 @@ module.exports.createProperty = catchAsync(async (req, res) => {
 
 // Read all properties with pagination
 // module.exports.getAllProperties = catchAsync(async (req, res) => {
-//   const { page = 1, limit = 9 } = req.query;
+//   const { page = 1, limit = 10 } = req.query;
 //   try {
 //     const properties = await Property.find({})
 //       .limit(limit * 1)
@@ -60,10 +60,10 @@ module.exports.createProperty = catchAsync(async (req, res) => {
 // });
 
 module.exports.getAllProperties = catchAsync(async (req, res) => {
-  const { page = 1, limit = 9, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
+  const { page = 1, limit = 10, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
   try {
     const properties = await Property.find({})
-      .sort({ order: sortOrder }) // Sort based on the 'order' field
+      // .sort({ order: sortOrder }) // Sort based on the 'order' field
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
@@ -89,7 +89,7 @@ module.exports.getAllProperties = catchAsync(async (req, res) => {
 // Read all properties with pagination - For Public Route
 module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
 
-  const { page = 1, limit = 9, sortOrder = 1 } = req.query;
+  const { page = 1, limit = 10, sortOrder = 1 } = req.query;
   try {
     const properties = await Property.find({ show_property: true })
     .sort({ order: sortOrder }) 

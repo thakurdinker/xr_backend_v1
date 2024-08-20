@@ -57,6 +57,9 @@ const generateSitemap = async () => {
 <url>
     <loc>https://www.xrealty.ae/dubai-properties</loc>
 </url>
+<url>
+    <loc>https://www.xrealty.ae/communities</loc>
+</url>
 
 ${
   // Developers sitemap

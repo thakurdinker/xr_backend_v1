@@ -63,7 +63,7 @@ module.exports.getAllProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
   try {
     const properties = await Property.find({})
-      // .sort({ order: sortOrder }) // Sort based on the 'order' field
+      .sort({ order: sortOrder }) // Sort based on the 'order' field
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();

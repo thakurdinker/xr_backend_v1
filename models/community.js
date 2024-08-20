@@ -53,6 +53,9 @@ const communitySchema = new mongoose.Schema(
       description: { type: String },
       image: { type: String },
     },
+    order: { type: Number, unique: true },
+    developer: String,
+    developer_name_slug: String,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

@@ -3,13 +3,17 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 const Community = require("../models/community");
 const shuffle = require("../utils/shuffleArray");
 const Property = require("../models/properties");
+const communityController = require("../controller/communityController");
 
 const router = express.Router({ mergeParams: true });
+
+router.route("/communities").get(communityController.getAll);
 
 router.route("/:communitySlug").get(
   catchAsync(async (req, res) => {
     const { communitySlug } = req.params;
     try {
+
       const community = await Community.findOne({
         slug: communitySlug,
       }).populate({ path: "amenities.icons" });
@@ -41,5 +45,6 @@ router.route("/:communitySlug").get(
     }
   })
 );
+
 
 module.exports = router;

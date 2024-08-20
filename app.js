@@ -127,6 +127,7 @@ app.use("/", homePageDataRouter);
 app.use("/label/:developerNameSlug", developerPageRouter);
 app.use("/meet-the-xr", agentsPageRouter);
 app.use("/agent", agentDetailRouter);
+app.use("/", agentRouter);
 app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);

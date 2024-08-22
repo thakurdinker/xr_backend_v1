@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const Contact = require("../models/submitForm");
+const Contact = require("../models/reviewsForm");
 const { submitFormValidation } = require("../schemaValidation/submitForm");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const {

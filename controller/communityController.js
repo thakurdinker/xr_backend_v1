@@ -42,8 +42,8 @@ module.exports.getAll = catchAsync(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   try {
     const communities = await Community.find({})
-      // .limit(limit)
-      // .skip((page - 1) * limit)
+      .limit(limit)
+      .skip((page - 1) * limit)
       .exec();
 
     const count = await Community.countDocuments();
@@ -51,7 +51,7 @@ module.exports.getAll = catchAsync(async (req, res) => {
       success: true,
       communities,
       totalPages: Math.ceil(count / limit),
-      currentPage: page,
+      currentPage: Number(page),
       message: "DONE",
     });
   } catch (error) {

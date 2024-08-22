@@ -92,13 +92,12 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, sortOrder = 1 } = req.query;
   try {
     const properties = await Property.find({ show_property: true })
-    .sort({ order: sortOrder }) 
+      .sort({ order: sortOrder })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .select(
         "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
       )
-      .sort("-createdAt")
       .exec();
 
     const count = await Property.countDocuments({ show_property: true });

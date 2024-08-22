@@ -11,7 +11,7 @@ const router = express.Router({ mergeParams: true });
 
 router.route("/").get(
   catchAsync(async (req, res) => {
-    const { page = 1, limit = 8 } = req.query;
+    const { page = 1, limit = 10 } = req.query;
     const { developerNameSlug } = req.params;
     try {
       // Find the developer details from the database
@@ -46,8 +46,8 @@ router.route("/").get(
         developer_name_slug: developerNameSlug,
         // show_property: true,
       })
-      // .limit(limit)
-      // .skip((page - 1) * limit)
+      .limit(limit)
+      .skip((page - 1) * limit)
       .exec();
 
       // Get the count of properties for paginationclear
@@ -63,7 +63,7 @@ router.route("/").get(
         developerCommunities,
         message: "DONE",
         totalPages: Math.ceil(count / limit),
-        currentPage: page,
+        currentPage:  Number(page),
       });
     } catch (error) {
       console.error(error);

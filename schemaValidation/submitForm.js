@@ -1,11 +1,11 @@
 const Joi = require("joi");
 
 const submitFormValidation = Joi.object({
-  firstname: Joi.string().min(2).max(30).optional(),
-  lastname: Joi.string().min(2).max(30).optional(),
+  firstname: Joi.string().optional(),
+  lastname: Joi.string().optional(),
   email: Joi.string().email().optional(),
   phone: Joi.string().optional(),
-  message: Joi.string().max(500).optional(),
+  message: Joi.string().optional(),
   pageUrl: Joi.string().optional(),
 });
 

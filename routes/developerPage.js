@@ -11,7 +11,7 @@ const router = express.Router({ mergeParams: true });
 
 router.route("/").get(
   catchAsync(async (req, res) => {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 8 } = req.query;
     const { developerNameSlug } = req.params;
     try {
       // Find the developer details from the database

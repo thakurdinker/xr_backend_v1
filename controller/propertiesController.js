@@ -9,30 +9,60 @@ const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 
 // Create a new property
-module.exports.createProperty = catchAsync(async (req, res) => {
-  // const { error } = propertySchemaValidation.validate(req.body);
+// module.exports.createProperty = catchAsync(async (req, res) => {
+//   // const { error } = propertySchemaValidation.validate(req.body);
 
-  // if (error) {
-  //   return res.status(200).json({
-  //     success: false,
-  //     isCreated: false,
-  //     message: error.details[0].message,
-  //   });
-  // }
+//   // if (error) {
+//   //   return res.status(200).json({
+//   //     success: false,
+//   //     isCreated: false,
+//   //     message: error.details[0].message,
+//   //   });
+//   // }
+//   console.log("hi");
+//   try {
+//     const property = new Property(req.body);
+//     await property.save();
+//     return res
+//       .status(200)
+//       .json({ success: true, isCreated: true, message: "DONE" });
+//   } catch (error) {
+//     return res.status(200).json({
+//       success: false,
+//       isCreated: false,
+//       message: "Failed to Add Property",
+//     });
+//   }
+// });
+
+
+
+module.exports.createProperty = catchAsync(async (req, res) => {
   try {
-    const property = new Property(req.body);
+    // Increment the order of all existing properties
+    await Property.updateMany({}, { $inc: { order: 1 } });
+
+    // Ensure that the order you're assigning to the new property is unique
+    const property = new Property({ ...req.body, order: 1 });
     await property.save();
-    return res
-      .status(200)
-      .json({ success: true, isCreated: true, message: "DONE" });
+
+    return res.status(200).json({ success: true, isCreated: true, message: "Property added successfully" });
   } catch (error) {
-    return res.status(200).json({
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        isCreated: false,
+        message: "Duplicate order value. Please try again.",
+      });
+    }
+    return res.status(500).json({
       success: false,
       isCreated: false,
-      message: "Fail to Add Property",
+      message: "Failed to add property",
     });
   }
 });
+
 
 // Read all properties with pagination
 // module.exports.getAllProperties = catchAsync(async (req, res) => {
@@ -136,85 +166,127 @@ module.exports.getById = catchAsync(async (req, res) => {
 });
 
 // Update a property by ID
+// module.exports.updateProperty = catchAsync(async (req, res) => {
+//   if (!mongoose.isValidObjectId(req.params.id)) {
+//     return res
+//       .status(200)
+//       .json({ success: false, isUpdated: false, message: "Invalid Id" });
+//   }
+
+//   // const { error } = propertySchemaValidation.validate(req.body);
+
+//   // if (error) {
+//   //   return res.status(200).json({
+//   //     success: false,
+//   //     isUpdated: false,
+//   //     message: error.details[0].message,
+//   //   });
+//   // }
+//   const updates = Object.keys(req.body);
+//   // const allowedUpdates = [
+//   //   "property_name",
+//   //   "description",
+//   //   "price",
+//   //   "type",
+//   //   "location",
+//   //   "features",
+//   //   "images",
+//   //   "gallery",
+//   //   "status",
+//   //   "community_name",
+//   //   "community_name_slug",
+//   //   "property_name_slug",
+//   //   "community_features",
+//   //   "show_property",
+//   //   "featured",
+//   // ];
+//   // const isValidOperation = updates.every((update) =>
+//   //   allowedUpdates.includes(update)
+//   // );
+
+//   // if (!isValidOperation) {
+//   //   return res
+//   //     .status(200)
+//   //     .json({ success: false, isUpdated: false, message: "Invalid updates!" });
+//   // }
+
+//   try {
+
+//     const property = await Property.findById(req.params.id);
+//     if (!property) {
+//       return res.status(200).json({
+//         success: false,
+//         isUpdated: false,
+//         message: "Proeprty Not Found",
+//       });
+//     }
+
+//     // Checking for nested objects in the request
+//     // If we find any, the update only that specific field in the object in the db instead of replacing the whole object
+//     updates.forEach((update) => {
+//       if (
+//         typeof req.body[update] === "object" &&
+//         !Array.isArray(req.body[update])
+//       ) {
+//         Object.keys(req.body[update]).forEach((nestedUpdate) => {
+//           property[update][nestedUpdate] = req.body[update][nestedUpdate];
+//         });
+//       } else {
+//         property[update] = req.body[update];
+//       }
+//     });
+//     await property.save();
+//     res
+//       .status(200)
+//       .json({ success: true, isUpdated: true, property, message: "DONE" });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(200).json({ success: false, isUpdated: false, message: error });
+//   }
+// });
+
+
+
 module.exports.updateProperty = catchAsync(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res
-      .status(200)
-      .json({ success: false, isUpdated: false, message: "Invalid Id" });
-  }
-
-  // const { error } = propertySchemaValidation.validate(req.body);
-
-  // if (error) {
-  //   return res.status(200).json({
-  //     success: false,
-  //     isUpdated: false,
-  //     message: error.details[0].message,
-  //   });
-  // }
-  const updates = Object.keys(req.body);
-
-  // const allowedUpdates = [
-  //   "property_name",
-  //   "description",
-  //   "price",
-  //   "type",
-  //   "location",
-  //   "features",
-  //   "images",
-  //   "gallery",
-  //   "status",
-  //   "community_name",
-  //   "community_name_slug",
-  //   "property_name_slug",
-  //   "community_features",
-  //   "show_property",
-  //   "featured",
-  // ];
-  // const isValidOperation = updates.every((update) =>
-  //   allowedUpdates.includes(update)
-  // );
-
-  // if (!isValidOperation) {
-  //   return res
-  //     .status(200)
-  //     .json({ success: false, isUpdated: false, message: "Invalid updates!" });
-  // }
-
   try {
     const property = await Property.findById(req.params.id);
 
     if (!property) {
-      return res.status(200).json({
-        success: false,
-        isUpdated: false,
-        message: "Proeprty Not Found",
-      });
+      return res.status(404).json({ success: false, message: "Property not found" });
     }
 
-    // Checking for nested objects in the request
-    // If we find any, the update only that specific field in the object in the db instead of replacing the whole object
-    updates.forEach((update) => {
-      if (
-        typeof req.body[update] === "object" &&
-        !Array.isArray(req.body[update])
-      ) {
-        Object.keys(req.body[update]).forEach((nestedUpdate) => {
-          property[update][nestedUpdate] = req.body[update][nestedUpdate];
-        });
+    const newOrder = req.body.order;
+    const currentOrder = property.order;
+
+    if (newOrder && newOrder !== currentOrder) {
+      // Adjust the orders of other properties accordingly
+      if (newOrder > currentOrder) {
+        await Property.updateMany(
+          { order: { $gt: currentOrder, $lte: newOrder } },
+          { $inc: { order: -1 } }
+        );
       } else {
-        property[update] = req.body[update];
+        await Property.updateMany(
+          { order: { $gte: newOrder, $lt: currentOrder } },
+          { $inc: { order: 1 } }
+        );
       }
-    });
+    }
+
+    // Update the property
+    property.order = newOrder;
+    Object.assign(property, req.body);
 
     await property.save();
-    res
-      .status(200)
-      .json({ success: true, isUpdated: true, property, message: "DONE" });
+    return res.status(200).json({ success: true, message: "Property updated successfully", property });
   } catch (error) {
-    res.status(200).json({ success: false, isUpdated: false, message: error });
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "Duplicate order value. Please try again." });
+    }
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 // Delete a property by ID
 module.exports.delete = catchAsync(async (req, res) => {

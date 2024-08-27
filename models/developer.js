@@ -20,7 +20,7 @@ const newDeveloperSchema = new Schema(
       type: String,
     },
     heading: { type: String },
-    order: { type: Number, unique: true },
+    order: Number,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

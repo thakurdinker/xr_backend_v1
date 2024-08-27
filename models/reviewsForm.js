@@ -5,12 +5,10 @@ const reviewSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      minlength: 2,
-      maxlength: 30,
     },
     message: {
       type: String,
-      maxlength: 500,
+      required: true,
     },
     imageUrl: {
       type: String,
@@ -18,6 +16,10 @@ const reviewSchema = new mongoose.Schema(
     numberOfStars: {
       type: Number,
       default: 5,
+    },
+    showReview: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -1,8 +1,8 @@
 const express = require('express');
-const { submitReviewsForm } = require('../controller/reviewsFormController');
+const { submitReviewsForm, getReviews } = require('../controller/reviewsFormController');
 
 const router = express.Router();
 
-router.post('/review', submitReviewsForm);
+router.post('/reviews', submitReviewsForm);
 
 module.exports = router;

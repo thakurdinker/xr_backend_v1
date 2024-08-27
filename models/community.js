@@ -53,7 +53,7 @@ const communitySchema = new mongoose.Schema(
       description: { type: String },
       image: { type: String },
     },
-    order: { type: Number, unique: true },
+    order: Number,
     developer: String,
     developer_name_slug: String,
   },

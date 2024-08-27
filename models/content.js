@@ -51,7 +51,7 @@ const contentSchema = new mongoose.Schema(
       image: { type: String },
       type: { type: String, default: "article" },
     },
-    order: { type: Number, unique: true },
+    order: Number,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

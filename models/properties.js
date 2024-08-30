@@ -102,7 +102,7 @@ const newPropertySchema = new Schema(
       image: { type: String },
       type: { type: String, default: "" },
     },
-    order: { type: Number },
+    order: { type: Number, unique: true },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

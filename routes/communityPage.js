@@ -28,7 +28,7 @@ router.route("/:communitySlug").get(
       const properties = await Property.find({
         community_name_slug: communitySlug,
         show_property: true,
-      });
+      }).sort({ order: 1 });
 
       const moreCommunities = shuffle(
         await Community.find({ _id: { $ne: community._id } }).limit(6)

@@ -185,22 +185,20 @@ router.route("/real-estate-news").get(
         __dirname,
         "../configs/content-categories.json"
       );
+      let categories = [];
       try {
-        const filePath = path.join(
-          __dirname,
-          "../configs/content-categories.json"
-        );
-        data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
+        const data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
+        categories = JSON.parse(data);
       } catch (e) {
-        console.log(e.message);
+        console.log("Error reading categories file:", e.message);
       }
-  
 
       // Fetch the news and blogs with pagination
       const newsAndBlogs = await Content.find(query)
         .sort({ publish_date: sortOrder }) // Sort by publish_date
         .limit(limit * 1)
         .skip((page - 1) * limit)
+        .select("_id title slug publish_date category featured_image") // Select only the necessary fields
         .exec();
 
       // Get the total count of documents matching the query
@@ -208,7 +206,7 @@ router.route("/real-estate-news").get(
 
       return res.status(200).json({
         success: true,
-        categories: JSON.parse(data),
+        categories,
         newsAndBlogs,
         totalPages: Math.ceil(count / limit),
         currentPage: Number(page),
@@ -224,8 +222,7 @@ router.route("/real-estate-news").get(
   })
 );
 
-
-// get content matching content slug
+// Read a single news article by slug
 router.route("/:contentSlug").get(
   catchAsync(async (req, res) => {
     const { contentSlug } = req.params;

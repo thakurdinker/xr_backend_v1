@@ -1,3 +1,4 @@
+const ProjectOfTheMonthModel = require("../models/ProjectOfTheMonthModel");
 const Agent = require("../models/agent");
 const Content = require("../models/content");
 const HomePageVideos = require("../models/homepageVideo");
@@ -34,12 +35,16 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     .select("_id title slug images featured_image createdAt")
     .limit(3);
 
+  // Project of the Month
+  const projectOfTheMonth = await ProjectOfTheMonthModel.findOne().populate({ path: "amenities.icons" });
+
   return res.status(200).json({
     success: true,
     homePageVideos,
     properties,
     content,
     agent,
+    projectOfTheMonth,
     message: "DONE",
   });
 });

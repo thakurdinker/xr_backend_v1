@@ -40,6 +40,7 @@ const newsPageRouter = require("./routes/newsPage");
 const submitForm = require("./routes/submitForm");
 const reviewsForm = require("./routes/reviewsForm");
 const reviewsRouter = require("./routes/reviewsRouter");
+const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 
 const User = require("./models/user");
 
@@ -124,6 +125,8 @@ app.use("/admin", iconRouter);
 app.use("/admin", developerRouter);
 app.use("/admin", sitemapRouter);
 app.use("/admin", reviewsRouter);
+app.use("/admin", projectOfTheMonthRouter);
+
 
 // Public Routes
 app.use("/", homePageDataRouter);

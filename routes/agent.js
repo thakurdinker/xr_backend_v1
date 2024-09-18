@@ -7,10 +7,8 @@ router
   .route("/agents")
   .get(isLoggedIn, agentController.getAll)
   .post(isLoggedIn, agentController.createAgent);
-  
-router
-  .route("/starAgents")
-  .get( agentController.getStarAgents)
+
+router.route("/starAgents").get(agentController.getStarAgents);
 
 router.route("/agents/listAll").get(isLoggedIn, agentController.listAll);
 

@@ -24,7 +24,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
 
   //   Xperience Stars
   const agent = shuffle(
-    await Agent.find({}).select(
+    await Agent.find({ hidden: false }).select(
       "_id name name_slug phone languages profile_picture"
     )
   );
@@ -36,7 +36,9 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     .limit(3);
 
   // Project of the Month
-  const projectOfTheMonth = await ProjectOfTheMonthModel.findOne().populate({ path: "amenities.icons" });
+  const projectOfTheMonth = await ProjectOfTheMonthModel.findOne().populate({
+    path: "amenities.icons",
+  });
 
   return res.status(200).json({
     success: true,

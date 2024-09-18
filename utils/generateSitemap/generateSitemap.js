@@ -32,7 +32,7 @@ const generateSitemap = async () => {
   const communities = await Community.find({});
   const properties = await Property.find({ show_property: true });
   const newsAndArticles = await Content.find({ status: "published" });
-  const agents = await Agent.find({});
+  const agents = await Agent.find({ hidden: false });
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

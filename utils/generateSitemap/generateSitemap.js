@@ -66,9 +66,10 @@ ${
   developers.length > 0 &&
   developers
     .map((developer) => {
+      let developerSlug = encodeURIComponent(developer.developer_slug);
       return `
           <url>
-              <loc>${`https://www.xrealty.ae/label/${developer.developer_slug}`}</loc>
+              <loc>${`https://www.xrealty.ae/label/${developerSlug}`}</loc>
               <lastmod>${new Date(developer.updatedAt).toISOString()}</lastmod>
           </url>
           `;
@@ -76,16 +77,15 @@ ${
     .join("")
 }
 
-
-
 ${
   //   Community Sitemap
   communities.length > 0 &&
   communities
     .map((community) => {
+      let communitySlug = encodeURIComponent(community.slug);
       return `
             <url>
-                <loc>${`https://www.xrealty.ae/area/${community.slug}`}</loc>
+                <loc>${`https://www.xrealty.ae/area/${communitySlug}`}</loc>
                 <lastmod>${new Date(
                   community.updatedAt
                 ).toISOString()}</lastmod>
@@ -95,17 +95,15 @@ ${
     .join("")
 }
 
-
-
-
 ${
   //   Property Sitemap
   properties.length > 0 &&
   properties
     .map((property) => {
+      let propertyNameSlug = encodeURIComponent(property.property_name_slug);
       return `
-              <url>
-                  <loc>${`https://www.xrealty.ae/property/${property.property_name_slug}`}</loc>
+              <url> 
+                  <loc>${`https://www.xrealty.ae/property/${propertyNameSlug}`}</loc>
                   <lastmod>${new Date(
                     property.updatedAt
                   ).toISOString()}</lastmod>
@@ -115,19 +113,15 @@ ${
     .join("")
 }
 
-
-
-
-
-
 ${
   //   News and Articles sitemap
   newsAndArticles.length > 0 &&
   newsAndArticles
     .map((newsAndArticle) => {
+      let newsArticleSlug = encodeURIComponent(newsAndArticle.slug);
       return `
                 <url>
-                    <loc>${`https://www.xrealty.ae/${newsAndArticle.slug}`}</loc>
+                    <loc>${`https://www.xrealty.ae/${newsArticleSlug}`}</loc>
                     <lastmod>${new Date(
                       newsAndArticle.updatedAt
                     ).toISOString()}</lastmod>
@@ -137,16 +131,15 @@ ${
     .join("")
 }
 
-
-
 ${
   //   Agent sitemap
   agents.length > 0 &&
   agents
     .map((agent) => {
+      let agentSlug = encodeURIComponent(agent.name_slug);
       return `
                   <url>
-                      <loc>${`https://www.xrealty.ae/agent/${agent.name_slug}`}</loc>
+                      <loc>${`https://www.xrealty.ae/agent/${agentSlug}`}</loc>
                       <lastmod>${new Date(
                         agent.updatedAt
                       ).toISOString()}</lastmod>

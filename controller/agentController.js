@@ -53,21 +53,18 @@ module.exports.getAll = catchAsync(async (req, res) => {
 
 // get star agents
 module.exports.getStarAgents = catchAsync(async (req, res) => {
-  
   try {
-    const agents = await Agent.find({ starAgent: true });
+    const agents = await Agent.find({ starAgent: true, hidden: false });
 
     res.status(200).json({
       success: true,
       agents,
       message: "DONE",
     });
-
   } catch (error) {
     res.status(200).json({ success: false, message: error });
   }
 });
-
 
 // Read all agents without pagination
 module.exports.listAll = catchAsync(async (req, res) => {

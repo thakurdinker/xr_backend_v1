@@ -127,7 +127,6 @@ app.use("/admin", sitemapRouter);
 app.use("/admin", reviewsRouter);
 app.use("/admin", projectOfTheMonthRouter);
 
-
 // Public Routes
 app.use("/", homePageDataRouter);
 app.use("/label/:developerNameSlug", developerPageRouter);

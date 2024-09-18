@@ -8,7 +8,7 @@ const router = express.Router({ mergeParams: true });
 router.route("/:agentSlug").get(
   catchAsync(async (req, res) => {
     const { agentSlug } = req.params;
-    const agent = await Agent.findOne({ name_slug: agentSlug });
+    const agent = await Agent.findOne({ name_slug: agentSlug, hidden: false });
 
     if (!agent) {
       return res.status(200).json({
@@ -20,7 +20,7 @@ router.route("/:agentSlug").get(
     }
 
     const moreOfTheTeam = shuffle(
-      await Agent.find({ _id: { $ne: agent._id } })
+      await Agent.find({ _id: { $ne: agent._id }, hidden: false })
     ).slice(0, 9);
 
     return res.status(200).json({

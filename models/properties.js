@@ -107,6 +107,90 @@ const newPropertySchema = new Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+// Function to modify the Cloudinary URL
+function modifyCloudinaryUrl(url) {
+  // Define the part where you want to insert the transformation parameters
+  const insertionPoint = "/upload/";
+  const transformation = "f_auto,q_auto/";
+
+  // Check if the URL contains the insertion point
+  if (url && url.includes(insertionPoint)) {
+    // Find the position to insert the transformation
+    const index = url.indexOf(insertionPoint) + insertionPoint.length;
+
+    // Insert the transformation at the correct position
+    return url.slice(0, index) + transformation + url.slice(index);
+  }
+  // Return the original URL if insertion point is not found
+  return url;
+}
+
+// Add a post hook to modify image URLs in various fields
+newPropertySchema.post("find", function (docs) {
+  docs.forEach((doc) => {
+    // Modify URLs in the `images` array
+    if (doc.images && doc.images.length > 0) {
+      doc.images.forEach((image) => {
+        image.url = modifyCloudinaryUrl(image.url);
+      });
+    }
+
+    // Modify URL in `section_1.image`
+    if (doc.section_1 && doc.section_1.image) {
+      doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
+    }
+
+    // Modify URL in `schema_org.properties.image`
+    if (
+      doc.schema_org &&
+      doc.schema_org.properties &&
+      doc.schema_org.properties.image
+    ) {
+      doc.schema_org.properties.image = modifyCloudinaryUrl(
+        doc.schema_org.properties.image
+      );
+    }
+
+    // Modify URL in `open_graph.image`
+    if (doc.open_graph && doc.open_graph.image) {
+      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+    }
+  });
+});
+
+// Add a post hook to modify image URLs for a single document
+newPropertySchema.post("findOne", function (doc) {
+  if (doc) {
+    // Modify URLs in the `images` array
+    if (doc.images && doc.images.length > 0) {
+      doc.images.forEach((image) => {
+        image.url = modifyCloudinaryUrl(image.url);
+      });
+    }
+
+    // Modify URL in `section_1.image`
+    if (doc.section_1 && doc.section_1.image) {
+      doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
+    }
+
+    // Modify URL in `schema_org.properties.image`
+    if (
+      doc.schema_org &&
+      doc.schema_org.properties &&
+      doc.schema_org.properties.image
+    ) {
+      doc.schema_org.properties.image = modifyCloudinaryUrl(
+        doc.schema_org.properties.image
+      );
+    }
+
+    // Modify URL in `open_graph.image`
+    if (doc.open_graph && doc.open_graph.image) {
+      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+    }
+  }
+});
+
 const Property = mongoose.model("Property", newPropertySchema);
 
 module.exports = Property;

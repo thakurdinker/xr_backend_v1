@@ -56,6 +56,90 @@ const contentSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+// Function to modify the Cloudinary URL
+function modifyCloudinaryUrl(url) {
+  // Define the part where you want to insert the transformation parameters
+  const insertionPoint = "/upload/";
+  const transformation = "f_auto,q_auto/";
+
+  // Check if the URL contains the insertion point
+  if (url && url.includes(insertionPoint)) {
+    // Find the position to insert the transformation
+    const index = url.indexOf(insertionPoint) + insertionPoint.length;
+
+    // Insert the transformation at the correct position
+    return url.slice(0, index) + transformation + url.slice(index);
+  }
+  // Return the original URL if insertion point is not found
+  return url;
+}
+
+// Add a post hook to modify image URLs in various fields
+contentSchema.post("find", function (docs) {
+  docs.forEach((doc) => {
+    // Modify the `featured_image` URL
+    if (doc.featured_image) {
+      doc.featured_image = modifyCloudinaryUrl(doc.featured_image);
+    }
+
+    // Modify URLs in the `images` array
+    if (doc.images && doc.images.length > 0) {
+      doc.images.forEach((image) => {
+        image.url = modifyCloudinaryUrl(image.url);
+      });
+    }
+
+    // Modify URL in `schema_org.properties.image` if it exists
+    if (
+      doc.schema_org &&
+      doc.schema_org.properties &&
+      doc.schema_org.properties.image
+    ) {
+      doc.schema_org.properties.image = modifyCloudinaryUrl(
+        doc.schema_org.properties.image
+      );
+    }
+
+    // Modify URL in `open_graph.image` if it exists
+    if (doc.open_graph && doc.open_graph.image) {
+      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+    }
+  });
+});
+
+// Add a post hook to modify image URLs for a single document
+contentSchema.post("findOne", function (doc) {
+  if (doc) {
+    // Modify the `featured_image` URL
+    if (doc.featured_image) {
+      doc.featured_image = modifyCloudinaryUrl(doc.featured_image);
+    }
+
+    // Modify URLs in the `images` array
+    if (doc.images && doc.images.length > 0) {
+      doc.images.forEach((image) => {
+        image.url = modifyCloudinaryUrl(image.url);
+      });
+    }
+
+    // Modify URL in `schema_org.properties.image` if it exists
+    if (
+      doc.schema_org &&
+      doc.schema_org.properties &&
+      doc.schema_org.properties.image
+    ) {
+      doc.schema_org.properties.image = modifyCloudinaryUrl(
+        doc.schema_org.properties.image
+      );
+    }
+
+    // Modify URL in `open_graph.image` if it exists
+    if (doc.open_graph && doc.open_graph.image) {
+      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+    }
+  }
+});
+
 const Content = mongoose.model("Content", contentSchema);
 
 module.exports = Content;

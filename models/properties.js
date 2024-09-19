@@ -135,12 +135,26 @@ newPropertySchema.post("find", function (docs) {
       });
     }
 
+    // Modify URLs in the `gallery1` array
+    if (doc.gallery1 && doc.gallery1.length > 0) {
+      doc.gallery1 = doc.gallery1.map((imageUrl) =>
+        modifyCloudinaryUrl(imageUrl)
+      );
+    }
+
+    // Modify URLs in the `gallery2` array
+    if (doc.gallery2 && doc.gallery2.length > 0) {
+      doc.gallery2 = doc.gallery2.map((imageUrl) =>
+        modifyCloudinaryUrl(imageUrl)
+      );
+    }
+
     // Modify URL in `section_1.image`
     if (doc.section_1 && doc.section_1.image) {
       doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
     }
 
-    // Modify URL in `schema_org.properties.image`
+    // Modify URL in `schema_org.properties.image` if it exists
     if (
       doc.schema_org &&
       doc.schema_org.properties &&
@@ -151,7 +165,7 @@ newPropertySchema.post("find", function (docs) {
       );
     }
 
-    // Modify URL in `open_graph.image`
+    // Modify URL in `open_graph.image` if it exists
     if (doc.open_graph && doc.open_graph.image) {
       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
     }
@@ -168,12 +182,26 @@ newPropertySchema.post("findOne", function (doc) {
       });
     }
 
+    // Modify URLs in the `gallery1` array
+    if (doc.gallery1 && doc.gallery1.length > 0) {
+      doc.gallery1 = doc.gallery1.map((imageUrl) =>
+        modifyCloudinaryUrl(imageUrl)
+      );
+    }
+
+    // Modify URLs in the `gallery2` array
+    if (doc.gallery2 && doc.gallery2.length > 0) {
+      doc.gallery2 = doc.gallery2.map((imageUrl) =>
+        modifyCloudinaryUrl(imageUrl)
+      );
+    }
+
     // Modify URL in `section_1.image`
     if (doc.section_1 && doc.section_1.image) {
       doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
     }
 
-    // Modify URL in `schema_org.properties.image`
+    // Modify URL in `schema_org.properties.image` if it exists
     if (
       doc.schema_org &&
       doc.schema_org.properties &&
@@ -184,7 +212,7 @@ newPropertySchema.post("findOne", function (doc) {
       );
     }
 
-    // Modify URL in `open_graph.image`
+    // Modify URL in `open_graph.image` if it exists
     if (doc.open_graph && doc.open_graph.image) {
       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
     }

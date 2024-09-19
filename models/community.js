@@ -64,7 +64,7 @@ const communitySchema = new mongoose.Schema(
 function modifyCloudinaryUrl(url) {
   // Define the part where you want to insert the transformation parameters
   const insertionPoint = "/upload/";
-  const transformation = "f_auto,q_auto/";
+  const transformation = "w_1280,f_auto,q_auto/";
 
   // Check if the URL contains the insertion point
   if (url && url.includes(insertionPoint)) {

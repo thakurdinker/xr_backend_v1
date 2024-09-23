@@ -9,6 +9,7 @@ const Community = require("../../models/community");
 const Property = require("../../models/properties");
 const Content = require("../../models/content");
 const Agent = require("../../models/agent");
+const Review = require("../../models/reviewsForm");
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
 const DB_URL =
@@ -59,6 +60,9 @@ const generateSitemap = async () => {
 </url>
 <url>
     <loc>https://www.xrealty.ae/communities</loc>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/customer-reviews</loc>
 </url>
 
 ${

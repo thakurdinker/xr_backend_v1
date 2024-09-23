@@ -3,6 +3,6 @@ const { submitReviewsForm, getReviews } = require('../controller/reviewsFormCont
 
 const router = express.Router();
 
-router.post('/reviews', submitReviewsForm);
+router.post("/reviews", submitReviewsForm);
 
 module.exports = router;

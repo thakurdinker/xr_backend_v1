@@ -29,6 +29,7 @@ const ProjectOfTheMonthSchema = new mongoose.Schema(
       },
     ],
     images: [String],
+    learnMore: String,
   },
   { timestamps: true }
 );

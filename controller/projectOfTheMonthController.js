@@ -5,8 +5,15 @@ const Project = require("../models/ProjectOfTheMonthModel"); // Assuming you hav
 // Controller to create or update the project of the month
 exports.saveProjectOfTheMonth = async (req, res) => {
   try {
-    const { videoUrl, images, projectName, description, amenities, headings } =
-      req.body;
+    const {
+      videoUrl,
+      images,
+      projectName,
+      description,
+      amenities,
+      headings,
+      learnMore,
+    } = req.body;
 
     // Check if a project of the month already exists
     let project = await Project.findOne({});
@@ -19,6 +26,7 @@ exports.saveProjectOfTheMonth = async (req, res) => {
       project.description = description;
       project.amenities = amenities;
       project.headings = headings;
+      project.learnMore = learnMore;
       await project.save();
     } else {
       // Create a new project
@@ -29,25 +37,22 @@ exports.saveProjectOfTheMonth = async (req, res) => {
         description,
         amenities,
         headings,
+        learnMore,
       });
       await project.save();
     }
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Project of the Month saved successfully",
-        project,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Project of the Month saved successfully",
+      project,
+    });
   } catch (error) {
     console.error("Error saving project of the month:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while saving the project of the month",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while saving the project of the month",
+    });
   }
 };
 
@@ -63,11 +68,9 @@ exports.getProjectOfTheMonth = async (req, res) => {
     res.status(200).json({ success: true, project });
   } catch (error) {
     console.error("Error fetching project of the month:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while fetching the project of the month",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the project of the month",
+    });
   }
 };

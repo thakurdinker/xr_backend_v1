@@ -53,6 +53,7 @@ router.route("/").get(
       const slideShowData = newly_launched_properties.map((property) => {
         return {
           backgroundUrl: property?.images[0]?.url,
+          community_name: property?.community_name,
           property_name: property?.property_name,
           slogan: property?.section_1?.heading,
           learnMore: property?.property_name_slug

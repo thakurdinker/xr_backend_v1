@@ -42,13 +42,32 @@ router.route("/").get(
       //   )
       //   .exec();
 
+      // Find slide_show (Newly Launched) properties
+      const newly_launched_properties = await Property.find({
+        developer_name_slug: developerNameSlug,
+        show_property: true,
+        show_slideShow: true,
+      });
+
+      // Construct data for the slideshow
+      const slideShowData = newly_launched_properties.map((property) => {
+        return {
+          backgroundUrl: property?.images[0]?.url,
+          property_name: property?.property_name,
+          slogan: property?.section_1?.heading,
+          learnMore: property?.property_name_slug
+            ? `/property/${property?.property_name_slug}`
+            : `/label/${developerNameSlug}/`,
+        };
+      });
+
       const developerCommunities = await Community.find({
         developer_name_slug: developerNameSlug,
         // show_property: true,
       })
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .exec();
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .exec();
 
       // Get the count of properties for paginationclear
 
@@ -60,10 +79,11 @@ router.route("/").get(
         success: true,
         aboutDeveloper: developer, // Developer information
         // developerProperties,
+        slideShowData,
         developerCommunities,
         message: "DONE",
         totalPages: Math.ceil(count / limit),
-        currentPage:  Number(page),
+        currentPage: Number(page),
       });
     } catch (error) {
       console.error(error);

@@ -56,6 +56,10 @@ const newPropertySchema = new Schema(
     },
     show_property: Boolean, // true or false
     featured: Boolean, // true or false
+    show_slideShow: {
+      type: Boolean,
+      default: false,
+    },
     section_1: {
       _id: false,
       heading: String,
@@ -126,98 +130,98 @@ function modifyCloudinaryUrl(url) {
 }
 
 // Add a post hook to modify image URLs in various fields
-newPropertySchema.post("find", function (docs) {
-  docs.forEach((doc) => {
-    // Modify URLs in the `images` array
-    if (doc.images && doc.images.length > 0) {
-      doc.images.forEach((image) => {
-        image.url = modifyCloudinaryUrl(image.url);
-      });
-    }
+// newPropertySchema.post("find", function (docs) {
+//   docs.forEach((doc) => {
+//     // Modify URLs in the `images` array
+//     if (doc.images && doc.images.length > 0) {
+//       doc.images.forEach((image) => {
+//         image.url = modifyCloudinaryUrl(image.url);
+//       });
+//     }
 
-    // Modify URLs in the `gallery1` array
-    if (doc.gallery1 && doc.gallery1.length > 0) {
-      doc.gallery1 = doc.gallery1.map((imageUrl) =>
-        modifyCloudinaryUrl(imageUrl)
-      );
-    }
+//     // Modify URLs in the `gallery1` array
+//     if (doc.gallery1 && doc.gallery1.length > 0) {
+//       doc.gallery1 = doc.gallery1.map((imageUrl) =>
+//         modifyCloudinaryUrl(imageUrl)
+//       );
+//     }
 
-    // Modify URLs in the `gallery2` array
-    if (doc.gallery2 && doc.gallery2.length > 0) {
-      doc.gallery2 = doc.gallery2.map((imageUrl) =>
-        modifyCloudinaryUrl(imageUrl)
-      );
-    }
+//     // Modify URLs in the `gallery2` array
+//     if (doc.gallery2 && doc.gallery2.length > 0) {
+//       doc.gallery2 = doc.gallery2.map((imageUrl) =>
+//         modifyCloudinaryUrl(imageUrl)
+//       );
+//     }
 
-    // Modify URL in `section_1.image`
-    if (doc.section_1 && doc.section_1.image) {
-      doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
-    }
+//     // Modify URL in `section_1.image`
+//     if (doc.section_1 && doc.section_1.image) {
+//       doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
+//     }
 
-    // Modify URL in `schema_org.properties.image` if it exists
-    if (
-      doc.schema_org &&
-      doc.schema_org.properties &&
-      doc.schema_org.properties.image
-    ) {
-      doc.schema_org.properties.image = modifyCloudinaryUrl(
-        doc.schema_org.properties.image
-      );
-    }
+//     // Modify URL in `schema_org.properties.image` if it exists
+//     if (
+//       doc.schema_org &&
+//       doc.schema_org.properties &&
+//       doc.schema_org.properties.image
+//     ) {
+//       doc.schema_org.properties.image = modifyCloudinaryUrl(
+//         doc.schema_org.properties.image
+//       );
+//     }
 
-    // Modify URL in `open_graph.image` if it exists
-    if (doc.open_graph && doc.open_graph.image) {
-      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
-    }
-  });
-});
+//     // Modify URL in `open_graph.image` if it exists
+//     if (doc.open_graph && doc.open_graph.image) {
+//       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+//     }
+//   });
+// });
 
 // Add a post hook to modify image URLs for a single document
-newPropertySchema.post("findOne", function (doc) {
-  if (doc) {
-    // Modify URLs in the `images` array
-    if (doc.images && doc.images.length > 0) {
-      doc.images.forEach((image) => {
-        image.url = modifyCloudinaryUrl(image.url);
-      });
-    }
+// newPropertySchema.post("findOne", function (doc) {
+//   if (doc) {
+//     // Modify URLs in the `images` array
+//     if (doc.images && doc.images.length > 0) {
+//       doc.images.forEach((image) => {
+//         image.url = modifyCloudinaryUrl(image.url);
+//       });
+//     }
 
-    // Modify URLs in the `gallery1` array
-    if (doc.gallery1 && doc.gallery1.length > 0) {
-      doc.gallery1 = doc.gallery1.map((imageUrl) =>
-        modifyCloudinaryUrl(imageUrl)
-      );
-    }
+//     // Modify URLs in the `gallery1` array
+//     if (doc.gallery1 && doc.gallery1.length > 0) {
+//       doc.gallery1 = doc.gallery1.map((imageUrl) =>
+//         modifyCloudinaryUrl(imageUrl)
+//       );
+//     }
 
-    // Modify URLs in the `gallery2` array
-    if (doc.gallery2 && doc.gallery2.length > 0) {
-      doc.gallery2 = doc.gallery2.map((imageUrl) =>
-        modifyCloudinaryUrl(imageUrl)
-      );
-    }
+//     // Modify URLs in the `gallery2` array
+//     if (doc.gallery2 && doc.gallery2.length > 0) {
+//       doc.gallery2 = doc.gallery2.map((imageUrl) =>
+//         modifyCloudinaryUrl(imageUrl)
+//       );
+//     }
 
-    // Modify URL in `section_1.image`
-    if (doc.section_1 && doc.section_1.image) {
-      doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
-    }
+//     // Modify URL in `section_1.image`
+//     if (doc.section_1 && doc.section_1.image) {
+//       doc.section_1.image = modifyCloudinaryUrl(doc.section_1.image);
+//     }
 
-    // Modify URL in `schema_org.properties.image` if it exists
-    if (
-      doc.schema_org &&
-      doc.schema_org.properties &&
-      doc.schema_org.properties.image
-    ) {
-      doc.schema_org.properties.image = modifyCloudinaryUrl(
-        doc.schema_org.properties.image
-      );
-    }
+//     // Modify URL in `schema_org.properties.image` if it exists
+//     if (
+//       doc.schema_org &&
+//       doc.schema_org.properties &&
+//       doc.schema_org.properties.image
+//     ) {
+//       doc.schema_org.properties.image = modifyCloudinaryUrl(
+//         doc.schema_org.properties.image
+//       );
+//     }
 
-    // Modify URL in `open_graph.image` if it exists
-    if (doc.open_graph && doc.open_graph.image) {
-      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
-    }
-  }
-});
+//     // Modify URL in `open_graph.image` if it exists
+//     if (doc.open_graph && doc.open_graph.image) {
+//       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+//     }
+//   }
+// });
 
 const Property = mongoose.model("Property", newPropertySchema);
 

@@ -78,61 +78,61 @@ function modifyCloudinaryUrl(url) {
   return url;
 }
 
-// Add a post hook to modify image URLs in various fields
-communitySchema.post("find", function (docs) {
-  docs.forEach((doc) => {
-    // Modify URLs in the `images` array
-    if (doc.images && doc.images.length > 0) {
-      doc.images.forEach((image) => {
-        image.url = modifyCloudinaryUrl(image.url);
-      });
-    }
+// // Add a post hook to modify image URLs in various fields
+// communitySchema.post("find", function (docs) {
+//   docs.forEach((doc) => {
+//     // Modify URLs in the `images` array
+//     if (doc.images && doc.images.length > 0) {
+//       doc.images.forEach((image) => {
+//         image.url = modifyCloudinaryUrl(image.url);
+//       });
+//     }
 
-    // Modify URL in `schema_org.properties.image` if it exists
-    if (
-      doc.schema_org &&
-      doc.schema_org.properties &&
-      doc.schema_org.properties.image
-    ) {
-      doc.schema_org.properties.image = modifyCloudinaryUrl(
-        doc.schema_org.properties.image
-      );
-    }
+//     // Modify URL in `schema_org.properties.image` if it exists
+//     if (
+//       doc.schema_org &&
+//       doc.schema_org.properties &&
+//       doc.schema_org.properties.image
+//     ) {
+//       doc.schema_org.properties.image = modifyCloudinaryUrl(
+//         doc.schema_org.properties.image
+//       );
+//     }
 
-    // Modify URL in `open_graph.image` if it exists
-    if (doc.open_graph && doc.open_graph.image) {
-      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
-    }
-  });
-});
+//     // Modify URL in `open_graph.image` if it exists
+//     if (doc.open_graph && doc.open_graph.image) {
+//       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+//     }
+//   });
+// });
 
-// Add a post hook to modify image URLs for a single document
-communitySchema.post("findOne", function (doc) {
-  if (doc) {
-    // Modify URLs in the `images` array
-    if (doc.images && doc.images.length > 0) {
-      doc.images.forEach((image) => {
-        image.url = modifyCloudinaryUrl(image.url);
-      });
-    }
+// // Add a post hook to modify image URLs for a single document
+// communitySchema.post("findOne", function (doc) {
+//   if (doc) {
+//     // Modify URLs in the `images` array
+//     if (doc.images && doc.images.length > 0) {
+//       doc.images.forEach((image) => {
+//         image.url = modifyCloudinaryUrl(image.url);
+//       });
+//     }
 
-    // Modify URL in `schema_org.properties.image` if it exists
-    if (
-      doc.schema_org &&
-      doc.schema_org.properties &&
-      doc.schema_org.properties.image
-    ) {
-      doc.schema_org.properties.image = modifyCloudinaryUrl(
-        doc.schema_org.properties.image
-      );
-    }
+//     // Modify URL in `schema_org.properties.image` if it exists
+//     if (
+//       doc.schema_org &&
+//       doc.schema_org.properties &&
+//       doc.schema_org.properties.image
+//     ) {
+//       doc.schema_org.properties.image = modifyCloudinaryUrl(
+//         doc.schema_org.properties.image
+//       );
+//     }
 
-    // Modify URL in `open_graph.image` if it exists
-    if (doc.open_graph && doc.open_graph.image) {
-      doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
-    }
-  }
-});
+//     // Modify URL in `open_graph.image` if it exists
+//     if (doc.open_graph && doc.open_graph.image) {
+//       doc.open_graph.image = modifyCloudinaryUrl(doc.open_graph.image);
+//     }
+//   }
+// });
 
 const Community = mongoose.model("Community", communitySchema);
 

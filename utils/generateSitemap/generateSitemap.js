@@ -28,6 +28,8 @@ const generateSitemap = async () => {
   //     console.log("Database connected");
   //   });
 
+  const isoDateNow = new Date().toISOString();
+
   const developers = await Developer.find({});
 
   const communities = await Community.find({});
@@ -39,30 +41,56 @@ const generateSitemap = async () => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
     <loc>https://www.xrealty.ae/</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>1</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/privacy-policy</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.8</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/contact-us-dubai-real-estate-agency</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/about-us</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/meet-the-xr</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/real-estate-news</loc>
+      <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/dubai-properties</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/communities</loc>
+    <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
 </url>
 <url>
     <loc>https://www.xrealty.ae/customer-reviews</loc>
+    <changefreq>daily</changefreq>
+		<priority>0.9</priority>
 </url>
 
 ${
@@ -75,6 +103,8 @@ ${
           <url>
               <loc>${`https://www.xrealty.ae/label/${developerSlug}`}</loc>
               <lastmod>${new Date(developer.updatedAt).toISOString()}</lastmod>
+              <changefreq>daily</changefreq>
+		          <priority>0.9</priority>
           </url>
           `;
     })
@@ -93,6 +123,8 @@ ${
                 <lastmod>${new Date(
                   community.updatedAt
                 ).toISOString()}</lastmod>
+                <changefreq>daily</changefreq>
+		            <priority>0.9</priority>
             </url>
             `;
     })
@@ -111,6 +143,8 @@ ${
                   <lastmod>${new Date(
                     property.updatedAt
                   ).toISOString()}</lastmod>
+                  <changefreq>daily</changefreq>
+		              <priority>0.9</priority>
               </url>
               `;
     })
@@ -129,6 +163,8 @@ ${
                     <lastmod>${new Date(
                       newsAndArticle.updatedAt
                     ).toISOString()}</lastmod>
+                    <changefreq>daily</changefreq>
+		                <priority>0.9</priority>
                 </url>
                 `;
     })
@@ -147,6 +183,8 @@ ${
                       <lastmod>${new Date(
                         agent.updatedAt
                       ).toISOString()}</lastmod>
+                      <changefreq>weekly</changefreq>
+		                  <priority>0.8</priority>
                   </url>
                   `;
     })

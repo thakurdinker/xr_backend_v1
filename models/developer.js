@@ -20,6 +20,8 @@ const newDeveloperSchema = new Schema(
       type: String,
     },
     heading: { type: String },
+    meta_title: { type: String },
+    meta_description: { type: String },
     order: Number,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

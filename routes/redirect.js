@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 });
 
 // Create a new redirect rule
-router.post("/", async (req, res) => {
+router.post("/", isLoggedIn, isAdmin, async (req, res) => {
   const { from, to } = req.body;
 
   // Validate input

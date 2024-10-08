@@ -64,12 +64,6 @@
 
 // module.exports = router;
 
-
-
-
-
-
-
 // const express = require("express");
 // const catchAsync = require("../utils/seedDB/catchAsync");
 // const Content = require("../models/content");
@@ -133,11 +127,11 @@
 
 //   try {
 //     const content = await Content.findOne({ slug: contentSlug, status: "published" });
-    
+
 //     if (!content) {
 //       return res.status(200).json({ success: false, message: "No article found" });
 //     }
-    
+
 //     return res.status(200).json({ success: true, content, message: "DONE" });
 //   } catch (error) {
 //     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -150,19 +144,12 @@
 
 // module.exports = router;
 
-
-
-
-
-
-
-
-
 const express = require("express");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const Content = require("../models/content");
 const fs = require("fs");
 const path = require("path");
+const Redirect = require("../models/redirect");
 
 const router = express.Router({ mergeParams: true });
 
@@ -223,13 +210,56 @@ router.route("/real-estate-news").get(
 );
 
 // Read a single news article by slug
+// router.route("/:contentSlug").get(
+//   catchAsync(async (req, res) => {
+//     const { contentSlug } = req.params;
+//     const content = await Content.find({
+//       slug: contentSlug,
+//       status: "published",
+//     });
+
+//     return res.status(200).json({ success: true, content, message: "DONE" });
+//   })
+// );
+
+// Read a single news article by slug
 router.route("/:contentSlug").get(
   catchAsync(async (req, res) => {
     const { contentSlug } = req.params;
-    const content = await Content.find({
+    let content = [];
+    content = await Content.find({
       slug: contentSlug,
       status: "published",
     });
+
+    if (content.length === 0) {
+      // This is an extra check for fetching slug from redirect url, if found, for any content slug
+      // Search for the slug in the redirect url,
+      const redirects = await Redirect.find({
+        to: { $regex: contentSlug, $options: "i" }, // 'i' makes it case-insensitive
+      });
+
+      // console.log(redirects);
+
+      if (redirects.length > 0) {
+        // Handle the matching redirects
+        // console.log("Redirects found: ", redirects);
+        content = await Content.find({
+          slug: redirects[0].from.split("/")[1],
+          status: "published",
+        });
+
+        if (content) {
+          return res
+            .status(200)
+            .json({ success: true, content, message: "DONE" });
+        }
+
+        return res
+          .status(200)
+          .json({ success: true, content, message: "DONE" });
+      }
+    }
 
     return res.status(200).json({ success: true, content, message: "DONE" });
   })

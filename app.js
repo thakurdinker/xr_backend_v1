@@ -41,6 +41,7 @@ const submitForm = require("./routes/submitForm");
 const reviewsForm = require("./routes/reviewsForm");
 const reviewsRouter = require("./routes/reviewsRouter");
 const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
+const redirectRouter = require("./routes/redirect");
 
 const User = require("./models/user");
 
@@ -126,6 +127,7 @@ app.use("/admin", developerRouter);
 app.use("/admin", sitemapRouter);
 app.use("/admin", reviewsRouter);
 app.use("/admin", projectOfTheMonthRouter);
+app.use("/admin/redirect-rules", redirectRouter);
 
 // Public Routes
 app.use("/", homePageDataRouter);

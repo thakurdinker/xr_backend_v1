@@ -92,6 +92,7 @@ const newPropertySchema = new Schema(
       _id: false,
       meta_title: { type: String },
       meta_description: { type: String },
+      meta_canonical_url: { type: String },
       keywords: [{ type: String }],
     },
     schema_org: {

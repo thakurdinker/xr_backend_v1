@@ -17,13 +17,13 @@ router.get("/", async (req, res) => {
 
 // Create a new redirect rule
 router.post("/", isLoggedIn, isAdmin, async (req, res) => {
-  const { from, to } = req.body;
+  const { from, to, type } = req.body;
 
   // Validate input
-  if (!from || !to) {
+  if (!from || !to || !type) {
     return res
       .status(400)
-      .json({ message: "Both from and to fields are required." });
+      .json({ message: "From, To, and Type fields are required." });
   }
 
   try {
@@ -35,7 +35,7 @@ router.post("/", isLoggedIn, isAdmin, async (req, res) => {
         .json({ message: "Redirect from this path already exists." });
     }
 
-    const newRedirect = new Redirect({ from, to });
+    const newRedirect = new Redirect({ from, to, type });
     await newRedirect.save();
     res.status(201).json(newRedirect);
   } catch (error) {
@@ -46,20 +46,20 @@ router.post("/", isLoggedIn, isAdmin, async (req, res) => {
 
 // Update an existing redirect rule
 router.put("/:id", isLoggedIn, isAdmin, async (req, res) => {
-  const { from, to } = req.body;
+  const { from, to, type } = req.body;
   const { id } = req.params;
 
   // Validate input
-  if (!from || !to) {
+  if (!from || !to || !type) {
     return res
       .status(400)
-      .json({ message: "Both from and to fields are required." });
+      .json({ message: "From, To, and Type fields are required." });
   }
 
   try {
     const updatedRedirect = await Redirect.findByIdAndUpdate(
       id,
-      { from, to },
+      { from, to, type },
       { new: true, runValidators: true }
     );
 

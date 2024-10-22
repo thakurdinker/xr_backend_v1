@@ -59,7 +59,6 @@ module.exports.resetPassRequestMiddleWare = catchAsync(
 );
 
 module.exports.resetPasswordMiddleware = catchAsync(async (req, res, next) => {
-
   const { errors } = resetPasswordValidation.validate(req.body);
   if (errors) {
     return res.status(422).json({ errors: errors });

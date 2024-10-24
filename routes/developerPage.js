@@ -47,7 +47,7 @@ router.route("/").get(
         developer_name_slug: developerNameSlug,
         show_property: true,
         show_slideShow: true,
-      });
+      }).sort("-createdAt");
 
       // Construct data for the slideshow
       const slideShowData = newly_launched_properties.map((property) => {

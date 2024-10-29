@@ -1,5 +1,6 @@
 const ProjectOfTheMonthModel = require("../models/ProjectOfTheMonthModel");
 const Agent = require("../models/agent");
+const Community = require("../models/community");
 const Content = require("../models/content");
 const HomePageVideos = require("../models/homepageVideo");
 const Property = require("../models/properties");
@@ -21,6 +22,22 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
       "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
     )
     .sort({ order: 1 });
+
+  // Xplore Dubai With XR
+  let propertyTypes = null;
+  propertyTypes = await Property.find({
+    show_property: true,
+  })
+    .select(
+      "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
+    )
+    .sort({ order: 1 })
+    .limit(30);
+
+  // Communities
+  const communities = await Community.find({})
+    .select("_id name slug images")
+    .sort("-createdAt");
 
   //   Xperience Stars
   const agent = shuffle(
@@ -44,6 +61,8 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     success: true,
     homePageVideos,
     properties,
+    propertyTypes,
+    communities,
     content,
     agent,
     projectOfTheMonth,

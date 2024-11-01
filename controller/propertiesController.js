@@ -7,6 +7,8 @@ const {
 const catchAsync = require("../utils/seedDB/catchAsync");
 const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
+const fs = require("fs");
+const path = require("path");
 
 // Create a new property
 // module.exports.createProperty = catchAsync(async (req, res) => {
@@ -85,13 +87,41 @@ module.exports.getAllProperties = catchAsync(async (req, res) => {
   }
 });
 
-
 // Read all properties with pagination - For Public Route
 module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
-
   const { page = 1, limit = 10, sortOrder = 1 } = req.query;
+
+  let query = { show_property: true };
+  let pageHeading = "";
+
+  if (req.params.slug) {
+    // Find the property type name from the slug
+
+    let data = null;
+    let foundTypeName = null;
+
+    try {
+      const filePath = path.join(__dirname, "../configs/property-types.json");
+      data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
+      data = JSON.parse(data);
+
+      data.map((item) => {
+        if (item.page_slug === req.params.slug) {
+          foundTypeName = item.name_slug;
+          pageHeading = item.page_heading;
+        }
+      });
+
+      if (foundTypeName !== null) {
+        query = { show_property: true, "type.name": foundTypeName };
+      }
+    } catch (e) {
+      console.log(e.message);
+    }
+  }
+
   try {
-    const properties = await Property.find({ show_property: true })
+    const properties = await Property.find(query)
       .sort({ order: sortOrder })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -100,10 +130,11 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
       )
       .exec();
 
-    const count = await Property.countDocuments({ show_property: true });
+    const count = await Property.countDocuments(query);
     return res.status(200).json({
       success: true,
       properties,
+      pageHeading,
       message: "DONE",
       totalPages: Math.ceil(count / limit),
       currentPage: Number(page),
@@ -268,11 +299,12 @@ module.exports.getById = catchAsync(async (req, res) => {
 //   }
 // });
 
-
 // Helper function to reorder properties starting from the end
 async function shiftPropertyOrderFromEnd(newOrder) {
   // Find all properties that have an order greater than or equal to newOrder, sorted by descending order
-  const propertiesToShift = await Property.find({ order: { $gte: newOrder } }).sort({ order: -1 });
+  const propertiesToShift = await Property.find({
+    order: { $gte: newOrder },
+  }).sort({ order: -1 });
 
   // Loop through the properties in reverse order and increment their order
   for (const property of propertiesToShift) {
@@ -298,7 +330,9 @@ module.exports.createProperty = catchAsync(async (req, res) => {
     const property = new Property(req.body);
     await property.save();
 
-    return res.status(200).json({ success: true, isCreated: true, message: "DONE" });
+    return res
+      .status(200)
+      .json({ success: true, isCreated: true, message: "DONE" });
   } catch (error) {
     return res.status(200).json({
       success: false,
@@ -344,17 +378,22 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
     });
 
     await property.save();
-    res.status(200).json({ success: true, isUpdated: true, property, message: "DONE" });
+    res
+      .status(200)
+      .json({ success: true, isUpdated: true, property, message: "DONE" });
   } catch (error) {
-    res.status(200).json({ success: false, isUpdated: false, message: error.message });
+    res
+      .status(200)
+      .json({ success: false, isUpdated: false, message: error.message });
   }
 });
-
 
 // Helper function to shift properties' order starting from a specific order
 async function shiftPropertyOrderAfterDelete(orderToDelete) {
   // Find all properties that have an order greater than the order to delete, sorted by ascending order
-  const propertiesToShift = await Property.find({ order: { $gt: orderToDelete } }).sort({ order: 1 });
+  const propertiesToShift = await Property.find({
+    order: { $gt: orderToDelete },
+  }).sort({ order: 1 });
 
   // Loop through the properties and decrement their order
   for (const property of propertiesToShift) {

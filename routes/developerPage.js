@@ -68,6 +68,7 @@ router.route("/").get(
       })
         .limit(limit)
         .skip((page - 1) * limit)
+        .select("_id order name slug images")
         .exec();
 
       // Get the count of properties for paginationclear

@@ -8,4 +8,6 @@ const router = express.Router({ mergeParams: true });
 
 router.route("/").get(propertiesController.getAllPublicProperties);
 
+router.route("/:slug").get(propertiesController.getAllPublicProperties);
+
 module.exports = router;

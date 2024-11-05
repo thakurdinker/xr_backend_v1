@@ -7,6 +7,13 @@ const Property = require("../models/properties");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const shuffle = require("../utils/shuffleArray");
 
+const featuredCommunities = [
+  "66a3779b688ec57316721322",
+  "66a37a67688ec57316721382",
+  "66a397243840185880028c36",
+  "66a396193840185880028c17",
+];
+
 module.exports.getHomePage = catchAsync(async (req, res) => {
   // Fetch the HomePage Video
   const homePageVideos = await HomePageVideos.findOne()
@@ -34,10 +41,23 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     .sort({ order: 1 })
     .limit(30);
 
+  // Featured Communities
+  const communities_featured = await Community.find({
+    _id: { $in: featuredCommunities },
+  })
+    .select("_id name slug images")
+    .sort("order");
+
   // Communities
-  const communities = await Community.find({})
+  const communities = await Community.find({
+    _id: { $nin: featuredCommunities },
+  })
     .select("_id name slug images")
     .sort("-createdAt");
+
+  // Merge both the featured and normal communities
+
+  let mergedCommunities = [...communities_featured, ...communities];
 
   //   Xperience Stars
   const agent = shuffle(
@@ -62,7 +82,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     homePageVideos,
     properties,
     propertyTypes,
-    communities,
+    communities: mergedCommunities,
     content,
     agent,
     projectOfTheMonth,

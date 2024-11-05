@@ -7,6 +7,7 @@ const submitFormValidation = Joi.object({
   phone: Joi.string().optional(),
   message: Joi.string().optional(),
   pageUrl: Joi.string().optional(),
+  ipAddress: Joi.string().optional(),
 });
 
 module.exports = {

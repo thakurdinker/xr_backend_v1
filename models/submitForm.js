@@ -32,6 +32,10 @@ const contactSchema = new mongoose.Schema(
       type: String,
       default: "https://www.xrealty.ae",
     },
+    ipAddress: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

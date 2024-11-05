@@ -42,6 +42,10 @@ const sendLeadSubmitEmail = (content) => {
                     <td><strong>Page Url:</strong></td>
                     <td>${content?.pageUrl}</td>
                 </tr>
+                <tr>
+                    <td><strong>Ip Address:</strong></td>
+                    <td>${content?.ipAddress}</td>
+                </tr>
             </table>
   `;
 

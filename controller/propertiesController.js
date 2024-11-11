@@ -94,21 +94,23 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
   let query = { show_property: true };
   let pageHeading = "";
 
-  if (req.params.slug) {
-    // Find the property type name from the slug
+  let data = null;
+  let foundTypeName = null;
+  let pageDescription = "";
 
-    let data = null;
-    let foundTypeName = null;
+  if (req.params?.slug?.trim() !== "") {
+    // Find the property type name from the slug
 
     try {
       const filePath = path.join(__dirname, "../configs/property-types.json");
       data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
       data = JSON.parse(data);
 
-      data.map((item) => {
+      data.map((item, index) => {
         if (item.page_slug === req.params.slug) {
           foundTypeName = item.name_slug;
           pageHeading = item.page_heading;
+          pageDescription = item.page_description;
         }
       });
 
@@ -118,6 +120,9 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
     } catch (e) {
       console.log(e.message);
     }
+  } else {
+    pageDescription = "";
+    pageHeading = "";
   }
 
   try {
@@ -135,6 +140,7 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
       success: true,
       properties,
       pageHeading,
+      pageDescription,
       message: "DONE",
       totalPages: Math.ceil(count / limit),
       currentPage: Number(page),

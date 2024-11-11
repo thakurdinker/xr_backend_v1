@@ -20,7 +20,7 @@ mongoose
 
 // Load the Excel file
 const workbook = xlsx.readFile(
-  path.resolve(__dirname, "../seedDB/Canoical Tag.txt.xlsx")
+  path.resolve(__dirname, "../seedDB/Canonical Tags-2.xlsx")
 ); // Replace with your file path
 const sheetName = workbook.SheetNames[0]; // Get the first sheet
 const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]); // Convert sheet to JSON array

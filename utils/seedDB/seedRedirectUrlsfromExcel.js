@@ -20,26 +20,26 @@ mongoose
 
 // Load the Excel file
 const workbook = xlsx.readFile(
-  path.resolve(__dirname, "../seedDB/Canonical Tags-2.xlsx")
+  path.resolve(__dirname, "../seedDB/agent_redirect.xlsx")
 ); // Replace with your file path
 const sheetName = workbook.SheetNames[0]; // Get the first sheet
 const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]); // Convert sheet to JSON array
 
 // Function to remove 'https://www.xrealty.ae' from a string
-const cleanURL = (url) => url.replace("https://www.xrealty.ae", "").trim();
+// const cleanURL = (url) => url.replace("https://www.xrealty.ae", "").trim();
 
 // Seed function
 const seedRedirects = async () => {
   try {
     // Map over sheetData to create redirect objects
     const redirects = sheetData.map((row) => ({
-      from: cleanURL(row.from),
-      to: cleanURL(row.to),
+      from: row.from,
+      to: row.to,
       type: "301",
     }));
 
     // Insert data into MongoDB
-    await Redirect.insertMany(redirects);
+    await Redirect.insertMany(redirects, { ordered: false });
     console.log("Redirects seeded successfully!");
 
     // Close the MongoDB connection

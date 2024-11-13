@@ -7,7 +7,7 @@ const leadSumitEmailReceivers = [
   "dinker.s@xrealty.ae",
   "naresh.k@xrealty.ae",
   "suman@xrealty.ae",
-  "ujwal.r@xrealty.ae",
+  "bhanu.k@xrealty.ae",
 ];
 
 const postmark = require("postmark");

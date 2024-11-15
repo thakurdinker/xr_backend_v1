@@ -19,7 +19,7 @@ router.route("/").get(
         developer_slug: developerNameSlug,
       })
         .select(
-          "logo_img_url developer_name developer_slug description heading meta_title meta_description"
+          "logo_img_url developer_name developer_slug description heading meta_title meta_description predefinedCommunitiesOrder"
         )
         .exec();
 
@@ -62,14 +62,59 @@ router.route("/").get(
         };
       });
 
+      // const developerCommunities = await Community.find({
+      //   developer_name_slug: developerNameSlug,
+      //   // show_property: true,
+      // })
+      //   .limit(limit)
+      //   .skip((page - 1) * limit)
+      //   .select("_id order name slug images")
+      //   .exec();
+
       const developerCommunities = await Community.find({
         developer_name_slug: developerNameSlug,
         // show_property: true,
       })
-        .limit(limit)
-        .skip((page - 1) * limit)
         .select("_id order name slug images")
         .exec();
+
+      // // Normalize the order array for comparison
+      // const normalizedOrder = developer?.predefinedCommunitiesOrder?.map(
+      //   (name) => name.toLowerCase()
+      // );
+
+      // Generate regex patterns for each predefined order entry
+
+      // Generate regex patterns
+      const regexPatterns = developer?.predefinedCommunitiesOrder?.map(
+        (name) => {
+          const pattern = name
+            .toLowerCase()
+            .replace(/&/g, "(and|&)") // Match both 'and' and '&'
+            .replace(/\s+/g, "\\s*"); // Allow flexible spaces
+          return new RegExp(pattern, "i"); // Create case-insensitive regex
+        }
+      );
+
+      // Sort communities based on predefined order
+      const sortedCommunities = developerCommunities.sort((a, b) => {
+        const indexA = regexPatterns.findIndex((regex) => regex.test(a.name));
+        const indexB = regexPatterns.findIndex((regex) => regex.test(b.name));
+
+        // If the name is not found in predefinedOrder, move it to the end
+        const adjustedIndexA = indexA === -1 ? regexPatterns.length : indexA;
+        const adjustedIndexB = indexB === -1 ? regexPatterns.length : indexB;
+
+        return adjustedIndexA - adjustedIndexB;
+      });
+
+      // console.log(sortedCommunities);
+
+      // Apply pagination to the sorted result
+      const paginatedCommunities = sortedCommunities.slice(
+        (page - 1) * limit,
+        page * limit
+      );
 
       // Get the count of properties for paginationclear
 
@@ -82,7 +127,7 @@ router.route("/").get(
         aboutDeveloper: developer, // Developer information
         // developerProperties,
         slideShowData,
-        developerCommunities,
+        developerCommunities: paginatedCommunities,
         message: "DONE",
         totalPages: Math.ceil(count / limit),
         currentPage: Number(page),

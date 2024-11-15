@@ -131,6 +131,7 @@ module.exports.updateAgent = catchAsync(async (req, res) => {
         message: "No agent Found",
       });
     }
+
     Object.keys(req.body).forEach((update) => {
       if (
         typeof req.body[update] === "object" &&
@@ -148,6 +149,7 @@ module.exports.updateAgent = catchAsync(async (req, res) => {
       .status(200)
       .json({ success: true, isUpdated: true, agent, message: "DONE" });
   } catch (error) {
+    console.log(error);
     return res.status(200).json({ success: false, message: error });
   }
 });

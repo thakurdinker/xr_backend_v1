@@ -23,6 +23,7 @@ const newDeveloperSchema = new Schema(
     meta_title: { type: String },
     meta_description: { type: String },
     order: Number,
+    predefinedCommunitiesOrder: [String],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

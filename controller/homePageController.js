@@ -68,9 +68,9 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
 
   //News and Insights
   const content = await Content.find({ status: "published" })
-    .sort("-createdAt")
-    .select("_id title slug images featured_image createdAt")
-    .limit(3);
+    .sort({ publish_date: -1 })
+    .select("_id title slug publish_date category featured_image")
+    .limit(6);
 
   // Project of the Month
   const projectOfTheMonth = await ProjectOfTheMonthModel.findOne().populate({

@@ -23,6 +23,10 @@ const newPropertySchema = new Schema(
         lng: String,
       },
     },
+    payment_plan: {
+      type: String,
+      default: "",
+    },
     features: {
       _id: false,
       // bedrooms: String,

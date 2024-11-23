@@ -10,6 +10,7 @@ const Property = require("../../models/properties");
 const Content = require("../../models/content");
 const Agent = require("../../models/agent");
 const Review = require("../../models/reviewsForm");
+const Redirect = require("../../models/redirect");
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
 const DB_URL =
@@ -34,6 +35,11 @@ const generateSitemap = async () => {
   // 		<changefreq>daily</changefreq>
   // 		<priority>0.9</priority>
   // </url>
+
+  let blogsModifiedCount = 0;
+  let realEstateNewsModifiedCount = 0;
+
+  const redirects = await Redirect.find({});
 
   const isoDateNow = new Date().toISOString();
 
@@ -212,9 +218,22 @@ ${
   realEstateNews
     .map((newsAndArticle) => {
       let newsArticleSlug = encodeURIComponent(newsAndArticle.slug);
+      let path = "";
+
+      for (let i = 0; i < redirects.length; i++) {
+        if (redirects[i].from === `/${newsAndArticle.slug}`) {
+          let temp = encodeURIComponent(redirects[i].to.split("/")[2]);
+          // path = redirects[i].to;
+          path = `/real-estate-news/${temp}/`;
+          realEstateNewsModifiedCount++;
+          break;
+        } else {
+          path = `/${encodeURIComponent(newsAndArticle.slug)}/`;
+        }
+      }
       return `
                 <url>
-                    <loc>${`https://www.xrealty.ae/real-estate-news/${newsArticleSlug}/`}</loc>
+                    <loc>${`https://www.xrealty.ae${path}`}</loc>
                     <lastmod>${new Date(
                       newsAndArticle.updatedAt
                     ).toISOString()}</lastmod>
@@ -227,14 +246,28 @@ ${
 }
 
 ${
-  //   Real Estate News sitemap
+  //   Blogs sitemap
   blogs.length > 0 &&
   blogs
     .map((newsAndArticle) => {
       let blogSlug = encodeURIComponent(newsAndArticle.slug);
+      let path = "";
+
+      for (let i = 0; i < redirects.length; i++) {
+        if (redirects[i].from === `/${newsAndArticle.slug}`) {
+          let temp = encodeURIComponent(redirects[i].to.split("/")[2]);
+          path = `/blogs/${temp}/`;
+          // path = encodeURIComponent(redirects[i].to);
+          blogsModifiedCount++;
+          break;
+        } else {
+          path = `/${encodeURIComponent(newsAndArticle.slug)}/`;
+        }
+      }
+
       return `
                 <url>
-                    <loc>${`https://www.xrealty.ae/blogs/${blogSlug}/`}</loc>
+                    <loc>${`https://www.xrealty.ae${path}`}</loc>
                     <lastmod>${new Date(
                       newsAndArticle.updatedAt
                     ).toISOString()}</lastmod>
@@ -278,6 +311,8 @@ ${
       }
     );
     console.log("genarated Sitemap successfully");
+    console.log("Blogs Modified: ", blogsModifiedCount);
+    console.log("Real Estate News Modified: ", realEstateNewsModifiedCount);
     return true;
   } catch (err) {
     console.log("Error generating sitemap");

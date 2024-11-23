@@ -18,15 +18,22 @@ const DB_URL =
     : process.env.DB_URL;
 
 const generateSitemap = async () => {
-  //   mongoose.connect(DB_URL);
+  mongoose.connect(DB_URL);
 
-  //   const db = mongoose.connection;
+  const db = mongoose.connection;
 
-  //   db.on("error", console.error.bind(console, "connection error: "));
+  db.on("error", console.error.bind(console, "connection error: "));
 
-  //   db.once("open", () => {
-  //     console.log("Database connected");
-  //   });
+  db.once("open", () => {
+    console.log("Database connected");
+  });
+
+  //   <url>
+  //     <loc>https://www.xrealty.ae/communities/</loc>
+  //     <lastmod>${isoDateNow}</lastmod>
+  // 		<changefreq>daily</changefreq>
+  // 		<priority>0.9</priority>
+  // </url>
 
   const isoDateNow = new Date().toISOString();
 
@@ -34,7 +41,11 @@ const generateSitemap = async () => {
 
   const communities = await Community.find({});
   const properties = await Property.find({ show_property: true });
-  const newsAndArticles = await Content.find({ status: "published" });
+  const blogs = await Content.find({ status: "published", category: "Blog" });
+  const realEstateNews = await Content.find({
+    status: "published",
+    category: "News",
+  });
   const agents = await Agent.find({ hidden: false });
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -46,49 +57,93 @@ const generateSitemap = async () => {
 		<priority>1</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/privacy-policy</loc>
+    <loc>https://www.xrealty.ae/privacy-policy/</loc>
     <lastmod>${isoDateNow}</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.8</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/contact-us-dubai-real-estate-agency</loc>
+    <loc>https://www.xrealty.ae/contact-us-dubai-real-estate-agency/</loc>
     <lastmod>${isoDateNow}</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/about-us</loc>
+    <loc>https://www.xrealty.ae/about-us/</loc>
     <lastmod>${isoDateNow}</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/meet-the-xr</loc>
+    <loc>https://www.xrealty.ae/agent/</loc>
     <lastmod>${isoDateNow}</lastmod>
 		<changefreq>daily</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/real-estate-news</loc>
+    <loc>https://www.xrealty.ae/real-estate-news/</loc>
       <lastmod>${isoDateNow}</lastmod>
 		<changefreq>daily</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/dubai-properties</loc>
+    <loc>https://www.xrealty.ae/blogs/</loc>
+      <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/</loc>
      <lastmod>${isoDateNow}</lastmod>
 		<changefreq>daily</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/communities</loc>
-    <lastmod>${isoDateNow}</lastmod>
+    <loc>https://www.xrealty.ae/dubai-properties/apartments-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
 		<changefreq>daily</changefreq>
 		<priority>0.9</priority>
 </url>
 <url>
-    <loc>https://www.xrealty.ae/customer-reviews</loc>
+    <loc>https://www.xrealty.ae/dubai-properties/townhouses-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/villas-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/penthouse-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/duplex-apartments-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/twin-villas-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+<url>
+    <loc>https://www.xrealty.ae/dubai-properties/mansions-for-sale-in-dubai/</loc>
+     <lastmod>${isoDateNow}</lastmod>
+		<changefreq>daily</changefreq>
+		<priority>0.9</priority>
+</url>
+
+<url>
+    <loc>https://www.xrealty.ae/customer-reviews/</loc>
+     <lastmod>${isoDateNow}</lastmod>
     <changefreq>daily</changefreq>
 		<priority>0.9</priority>
 </url>
@@ -101,7 +156,7 @@ ${
       let developerSlug = encodeURIComponent(developer.developer_slug);
       return `
           <url>
-              <loc>${`https://www.xrealty.ae/label/${developerSlug}`}</loc>
+              <loc>${`https://www.xrealty.ae/developer/${developerSlug}/`}</loc>
               <lastmod>${new Date(developer.updatedAt).toISOString()}</lastmod>
               <changefreq>daily</changefreq>
 		          <priority>0.9</priority>
@@ -119,7 +174,7 @@ ${
       let communitySlug = encodeURIComponent(community.slug);
       return `
             <url>
-                <loc>${`https://www.xrealty.ae/area/${communitySlug}`}</loc>
+                <loc>${`https://www.xrealty.ae/area/${communitySlug}/`}</loc>
                 <lastmod>${new Date(
                   community.updatedAt
                 ).toISOString()}</lastmod>
@@ -139,7 +194,7 @@ ${
       let propertyNameSlug = encodeURIComponent(property.property_name_slug);
       return `
               <url> 
-                  <loc>${`https://www.xrealty.ae/property/${propertyNameSlug}`}</loc>
+                  <loc>${`https://www.xrealty.ae/property/${propertyNameSlug}/`}</loc>
                   <lastmod>${new Date(
                     property.updatedAt
                   ).toISOString()}</lastmod>
@@ -152,14 +207,34 @@ ${
 }
 
 ${
-  //   News and Articles sitemap
-  newsAndArticles.length > 0 &&
-  newsAndArticles
+  //   Real Estate News sitemap
+  realEstateNews.length > 0 &&
+  realEstateNews
     .map((newsAndArticle) => {
       let newsArticleSlug = encodeURIComponent(newsAndArticle.slug);
       return `
                 <url>
-                    <loc>${`https://www.xrealty.ae/${newsArticleSlug}`}</loc>
+                    <loc>${`https://www.xrealty.ae/real-estate-news/${newsArticleSlug}/`}</loc>
+                    <lastmod>${new Date(
+                      newsAndArticle.updatedAt
+                    ).toISOString()}</lastmod>
+                    <changefreq>daily</changefreq>
+		                <priority>0.9</priority>
+                </url>
+                `;
+    })
+    .join("")
+}
+
+${
+  //   Real Estate News sitemap
+  blogs.length > 0 &&
+  blogs
+    .map((newsAndArticle) => {
+      let blogSlug = encodeURIComponent(newsAndArticle.slug);
+      return `
+                <url>
+                    <loc>${`https://www.xrealty.ae/blogs/${blogSlug}/`}</loc>
                     <lastmod>${new Date(
                       newsAndArticle.updatedAt
                     ).toISOString()}</lastmod>
@@ -179,7 +254,7 @@ ${
       let agentSlug = encodeURIComponent(agent.name_slug);
       return `
                   <url>
-                      <loc>${`https://www.xrealty.ae/agent/${agentSlug}`}</loc>
+                      <loc>${`https://www.xrealty.ae/agent/${agentSlug}/`}</loc>
                       <lastmod>${new Date(
                         agent.updatedAt
                       ).toISOString()}</lastmod>
@@ -211,6 +286,6 @@ ${
   return;
 };
 
-// generateSitemap().then(() => mongoose.connection.close());
+generateSitemap().then(() => mongoose.connection.close());
 
 module.exports = generateSitemap;

@@ -31,7 +31,7 @@ router.route("/sitemap").get(async (req, res) => {
   });
 });
 
-// Get current sitemap
+// Update current sitemap
 router.route("/sitemap").post(isLoggedIn, isAdmin, async (req, res) => {
   const { sitemap } = req.body;
 

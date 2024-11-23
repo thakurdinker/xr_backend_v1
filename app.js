@@ -90,7 +90,7 @@ db.once("open", () => {
 });
 
 app.use(cors({ origin: true, credentials: true }));
-
+app.use(mongoSanitize());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -98,7 +98,6 @@ app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(mongoSanitize());
 
 passport.use(new LocalStrategy(User.authenticate()));
 

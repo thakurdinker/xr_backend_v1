@@ -286,6 +286,6 @@ ${
   return;
 };
 
-generateSitemap().then(() => mongoose.connection.close());
+// generateSitemap().then(() => mongoose.connection.close());
 
 module.exports = generateSitemap;

@@ -282,6 +282,7 @@ router.route("/blogs").get(
 router.route("/:contentSlug").get(
   catchAsync(async (req, res) => {
     const { contentSlug } = req.params;
+    // console.log(contentSlug);
     let content = [];
     content = await Content.find({
       slug: contentSlug,

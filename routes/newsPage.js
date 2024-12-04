@@ -181,22 +181,28 @@ router.route("/real-estate-news").get(
       }
 
       // Fetch the news and blogs with pagination
+      // const newsAndBlogs = await Content.find(query)
+      //   .sort({ publish_date: sortOrder }) // Sort by publish_date
+      //   .limit(limit * 1)
+      //   .skip((page - 1) * limit)
+      //   .select("_id title slug publish_date category featured_image") // Select only the necessary fields
+      //   .exec();
+
       const newsAndBlogs = await Content.find(query)
         .sort({ publish_date: sortOrder }) // Sort by publish_date
-        .limit(limit * 1)
-        .skip((page - 1) * limit)
+
         .select("_id title slug publish_date category featured_image") // Select only the necessary fields
         .exec();
 
       // Get the total count of documents matching the query
-      const count = await Content.countDocuments(query);
+      // const count = await Content.countDocuments(query);
 
       return res.status(200).json({
         success: true,
         categories,
         newsAndBlogs,
-        totalPages: Math.ceil(count / limit),
-        currentPage: Number(page),
+        // totalPages: Math.ceil(count / limit),
+        // currentPage: Number(page),
         message: "DONE",
       });
     } catch (error) {
@@ -237,22 +243,25 @@ router.route("/blogs").get(
       }
 
       // Fetch blogs with pagination
+      // const blogs = await Content.find(query)
+      //   .sort({ publish_date: sortOrder }) // Sort by publish_date
+      //   .limit(limit * 1)
+      //   .skip((page - 1) * limit)
+      //   .select("_id title slug publish_date category featured_image") // Select only the necessary fields
+      //   .exec();
+
       const blogs = await Content.find(query)
         .sort({ publish_date: sortOrder }) // Sort by publish_date
-        .limit(limit * 1)
-        .skip((page - 1) * limit)
         .select("_id title slug publish_date category featured_image") // Select only the necessary fields
         .exec();
 
       // Get the total count of documents matching the query
-      const count = await Content.countDocuments(query);
+      // const count = await Content.countDocuments(query);
 
       return res.status(200).json({
         success: true,
         categories,
         blogs,
-        totalPages: Math.ceil(count / limit),
-        currentPage: Number(page),
         message: "DONE",
       });
     } catch (error) {

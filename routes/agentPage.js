@@ -11,11 +11,17 @@ const router = express.Router({ mergeParams: true });
 router.route("/").get(
   catchAsync(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
+    // const agents = shuffle(
+    //   await Agent.find({ hidden: false })
+    //     .limit(limit)
+    //     .skip((page - 1) * limit)
+    //     .select("_id name name_slug phone languages profile_picture")
+    // );
+
     const agents = shuffle(
-      await Agent.find({ hidden: false })
-        .limit(limit)
-        .skip((page - 1) * limit)
-        .select("_id name name_slug phone languages profile_picture")
+      await Agent.find({ hidden: false }).select(
+        "_id name name_slug phone languages profile_picture"
+      )
     );
 
     let data = null;
@@ -29,7 +35,7 @@ router.route("/").get(
       console.log(e.message);
     }
 
-    const count = await Agent.countDocuments();
+    // const count = await Agent.countDocuments();
 
     return res.status(200).json({
       success: true,
@@ -37,8 +43,8 @@ router.route("/").get(
       bottomSection: data.bottom_section,
       agents,
       message: "DONE",
-      totalPages: Math.ceil(count / limit),
-      currentPage: page,
+      // totalPages: Math.ceil(count / limit),
+      // currentPage: page,
     });
   })
 );

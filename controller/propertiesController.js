@@ -126,24 +126,31 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
   }
 
   try {
+    // const properties = await Property.find(query)
+    //   .sort({ order: sortOrder })
+    //   .limit(limit * 1)
+    //   .skip((page - 1) * limit)
+    //   .select(
+    //     "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
+    //   )
+    //   .exec();
+
     const properties = await Property.find(query)
       .sort({ order: sortOrder })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
       .select(
         "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
       )
       .exec();
 
-    const count = await Property.countDocuments(query);
+    // const count = await Property.countDocuments(query);
     return res.status(200).json({
       success: true,
       properties,
       pageHeading,
       pageDescription,
       message: "DONE",
-      totalPages: Math.ceil(count / limit),
-      currentPage: Number(page),
+      // totalPages: Math.ceil(count / limit),
+      // currentPage: Number(page),
     });
   } catch (error) {
     return res.status(500).json({

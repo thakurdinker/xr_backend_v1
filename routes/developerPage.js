@@ -11,7 +11,7 @@ const router = express.Router({ mergeParams: true });
 
 router.route("/").get(
   catchAsync(async (req, res) => {
-    const { page = 1, limit = 8 } = req.query;
+    // const { page = 1, limit = 8 } = req.query;
     const { developerNameSlug } = req.params;
     try {
       // Find the developer details from the database
@@ -112,10 +112,10 @@ router.route("/").get(
       // console.log(sortedCommunities);
 
       // Apply pagination to the sorted result
-      const paginatedCommunities = sortedCommunities.slice(
-        (page - 1) * limit,
-        page * limit
-      );
+      // const paginatedCommunities = sortedCommunities.slice(
+      //   (page - 1) * limit,
+      //   page * limit
+      // );
 
       // Get the count of properties for paginationclear
 
@@ -128,10 +128,10 @@ router.route("/").get(
         aboutDeveloper: developer, // Developer information
         // developerProperties,
         slideShowData,
-        developerCommunities: paginatedCommunities,
+        developerCommunities: sortedCommunities,
         message: "DONE",
-        totalPages: Math.ceil(count / limit),
-        currentPage: Number(page),
+        // totalPages: Math.ceil(count / limit),
+        // currentPage: Number(page),
       });
     } catch (error) {
       console.error(error);

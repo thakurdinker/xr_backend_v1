@@ -3597,5 +3597,18 @@
         <priority>0.8</priority>
     </url>
 
+    <url>
+        <loc>https://www.xrealty.ae/agent/vikas-padhi/</loc>
+        <lastmod>2024-11-20T08:55:32.205Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>https://www.xrealty.ae/agent/khalid-ali/</loc>
+        <lastmod>2024-11-20T08:55:32.205Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
 
 </urlset>

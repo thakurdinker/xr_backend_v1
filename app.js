@@ -145,6 +145,9 @@ app.use("/", submitForm);
 app.use("/", reviewsForm);
 app.use("/", iconRouter);
 
+// Resume Upload
+app.use("/resume", require("./routes/resumeUpload"));
+
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;
 

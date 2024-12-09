@@ -4,24 +4,18 @@ const contactSchema = new mongoose.Schema(
   {
     firstname: {
       type: String,
-      required: true,
-      minlength: 2,
       maxlength: 30,
     },
     lastname: {
       type: String,
-      required: true,
-      minlength: 1,
       maxlength: 30,
     },
     email: {
       type: String,
-      required: true,
       // match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/
     },
     phone: {
       type: String,
-      required: true,
       // match: /^[0-9]{10,15}$/
     },
     message: {
@@ -33,6 +27,18 @@ const contactSchema = new mongoose.Schema(
       default: "https://www.xrealty.ae",
     },
     ipAddress: {
+      type: String,
+      default: "",
+    },
+    resumeUrl: {
+      type: String,
+      default: "",
+    },
+    original_fileName: {
+      type: String,
+      default: "",
+    },
+    resume_fileName: {
       type: String,
       default: "",
     },

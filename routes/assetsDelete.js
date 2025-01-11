@@ -27,11 +27,11 @@ router.route("/deleteAsset").post(isLoggedIn, async (req, res) => {
   }
 
   try {
-    const result = await cloudinary.api.delete_resources([public_id], {
+    const result = await cloudinary.uploader.destroy(public_id, {
       resource_type: "image",
       invalidate: true,
     });
-    console.log(result);
+    // console.log(result);
     return res
       .status(200)
       .json({ success: true, isDeleted: true, message: result });

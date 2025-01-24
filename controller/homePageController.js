@@ -4,6 +4,7 @@ const Community = require("../models/community");
 const Content = require("../models/content");
 const HomePageVideos = require("../models/homepageVideo");
 const Property = require("../models/properties");
+const Review = require("../models/reviewsForm");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const shuffle = require("../utils/shuffleArray");
 
@@ -26,7 +27,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     show_property: true,
   })
     .select(
-      "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
+      "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order status"
     )
     .sort({ order: 1 });
 
@@ -53,7 +54,8 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     _id: { $nin: featuredCommunities },
   })
     .select("_id name slug images")
-    .sort("-createdAt");
+    .sort("-createdAt")
+    .limit(10);
 
   // Merge both the featured and normal communities
 
@@ -61,9 +63,9 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
 
   //   Xperience Stars
   const agent = shuffle(
-    await Agent.find({ hidden: false }).select(
-      "_id name name_slug phone languages profile_picture"
-    )
+    await Agent.find({ hidden: false })
+      .select("_id name name_slug phone languages profile_picture specialties")
+      .limit(10)
   );
 
   //News and Insights
@@ -77,6 +79,13 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     path: "amenities.icons",
   });
 
+  // Reviews
+  const reviews = await Review.find({ showReview: true })
+    .sort({
+      createdAt: -1,
+    })
+    .limit(3);
+
   return res.status(200).json({
     success: true,
     homePageVideos,
@@ -86,6 +95,7 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     content,
     agent,
     projectOfTheMonth,
+    reviews,
     message: "DONE",
   });
 });

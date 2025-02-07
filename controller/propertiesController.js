@@ -138,7 +138,7 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
     const properties = await Property.find(query)
       .sort({ order: sortOrder })
       .select(
-        "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
+        "_id property_name property_name_slug status price location features images type community_name community_name_slug developer developer_name_slug order"
       )
       .exec();
 
@@ -177,6 +177,28 @@ module.exports.getById = catchAsync(async (req, res) => {
   } catch (error) {
     return res.status(200).json({ success: false, message: error });
   }
+});
+
+// Get properties by sale type and type
+module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
+  const { saleType, type } = req.params;
+
+  console.log(saleType, type);
+
+  return res.status(200).json({ success: true, message: "DONE" });
+
+  let query = { show_property: true };
+
+  if (saleType) {
+    query.sale_type = saleType;
+  }
+
+  if (type) {
+    query.type = type;
+  }
+
+  const properties = await Property.find(query);
+  return res.status(200).json({ success: true, properties, message: "DONE" });
 });
 
 // Update a property by ID

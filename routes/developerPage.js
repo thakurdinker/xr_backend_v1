@@ -76,7 +76,7 @@ router.route("/").get(
         developer_name_slug: developerNameSlug,
         // show_property: true,
       })
-        .select("_id order name slug images")
+        .select("_id order name slug images description")
         .exec();
 
       // // Normalize the order array for comparison

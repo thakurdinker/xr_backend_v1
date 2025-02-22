@@ -30,7 +30,7 @@ router.route("/sitemap").get(async (req, res) => {
   //   res.send(data);
   // });
   // Fetch Sitemap from Strapi
-  const sitemap = await fetch("http://13.233.253.36:1337" + "/api/sitemaps");
+  const sitemap = await fetch("https://admin-v1.xrealty.ae" + "/api/sitemaps");
   const sitemapData = await sitemap.json();
   return res.send(sitemapData?.data[0]?.content);
 });

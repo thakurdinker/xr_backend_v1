@@ -20,7 +20,7 @@ router.route("/").get(
 
     const agents = shuffle(
       await Agent.find({ hidden: false }).select(
-        "_id name name_slug phone languages profile_picture"
+        "_id name name_slug phone languages profile_picture specialties"
       )
     );
 

@@ -42,6 +42,7 @@ const reviewsForm = require("./routes/reviewsForm");
 const reviewsRouter = require("./routes/reviewsRouter");
 const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 const redirectRouter = require("./routes/redirect");
+const aboutUsRouter = require("./routes/aboutUsRouter");
 
 const User = require("./models/user");
 
@@ -140,6 +141,7 @@ app.use("/", propertyTypeRouter);
 app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
+app.use("/about-us", aboutUsRouter);
 app.use("/", newsPageRouter);
 app.use("/", submitForm);
 app.use("/", reviewsForm);

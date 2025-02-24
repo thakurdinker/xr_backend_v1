@@ -7,6 +7,7 @@ const {
 const catchAsync = require("../utils/seedDB/catchAsync");
 const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
+const Property = require("../models/properties");
 
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
@@ -39,19 +40,41 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
 
 // Read all communities
 module.exports.getAll = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  // const { page = 1, limit = 10 } = req.query;
   try {
     const communities = await Community.find({})
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .exec();
+      // .limit(limit)
+      // .skip((page - 1) * limit)
+      .select("name slug description images");
 
-    const count = await Community.countDocuments();
+    const properties = await Property.find({}).select(
+      "community_name community_name_slug"
+    );
+
+    // Match the properties with the communities
+    const matchedProperties = properties.filter((property) =>
+      communities.some(
+        (community) => community.slug === property.community_name_slug
+      )
+    );
+
+    // Make a object containing the community and the properties total number in that community
+    const communityWithProperties = communities.map((community) => ({
+      community_name: community.name,
+      community_slug: community.slug,
+      community_description: community.description,
+      community_images: community.images,
+      properties: matchedProperties.filter(
+        (property) => property.community_name_slug === community.slug
+      ).length,
+    }));
+
+    // const count = await Community.countDocuments();
     return res.status(200).json({
       success: true,
-      communities,
-      totalPages: Math.ceil(count / limit),
-      currentPage: Number(page),
+      communities: communityWithProperties,
+      // totalPages: Math.ceil(count / limit),
+      // currentPage: Number(page),
       message: "DONE",
     });
   } catch (error) {

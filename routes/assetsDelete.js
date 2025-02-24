@@ -39,6 +39,7 @@ router.route("/deleteAsset").post(isLoggedIn, async (req, res) => {
     return res
       .status(200)
       .json({ success: false, isDeleted: false, message: err.message });
+    0;
   }
 });
 

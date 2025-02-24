@@ -23,12 +23,17 @@ router.route("/generateSitemap").get(isLoggedIn, isAdmin, async (req, res) => {
 
 // Get current sitemap
 router.route("/sitemap").get(async (req, res) => {
-  fs.readFile(SITEMAP_FILE, "utf8", (err, data) => {
-    if (err) {
-      return res.status(500).json({ message: "Error fetching sitemap" });
-    }
-    res.send(data);
-  });
+  // fs.readFile(SITEMAP_FILE, "utf8", (err, data) => {
+  //   if (err) {
+  //     return res.status(500).json({ message: "Error fetching sitemap" });
+  //   }
+  //   res.send(data);
+  // });
+
+  // Fetch Sitemap from Strapi
+  const sitemap = await fetch("https://admin-v1.xrealty.ae" + "/api/sitemaps");
+  const sitemapData = await sitemap.json();
+  return res.send(sitemapData?.data[0]?.content);
 });
 
 // Update current sitemap

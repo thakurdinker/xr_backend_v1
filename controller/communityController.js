@@ -86,6 +86,32 @@ module.exports.getAll = catchAsync(async (req, res) => {
   }
 });
 
+// Read all communities for admin panel
+module.exports.getAllForAdmin = catchAsync(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  try {
+    const communities = await Community.find({})
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const count = await Community.countDocuments();
+    return res.status(200).json({
+      success: true,
+      communities,
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
+      message: "DONE",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(200).json({
+      success: false,
+      message: "Error",
+    });
+  }
+});
+
 module.exports.getAllCommunities = catchAsync(async (req, res) => {
   try {
     const communities = await Community.find({});

@@ -8,8 +8,18 @@ const { isLoggedIn } = require("../middleware/middleware");
 router
   .route("/communities")
   .get(isLoggedIn, communityController.getAll)
-
   .post(isLoggedIn, communityController.createCommunity);
+
+router
+  .route("/getAllForAdmin")
+  .get(isLoggedIn, communityController.getAllForAdmin)
+  .post(isLoggedIn, communityController.createCommunity);
+
+router
+  .route("/getAllForAdmin/:id")
+  .get(isLoggedIn, communityController.getById)
+  .put(isLoggedIn, communityController.updateCommunity)
+  .delete(isLoggedIn, communityController.delete);
 
 router
   .route("/getAllCommunities")

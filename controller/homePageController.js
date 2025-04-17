@@ -62,11 +62,19 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
   let mergedCommunities = [...communities_featured, ...communities];
 
   //   Xperience Stars
-  const agent = shuffle(
-    await Agent.find({ hidden: false })
-      .select("_id name name_slug phone languages profile_picture specialties")
-      .limit(10)
-  );
+  // const agent = shuffle(
+  //   await Agent.find({ hidden: false })
+  //     .select("_id name name_slug phone languages profile_picture specialties")
+  //     .limit(10)
+  // );
+
+  const count = await Agent.countDocuments({ hidden: false });
+  const random = Math.max(0, Math.floor(Math.random() * (count - 10)));
+
+  const agent = await Agent.find({ hidden: false })
+    .select("_id name name_slug phone languages profile_picture specialties")
+    .skip(random)
+    .limit(10);
 
   //News and Insights
   const content = await Content.find({ status: "published" })

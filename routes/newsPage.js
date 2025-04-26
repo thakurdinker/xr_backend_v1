@@ -194,6 +194,17 @@ router.route("/real-estate-news").get(
         .select("_id title slug publish_date category featured_image") // Select only the necessary fields
         .exec();
 
+      for (let i = 0; i < newsAndBlogs.length; i++) {
+        const blog = newsAndBlogs[i];
+        const redirect = await Redirect.findOne({
+          from: "/" + blog.slug,
+        });
+
+        if (redirect) {
+          blog.slug = redirect.to;
+        }
+      }
+
       // Get the total count of documents matching the query
       // const count = await Content.countDocuments(query);
 
@@ -254,6 +265,17 @@ router.route("/blogs").get(
         .sort({ publish_date: sortOrder }) // Sort by publish_date
         .select("_id title slug publish_date category featured_image") // Select only the necessary fields
         .exec();
+
+      for (let i = 0; i < blogs.length; i++) {
+        const blog = blogs[i];
+        const redirect = await Redirect.findOne({
+          from: "/" + blog.slug,
+        });
+
+        if (redirect) {
+          blog.slug = redirect.to;
+        }
+      }
 
       // Get the total count of documents matching the query
       // const count = await Content.countDocuments(query);

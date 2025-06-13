@@ -5,9 +5,7 @@ const Property = require("../../models/properties");
 const updatePropertiesSchema = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(
-      "mongodb+srv://proptubexr:IxKFbyfPcqDgIqDo@xrwebsitelivecluster.ommpioe.mongodb.net/xrealty_website_backend?retryWrites=true&w=majority&appName=XRWEBSITELIVECLUSTER"
-    );
+    await mongoose.connect("");
     console.log("Connected to database");
 
     // Get all properties

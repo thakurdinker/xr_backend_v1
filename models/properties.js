@@ -91,6 +91,7 @@ const newPropertySchema = new Schema(
         answer: { type: String },
       },
     ],
+
     // SEO fields
     seo: {
       _id: false,
@@ -103,6 +104,10 @@ const newPropertySchema = new Schema(
       _id: false,
       type: { type: String, default: "" }, // Example schema.org type
       properties: { type: Object }, // Additional properties for schema.org
+    },
+    faqs_schema: {
+      _id: false,
+      properties: { type: Object },
     },
     open_graph: {
       _id: false,

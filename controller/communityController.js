@@ -191,6 +191,7 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
     });
 
     await community.save();
+
     return res
       .status(200)
       .json({ success: true, isUpdated: true, community, message: "DONE" });

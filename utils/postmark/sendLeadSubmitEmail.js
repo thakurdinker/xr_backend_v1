@@ -13,6 +13,7 @@ const leadSumitEmailReceivers = [
 // Career Page Receivers
 const leadSubmitReceiversCareers = [
   "dinker.s@xrealty.ae",
+  "taaliah@xrealty.ae",
   "sahil.manhas@xrealty.ae",
 ];
 

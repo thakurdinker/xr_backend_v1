@@ -9,12 +9,26 @@ const {
   sendLeadSubmitEmail,
   sendCareerSubmitEmail,
 } = require("../utils/postmark/sendLeadSubmitEmail");
+const { default: axios } = require("axios");
+
+const ZAPIER_URL = "https://hooks.zapier.com/hooks/catch/15517292/urbvht1/";
+
+// sends data to zapier which analyzes the data and sends it to the crm
+const sendContactFormDataToZapier = async (data) => {
+  try {
+    const response = await axios.post(ZAPIER_URL, data);
+    // console.log(response.data);
+  } catch (err) {
+    console.log(err);
+  }
+};
 
 module.exports.submitContactForm = catchAsync(async (req, res) => {
   const { error, value } = submitFormValidation.validate(req.body);
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
+
   try {
     const contact = new Contact(value);
     await contact.save();
@@ -22,6 +36,12 @@ module.exports.submitContactForm = catchAsync(async (req, res) => {
     res.status(201).json({ message: "Form submitted successfully" });
   } catch (err) {
     res.status(500).json({ error: "An error occurred while saving the form" });
+  } finally {
+    try {
+      sendContactFormDataToZapier(value);
+    } catch (err) {
+      console.log(err);
+    }
   }
 });
 

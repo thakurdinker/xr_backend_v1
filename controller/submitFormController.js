@@ -1,3 +1,8 @@
+const dotenv = require("dotenv");
+const path = require("path");
+
+dotenv.config({ path: path.resolve(__dirname, "../vars/.env") });
+
 const Joi = require("joi");
 const Contact = require("../models/submitForm");
 const {
@@ -11,7 +16,7 @@ const {
 } = require("../utils/postmark/sendLeadSubmitEmail");
 const { default: axios } = require("axios");
 
-const ZAPIER_URL = "https://hooks.zapier.com/hooks/catch/15517292/urbvht1/";
+const ZAPIER_URL = process.env.ZAPIER_URL;
 
 // sends data to zapier which analyzes the data and sends it to the crm
 const sendContactFormDataToZapier = async (data) => {

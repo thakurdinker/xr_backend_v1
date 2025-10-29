@@ -30,6 +30,7 @@ const sendContactFormDataToZapier = async (data) => {
 
 module.exports.submitContactForm = catchAsync(async (req, res) => {
   const { error, value } = submitFormValidation.validate(req.body);
+
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }

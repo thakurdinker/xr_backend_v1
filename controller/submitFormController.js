@@ -28,8 +28,29 @@ const sendContactFormDataToZapier = async (data) => {
   }
 };
 
+//  submit data to the crm
+
+const submitDataToCrm = async (data) => {
+  try {
+    await axios.post(`${process.env.CRM_URL}`, {
+      leadName: data?.firstname + " " + data?.lastname,
+      email: data?.email || "",
+      phoneNumber: data?.phone || "",
+      // dateCreated: convertToDatabaseFormat(created_time),
+      dateCreated: new Date().toISOString(),
+      source: "Website",
+      description: data?.message || "",
+      campaignName: "XR - Website",
+      location: data?.campaignName || "",
+    });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 module.exports.submitContactForm = catchAsync(async (req, res) => {
   const { error, value } = submitFormValidation.validate(req.body);
+
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
@@ -71,6 +92,16 @@ module.exports.submitContactFormCareer = catchAsync(async (req, res) => {
     await contact.save();
     // console.log(contact);
     sendCareerSubmitEmail(contact);
+    res.status(201).json({ message: "Form submitted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "An error occurred while saving the form" });
+  }
+});
+
+// Landing page submission
+module.exports.submitLandingPageForm = catchAsync(async (req, res) => {
+  try {
+    submitDataToCrm(req.body);
     res.status(201).json({ message: "Form submitted successfully" });
   } catch (err) {
     res.status(500).json({ error: "An error occurred while saving the form" });

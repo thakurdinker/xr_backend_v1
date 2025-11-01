@@ -19,7 +19,7 @@ router.route("/").get(
         developer_slug: developerNameSlug,
       })
         .select(
-          "logo_img_url developer_name developer_slug description heading meta_title meta_description predefinedCommunitiesOrder"
+          "logo_img_url developer_name developer_slug description heading meta_title meta_description meta_keywords predefinedCommunitiesOrder"
         )
         .exec();
 

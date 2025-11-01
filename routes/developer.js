@@ -26,22 +26,20 @@ router.route("/developers").post(isLoggedIn, async (req, res) => {
 // Get all developers
 router.route("/developers").get(async (req, res) => {
   try {
-    const developers = await Developer.find({})
-      .sort({ order: 1 })
-      .exec();
+    const developers = await Developer.find({}).sort({ order: 1 }).exec();
 
     let tempDevelopers = [];
 
     developers.map((developer) => {
-    if (
-      developer.developer_slug === "emaar-properties" ||
-      developer.developer_slug === "emaar"
-    ) {
-      tempDevelopers.unshift(developer);
-    } else {
-      tempDevelopers.push(developer);
-    }
-  });
+      if (
+        developer.developer_slug === "emaar-properties" ||
+        developer.developer_slug === "emaar"
+      ) {
+        tempDevelopers.unshift(developer);
+      } else {
+        tempDevelopers.push(developer);
+      }
+    });
 
     return res.status(200).json({
       success: true,

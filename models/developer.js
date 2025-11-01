@@ -22,6 +22,7 @@ const newDeveloperSchema = new Schema(
     heading: { type: String },
     meta_title: { type: String },
     meta_description: { type: String },
+    meta_keywords: { type: String },
     order: Number,
     predefinedCommunitiesOrder: [String],
   },

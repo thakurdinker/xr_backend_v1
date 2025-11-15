@@ -10,56 +10,16 @@ const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const fs = require("fs");
 const path = require("path");
 
-// Create a new property
-// module.exports.createProperty = catchAsync(async (req, res) => {
-//   // const { error } = propertySchemaValidation.validate(req.body);
+const modifyCloudinaryUrl = require("../utils/modifyCloudinaryUrl.js");
 
-//   // if (error) {
-//   //   return res.status(200).json({
-//   //     success: false,
-//   //     isCreated: false,
-//   //     message: error.details[0].message,
-//   //   });
-//   // }
-//   try {
-//     const property = new Property(req.body);
-//     await property.save();
-//     return res
-//       .status(200)
-//       .json({ success: true, isCreated: true, message: "DONE" });
-//   } catch (error) {
-//     return res.status(200).json({
-//       success: false,
-//       isCreated: false,
-//       message: "Fail to Add Property",
-//     });
-//   }
-// });
-
-// Read all properties with pagination
-// module.exports.getAllProperties = catchAsync(async (req, res) => {
-//   const { page = 1, limit = 10 } = req.query;
-//   try {
-//     const properties = await Property.find({})
-//       .limit(limit * 1)
-//       .skip((page - 1) * limit)
-//       .exec();
-
-//     const count = await Property.countDocuments();
-//     return res.status(200).json({
-//       success: true,
-//       properties,
-//       message: "DONE",
-//       totalPages: Math.ceil(count / limit),
-//       currentPage: page,
-//     });
-//   } catch (error) {
-//     return res.status(200).json({
-//       success: false,
-//       message: error,
-//     });
-//   }
-// });
+const mapTypeNameToSlug = {
+  "type-apartment": "apartments",
+  "type-villa": "villas",
+  "type-townhouse": "townhouses",
+  "type-penthouse": "penthouse",
+  "type-mansion": "mansions",
+  "type-off-plan-projects": "off-plan-projects",
+};
 
 module.exports.getAllProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
@@ -126,31 +86,31 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
   }
 
   try {
-    // const properties = await Property.find(query)
-    //   .sort({ order: sortOrder })
-    //   .limit(limit * 1)
-    //   .skip((page - 1) * limit)
-    //   .select(
-    //     "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
-    //   )
-    //   .exec();
-
     const properties = await Property.find(query)
       .sort({ order: sortOrder })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
       .select(
-        "_id property_name property_name_slug status price location features images type community_name community_name_slug developer developer_name_slug order"
+        "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
       )
       .exec();
 
-    // const count = await Property.countDocuments(query);
+    // const properties = await Property.find(query)
+    //   .sort({ order: sortOrder })
+    //   .select(
+    //     "_id property_name property_name_slug status price location features images type community_name community_name_slug developer developer_name_slug order"
+    //   )
+    //   .exec();
+
+    const count = await Property.countDocuments(query);
     return res.status(200).json({
       success: true,
       properties,
       pageHeading,
       pageDescription,
       message: "DONE",
-      // totalPages: Math.ceil(count / limit),
-      // currentPage: Number(page),
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
     });
   } catch (error) {
     return res.status(500).json({
@@ -183,22 +143,68 @@ module.exports.getById = catchAsync(async (req, res) => {
 module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
   const { saleType, type } = req.params;
 
-  console.log(saleType, type);
-
-  return res.status(200).json({ success: true, message: "DONE" });
+  const { page = 1, limit = 10, sortOrder = 1 } = req.query;
 
   let query = { show_property: true };
+  let foundTypeName = null;
 
-  if (saleType) {
-    query.sale_type = saleType;
+  foundTypeName = mapTypeNameToSlug[type];
+
+  if (foundTypeName !== null && foundTypeName === "off-plan-projects") {
+    query = { show_property: true };
+  } else if (foundTypeName !== null && saleType === "for-sale") {
+    query = { show_property: true, "type.name": foundTypeName };
+  } else {
+    return res.status(200).json({ success: true, properties: [] });
   }
 
-  if (type) {
-    query.type = type;
-  }
+  try {
+    const properties = await Property.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select(
+        "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order"
+      )
+      .exec();
 
-  const properties = await Property.find(query);
-  return res.status(200).json({ success: true, properties, message: "DONE" });
+    let newProperties = [];
+
+    properties.map((property) => {
+      newProperties.push({
+        _id: property._id,
+        card_image: {
+          url: modifyCloudinaryUrl(property?.images[0]?.url),
+          alternativeText: property?.images[0]?.heading,
+        },
+        community_name: property?.community_name,
+        developer_name: property?.developer,
+        name: property?.property_name,
+        property_status: property?.status?.[0],
+        price: property?.price,
+        property_variants: [],
+        slug: property?.property_name_slug,
+        url:
+          property?.seo?.meta_canonical_url ||
+          `https://www.xrealty.ae/property/${property?.property_name_slug}/`,
+      });
+    });
+
+    const count = await Property.countDocuments(query);
+    return res.status(200).json({
+      success: true,
+      properties: newProperties,
+      message: "DONE",
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 });
 
 // Update a property by ID

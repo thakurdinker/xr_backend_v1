@@ -65,50 +65,50 @@ router.route("/:communitySlug").get(
     // Extract pagination parameters for properties and more communities
     const {
       propertiesPage = 1,
-      propertiesLimit = 8,
+      propertiesLimit = 6,
       moreCommunitiesPage = 1,
       moreCommunitiesLimit = 8,
     } = req.query;
 
-    if (
-      !req.query.propertiesPage ||
-      !req.query.propertiesLimit ||
-      !req.query.moreCommunitiesPage ||
-      !req.query.moreCommunitiesLimit
-    ) {
-      try {
-        const community = await Community.findOne({
-          slug: communitySlug,
-        }).populate({ path: "amenities.icons" });
+    // if (
+    //   !req.query.propertiesPage ||
+    //   !req.query.propertiesLimit ||
+    //   !req.query.moreCommunitiesPage ||
+    //   !req.query.moreCommunitiesLimit
+    // ) {
+    //   try {
+    //     const community = await Community.findOne({
+    //       slug: communitySlug,
+    //     }).populate({ path: "amenities.icons" });
 
-        if (!community) {
-          return res
-            .status(200)
-            .json({ success: false, message: "NO community Found" });
-        }
+    //     if (!community) {
+    //       return res
+    //         .status(200)
+    //         .json({ success: false, message: "NO community Found" });
+    //     }
 
-        // Properties in the community with pagination
-        const properties = await Property.find({
-          community_name_slug: communitySlug,
-          show_property: true,
-        }).sort({ order: 1 });
+    //     // Properties in the community with pagination
+    //     const properties = await Property.find({
+    //       community_name_slug: communitySlug,
+    //       show_property: true,
+    //     }).sort({ order: 1 });
 
-        return res.status(200).json({
-          success: true,
-          community: community,
-          properties,
-          totalPropertiesPages: null,
-          moreCommunities: null,
-          totalMoreCommunitiesPages: null,
-          message: "DONE",
-        });
-      } catch (error) {
-        console.log(error);
-        return res
-          .status(500)
-          .json({ success: false, message: "Internal server error" });
-      }
-    }
+    //     return res.status(200).json({
+    //       success: true,
+    //       community: community,
+    //       properties,
+    //       totalPropertiesPages: null,
+    //       moreCommunities: null,
+    //       totalMoreCommunitiesPages: null,
+    //       message: "DONE",
+    //     });
+    //   } catch (error) {
+    //     console.log(error);
+    //     return res
+    //       .status(500)
+    //       .json({ success: false, message: "Internal server error" });
+    //   }
+    // }
 
     try {
       const community = await Community.findOne({
@@ -136,25 +136,25 @@ router.route("/:communitySlug").get(
       });
 
       // More communities with pagination
-      const allMoreCommunities = await Community.find({
-        _id: { $ne: community._id },
-      });
-      const shuffledCommunities = shuffle(allMoreCommunities);
-      const moreCommunities = shuffledCommunities.slice(
-        (moreCommunitiesPage - 1) * moreCommunitiesLimit,
-        moreCommunitiesPage * moreCommunitiesLimit
-      );
-      const totalMoreCommunities = shuffledCommunities.length;
+      // const allMoreCommunities = await Community.find({
+      //   _id: { $ne: community._id },
+      // });
+      // const shuffledCommunities = shuffle(allMoreCommunities);
+      // const moreCommunities = shuffledCommunities.slice(
+      //   (moreCommunitiesPage - 1) * moreCommunitiesLimit,
+      //   moreCommunitiesPage * moreCommunitiesLimit
+      // );
+      // const totalMoreCommunities = shuffledCommunities.length;
 
       return res.status(200).json({
         success: true,
         community,
         properties,
         totalPropertiesPages: Math.ceil(totalProperties / propertiesLimit),
-        moreCommunities,
-        totalMoreCommunitiesPages: Math.ceil(
-          totalMoreCommunities / moreCommunitiesLimit
-        ),
+        // moreCommunities,
+        //   totalMoreCommunitiesPages: Math.ceil(
+        //     totalMoreCommunities / moreCommunitiesLimit
+        //   ),
         message: "DONE",
       });
     } catch (error) {

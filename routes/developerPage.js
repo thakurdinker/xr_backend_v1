@@ -11,7 +11,7 @@ const router = express.Router({ mergeParams: true });
 
 router.route("/").get(
   catchAsync(async (req, res) => {
-    // const { page = 1, limit = 8 } = req.query;
+    const { page = 1, limit = 9 } = req.query;
     const { developerNameSlug } = req.params;
     try {
       // Find the developer details from the database
@@ -31,16 +31,30 @@ router.route("/").get(
       }
 
       // Find the properties associated with the developer
-      // const developerProperties = await Property.find({
-      //   developer_name_slug: developerNameSlug,
-      //   show_property: true,
-      // })
-      //   .limit(limit)
-      //   .skip((page - 1) * limit)
-      //   .select(
-      //     "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug"
-      //   )
-      //   .exec();
+      const developerProperties = await Property.find({
+        developer_name_slug: developerNameSlug,
+        show_property: true,
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .select(
+          "_id property_name property_name_slug price  images community_name community_name_slug developer developer_name_slug"
+        )
+
+        .exec();
+
+      // get all unqiue communities
+      const uniqueCommunities = await Property.distinct("community_name_slug", {
+        developer_name_slug: developerNameSlug,
+        show_property: true,
+      });
+
+      // Count the number of properties
+      const propertiesCount = await Property.countDocuments({
+        developer_name_slug: developerNameSlug,
+        show_property: true,
+      });
 
       // Find slide_show (Newly Launched) properties
       const newly_launched_properties = await Property.find({
@@ -59,7 +73,7 @@ router.route("/").get(
           slogan: property?.section_1?.heading,
           learnMore: property?.property_name_slug
             ? `/property/${property?.property_name_slug}`
-            : `/label/${developerNameSlug}/`,
+            : `/developer/${developerNameSlug}/`,
         };
       });
 
@@ -73,7 +87,8 @@ router.route("/").get(
       //   .exec();
 
       const developerCommunities = await Community.find({
-        developer_name_slug: developerNameSlug,
+        // developer_name_slug: developerNameSlug,
+        slug: { $in: uniqueCommunities },
         // show_property: true,
       })
         .select("_id order name slug images description")
@@ -119,19 +134,18 @@ router.route("/").get(
 
       // Get the count of properties for paginationclear
 
-      const count = await Community.countDocuments({
-        developer_name_slug: developerNameSlug,
-        // show_property: true,
-      });
+      // const count = await Community.countDocuments({
+      //   developer_name_slug: developerNameSlug,
+      //   // show_property: true,
+      // });
       return res.status(200).json({
         success: true,
-        aboutDeveloper: developer, // Developer information
-        // developerProperties,
+        developerProperties,
         slideShowData,
         developerCommunities: sortedCommunities,
         message: "DONE",
-        // totalPages: Math.ceil(count / limit),
-        // currentPage: Number(page),
+        totalPages: Math.ceil(propertiesCount / limit),
+        currentPage: Number(page),
       });
     } catch (error) {
       console.error(error);

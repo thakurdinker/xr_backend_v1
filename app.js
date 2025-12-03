@@ -43,6 +43,7 @@ const reviewsRouter = require("./routes/reviewsRouter");
 const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 const redirectRouter = require("./routes/redirect");
 const aboutUsRouter = require("./routes/aboutUsRouter");
+const propertySearchRouter = require("./routes/propertySearchRouter");
 
 const User = require("./models/user");
 
@@ -146,6 +147,7 @@ app.use("/", newsPageRouter);
 app.use("/", submitForm);
 app.use("/", reviewsForm);
 app.use("/", iconRouter);
+app.use('/', propertySearchRouter);
 
 // Resume Upload
 app.use("/resume", require("./routes/resumeUpload"));

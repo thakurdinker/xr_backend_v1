@@ -4,7 +4,7 @@ const Property = require("../models/properties");
 module.exports = catchAsync(async (req, res) => {
     const { propertyType, bedroom, priceRange, community } = req.body;
 
-
+    console.log(req.body);
     // 1. Parse Price Range
     let minPrice = 0;
     let maxPrice = Infinity;

@@ -44,6 +44,7 @@ const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 const redirectRouter = require("./routes/redirect");
 const aboutUsRouter = require("./routes/aboutUsRouter");
 const propertySearchRouter = require("./routes/propertySearchRouter");
+const fetchSearchFilterRouter = require("./routes/fetchSearchFilterRouter");
 
 const User = require("./models/user");
 
@@ -139,6 +140,7 @@ app.use("/meet-the-xr", agentsPageRouter);
 app.use("/agent", agentDetailRouter);
 app.use("/", agentRouter);
 app.use("/", propertyTypeRouter);
+
 app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
@@ -147,7 +149,9 @@ app.use("/", newsPageRouter);
 app.use("/", submitForm);
 app.use("/", reviewsForm);
 app.use("/", iconRouter);
-app.use('/', propertySearchRouter);
+app.use("/", propertySearchRouter);
+app.use("/", fetchSearchFilterRouter);
+
 
 // Resume Upload
 app.use("/resume", require("./routes/resumeUpload"));

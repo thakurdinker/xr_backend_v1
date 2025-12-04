@@ -15,15 +15,40 @@ module.exports = catchAsync(async (req, res) => {
     let maxPrice = Infinity;
 
     if (priceRange) {
-        const parts = priceRange.split("-").map((p) => p.trim().toUpperCase());
-        if (parts.length === 2) {
-            const parseValue = (val) => {
-                if (val.includes("M")) return parseFloat(val.replace("M", "")) * 1000000;
-                if (val.includes("K")) return parseFloat(val.replace("K", "")) * 1000;
-                return parseFloat(val);
-            };
-            minPrice = parseValue(parts[0]);
-            maxPrice = parseValue(parts[1]);
+        const trimmed = priceRange.trim().toUpperCase();
+
+        const parseValue = (val) => {
+            val = val.trim();
+            if (val.includes("M")) return parseFloat(val.replace("M", "")) * 1000000;
+            if (val.includes("K")) return parseFloat(val.replace("K", "")) * 1000;
+            return parseFloat(val);
+        };
+
+        // Handle "> 5M" format (greater than)
+        if (trimmed.startsWith(">")) {
+            const value = trimmed.substring(1).trim();
+            minPrice = parseValue(value);
+            maxPrice = Infinity;
+        }
+        // Handle "< 5M" format (less than)
+        else if (trimmed.startsWith("<")) {
+            const value = trimmed.substring(1).trim();
+            minPrice = 0;
+            maxPrice = parseValue(value);
+        }
+        // Handle "1M - 2M" format (range)
+        else if (trimmed.includes("-")) {
+            const parts = trimmed.split("-").map((p) => p.trim());
+            if (parts.length === 2) {
+                minPrice = parseValue(parts[0]);
+                maxPrice = parseValue(parts[1]);
+            }
+        }
+        // Handle single value "5M" (exact match)
+        else {
+            const value = parseValue(trimmed);
+            minPrice = value;
+            maxPrice = value;
         }
     }
 
@@ -45,6 +70,13 @@ module.exports = catchAsync(async (req, res) => {
 
     // 3. Build Aggregation Pipeline
     const pipeline = [];
+
+    // Stage 0: Only show properties where show_property is true
+    pipeline.push({
+        $match: {
+            show_property: true
+        }
+    });
 
     // Stage 1: Filter by Community (Case-insensitive)
     if (community) {

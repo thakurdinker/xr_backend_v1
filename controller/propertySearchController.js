@@ -2,9 +2,14 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 const Property = require("../models/properties");
 
 module.exports = catchAsync(async (req, res) => {
-    const { propertyType, bedroom, priceRange, community } = req.body;
+    const { propertyType, bedroom, priceRange, community, page = 1, limit = 20 } = req.body;
 
-    console.log(req.body);
+
+    // Parse pagination parameters
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
     // 1. Parse Price Range
     let minPrice = 0;
     let maxPrice = Infinity;
@@ -111,9 +116,30 @@ module.exports = catchAsync(async (req, res) => {
         });
     }
 
+    // Get total count using facet
+    const countPipeline = [
+        ...pipeline,
+        {
+            $facet: {
+                metadata: [{ $count: "total" }],
+                data: [{ $skip: skip }, { $limit: limitNum }]
+            }
+        }
+    ];
 
+    const result = await Property.aggregate(countPipeline);
 
-    const properties = await Property.aggregate(pipeline);
+    const total = result[0]?.metadata[0]?.total || 0;
+    const properties = result[0]?.data || [];
+    const totalPages = Math.ceil(total / limitNum);
 
-    return res.json({ success: true, count: properties.length, data: properties });
+    return res.json({
+        success: true,
+        count: properties.length,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        data: properties
+    });
 });

@@ -152,7 +152,6 @@ app.use("/", iconRouter);
 app.use("/", propertySearchRouter);
 app.use("/", fetchSearchFilterRouter);
 
-
 // Resume Upload
 app.use("/resume", require("./routes/resumeUpload"));
 

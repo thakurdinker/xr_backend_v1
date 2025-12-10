@@ -8,6 +8,8 @@ const Contact = require("../models/submitForm");
 const {
   submitFormValidation,
   submitContactFormValidation,
+  submitBrochureDownloadFormValidation,
+  submitMarketReportFormValidation,
 } = require("../schemaValidation/submitForm");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const {
@@ -105,5 +107,113 @@ module.exports.submitLandingPageForm = catchAsync(async (req, res) => {
     res.status(201).json({ message: "Form submitted successfully" });
   } catch (err) {
     res.status(500).json({ error: "An error occurred while saving the form" });
+  }
+});
+
+// Borchure Download Submission
+module.exports.brochureDownloadSubmission = catchAsync(async (req, res) => {
+  const { error, value } = submitBrochureDownloadFormValidation.validate(
+    req.body
+  );
+
+  if (error) {
+    return res.status(400).json({ error: "Something went wrong" });
+  }
+
+  try {
+    const contact = new Contact(value);
+    await contact.save();
+    sendLeadSubmitEmail({
+      email: value?.email,
+      firstname: value?.firstname,
+      lastname: value?.lastname,
+      phone: value?.phone,
+      message: `Brochure Download -  ${value?.projectName}`,
+      pageUrl: value?.pageUrl,
+      ipAddress: value?.ipAddress,
+    });
+
+    // Get the brochure link
+    const brochureLink = await axios.get(
+      `https://admin-v1.xrealty.ae/api/brochures?filters[documentId]=${value.projectBrochure}&populate=*`
+    );
+
+    res.status(201).json({
+      message: "Form submitted successfully",
+      brochureLink: brochureLink?.data?.data[0]?.project_brochure?.url || "",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "An error occurred while saving the form" });
+  } finally {
+    try {
+      sendContactFormDataToZapier({
+        email: value?.email,
+        firstname: value?.firstname,
+        lastname: value?.lastname,
+        phone: value?.phone,
+        message: `Brochure Download -  ${value?.projectName}`,
+        pageUrl: value?.pageUrl,
+        ipAddress: value?.ipAddress,
+      });
+    } catch (err) {
+      console.log(err);
+      res
+        .status(500)
+        .json({ error: "An error occurred while saving the form" });
+    }
+  }
+});
+
+// Market Report Submission
+module.exports.marketReportSubmission = catchAsync(async (req, res) => {
+  const { error, value } = submitMarketReportFormValidation.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({ error: "Something went wrong" });
+  }
+
+  try {
+    const contact = new Contact(value);
+    await contact.save();
+    sendLeadSubmitEmail({
+      email: value?.email,
+      firstname: value?.firstname,
+      lastname: value?.lastname,
+      phone: value?.phone,
+      message: `Market Report -  ${value?.reportName}`,
+      pageUrl: value?.pageUrl,
+      ipAddress: value?.ipAddress,
+    });
+
+    // Get the brochure link
+    const marketReportLink = await axios.get(
+      `https://admin-v1.xrealty.ae/api/market-reports?filters[documentId]=${value.marketReport}&populate=*`
+    );
+
+    res.status(201).json({
+      message: "Form submitted successfully",
+      marketReportLink: marketReportLink?.data?.data[0]?.report_link?.url || "",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "An error occurred while saving the form" });
+  } finally {
+    try {
+      sendContactFormDataToZapier({
+        email: value?.email,
+        firstname: value?.firstname,
+        lastname: value?.lastname,
+        phone: value?.phone,
+        message: `Market Report -  ${value?.reportName}`,
+        pageUrl: value?.pageUrl,
+        ipAddress: value?.ipAddress,
+      });
+    } catch (err) {
+      console.log(err);
+      res
+        .status(500)
+        .json({ error: "An error occurred while saving the form" });
+    }
   }
 });

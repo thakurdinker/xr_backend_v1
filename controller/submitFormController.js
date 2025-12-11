@@ -10,11 +10,13 @@ const {
   submitContactFormValidation,
   submitBrochureDownloadFormValidation,
   submitMarketReportFormValidation,
+  newsletterSubmissionValidation,
 } = require("../schemaValidation/submitForm");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const {
   sendLeadSubmitEmail,
   sendCareerSubmitEmail,
+  sendNewsletterSubmitEmail,
 } = require("../utils/postmark/sendLeadSubmitEmail");
 const { default: axios } = require("axios");
 
@@ -215,5 +217,38 @@ module.exports.marketReportSubmission = catchAsync(async (req, res) => {
         .status(500)
         .json({ error: "An error occurred while saving the form" });
     }
+  }
+});
+
+module.exports.newsletterSubmission = catchAsync(async (req, res) => {
+  const { error, value } = newsletterSubmissionValidation.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const response = await fetch(
+      "https://admin-v1.xrealty.ae/api/newsletter-subscribers",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: { email: value.email, pageName: value.pageName },
+        }),
+      }
+    );
+
+    if (response.ok) {
+      sendNewsletterSubmitEmail(value.email);
+      return res.status(201).json({ message: "Subscription successful" });
+    } else {
+      return res.status(400).json({ error: "Subscription failed. Try again." });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: "An error occurred." });
   }
 });

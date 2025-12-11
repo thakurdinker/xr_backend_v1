@@ -43,9 +43,15 @@ const submitContactFormValidation = Joi.object({
   formId: Joi.string().optional(),
 });
 
+const newsletterSubmissionValidation = Joi.object({
+  email: Joi.string().email().required(),
+  pageName: Joi.string().optional(),
+});
+
 module.exports = {
   submitFormValidation,
   submitContactFormValidation,
   submitBrochureDownloadFormValidation,
   submitMarketReportFormValidation,
+  newsletterSubmissionValidation,
 };

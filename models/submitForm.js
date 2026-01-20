@@ -42,6 +42,10 @@ const contactSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    budget: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

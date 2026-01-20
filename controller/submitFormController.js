@@ -152,7 +152,7 @@ module.exports.brochureDownloadSubmission = catchAsync(async (req, res) => {
     res.status(500).json({ error: "An error occurred while saving the form" });
   } finally {
     try {
-      sendContactFormDataToZapier({
+      await sendContactFormDataToZapier({
         email: value?.email,
         firstname: value?.firstname,
         lastname: value?.lastname,
@@ -205,7 +205,7 @@ module.exports.marketReportSubmission = catchAsync(async (req, res) => {
     res.status(500).json({ error: "An error occurred while saving the form" });
   } finally {
     try {
-      sendContactFormDataToZapier({
+      await sendContactFormDataToZapier({
         email: value?.email,
         firstname: value?.firstname,
         lastname: value?.lastname,

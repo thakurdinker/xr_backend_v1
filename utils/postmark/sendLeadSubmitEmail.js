@@ -52,6 +52,14 @@ const sendLeadSubmitEmail = (content) => {
                     <td><strong>Ip Address:</strong></td>
                     <td>${content?.ipAddress}</td>
                 </tr>
+                ${content?.budget && (
+      `
+                  <tr>
+                    <td><strong>Budget:</strong></td>
+                    <td>${content?.budget}</td>
+                    </tr>
+                  `
+    )}
             </table>
   `;
 

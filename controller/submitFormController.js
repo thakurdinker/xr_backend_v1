@@ -64,13 +64,13 @@ module.exports.submitContactForm = catchAsync(async (req, res) => {
     const contact = new Contact(value);
     await contact.save();
     sendLeadSubmitEmail(value);
-    sendFormSubmitDataN8N(value);
+    await sendFormSubmitDataN8N(value);
     res.status(201).json({ message: "Form submitted successfully" });
   } catch (err) {
     res.status(500).json({ error: "An error occurred while saving the form" });
   } finally {
     try {
-      sendContactFormDataToZapier(value);
+      await sendContactFormDataToZapier(value);
     } catch (err) {
       console.log(err);
     }
@@ -121,8 +121,9 @@ module.exports.brochureDownloadSubmission = catchAsync(async (req, res) => {
   );
 
   if (error) {
-    return res.status(400).json({ error: "Something went wrong" });
+    return res.status(400).json({ error: error.details[0].message });
   }
+
 
   try {
     const contact = new Contact(value);
@@ -151,7 +152,7 @@ module.exports.brochureDownloadSubmission = catchAsync(async (req, res) => {
     res.status(500).json({ error: "An error occurred while saving the form" });
   } finally {
     try {
-      sendContactFormDataToZapier({
+      await sendContactFormDataToZapier({
         email: value?.email,
         firstname: value?.firstname,
         lastname: value?.lastname,
@@ -174,7 +175,7 @@ module.exports.marketReportSubmission = catchAsync(async (req, res) => {
   const { error, value } = submitMarketReportFormValidation.validate(req.body);
 
   if (error) {
-    return res.status(400).json({ error: "Something went wrong" });
+    return res.status(400).json({ error: error.details[0].message });
   }
 
   try {
@@ -204,7 +205,7 @@ module.exports.marketReportSubmission = catchAsync(async (req, res) => {
     res.status(500).json({ error: "An error occurred while saving the form" });
   } finally {
     try {
-      sendContactFormDataToZapier({
+      await sendContactFormDataToZapier({
         email: value?.email,
         firstname: value?.firstname,
         lastname: value?.lastname,

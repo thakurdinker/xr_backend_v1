@@ -18,7 +18,7 @@ const limiter = rateLimit({
 
 const router = express.Router();
 
-router.post("/contact", limiter, submitContactForm);
+router.post("/contact", submitContactForm);
 router.post("/landing-page", limiter, submitLandingPageForm);
 router.post("/career_contact", limiter, submitContactFormCareer);
 router.post("/brochure-download", brochureDownloadSubmission);

@@ -64,7 +64,7 @@ module.exports.submitContactForm = catchAsync(async (req, res) => {
     const contact = new Contact(value);
     await contact.save();
     sendLeadSubmitEmail(value);
-    // await sendFormSubmitDataN8N(value);
+    await sendFormSubmitDataN8N(value);
     res.status(201).json({ message: "Form submitted successfully" });
   } catch (err) {
     res.status(500).json({ error: "An error occurred while saving the form" });

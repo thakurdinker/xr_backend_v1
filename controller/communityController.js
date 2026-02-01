@@ -8,6 +8,8 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const Property = require("../models/properties");
+const axios = require("axios");
+const qs = require("qs");
 
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
@@ -58,6 +60,15 @@ module.exports.getAll = catchAsync(async (req, res) => {
       )
     );
 
+
+    // get the communities from the strapi backend
+    const strapiCommunities = await axios.get(
+      `https://admin-v1.xrealty.ae/api/communities-contents?populate=*`
+    );
+
+    const strapiCommunitiesData = strapiCommunities?.data;
+
+
     // Make a object containing the community and the properties total number in that community
     const communityWithProperties = communities.map((community) => ({
       community_name: community.name,
@@ -69,10 +80,18 @@ module.exports.getAll = catchAsync(async (req, res) => {
       ).length,
     }));
 
+    const communityWithPropertiesStrapiData = strapiCommunitiesData?.data?.map((community) => ({
+      community_name: community?.community_name,
+      community_slug: community?.community_slug,
+      community_description: community?.seo?.metaDescription,
+      community_images: [{ url: community?.hero_image?.url, description: community?.seo?.metaDescription }],
+      properties: 0,
+    }));
+
     // const count = await Community.countDocuments();
     return res.status(200).json({
       success: true,
-      communities: communityWithProperties,
+      communities: [...communityWithProperties, ...communityWithPropertiesStrapiData],
       // totalPages: Math.ceil(count / limit),
       // currentPage: Number(page),
       message: "DONE",

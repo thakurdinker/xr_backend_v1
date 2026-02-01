@@ -115,11 +115,13 @@ router.route("/:communitySlug").get(
         slug: communitySlug,
       }).populate({ path: "amenities.icons" });
 
-      if (!community) {
-        return res
-          .status(200)
-          .json({ success: false, message: "NO community Found" });
-      }
+      // Disable for now as we are adding new communities from the strapi backend
+
+      // if (!community) {
+      //   return res
+      //     .status(200)
+      //     .json({ success: false, message: "NO community Found" });
+      // }
 
       // Properties in the community with pagination
       const properties = await Property.find({

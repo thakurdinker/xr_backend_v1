@@ -45,8 +45,9 @@ const submitDataToCrm = async (data) => {
       dateCreated: new Date().toISOString(),
       source: "Website",
       description: data?.message || "",
-      campaignName: "XR - Website",
-      location: data?.campaignName || "",
+      campaignName: data?.campaignName || "XR - Website",
+      pageName: data?.pageUrl || "",
+      // location: data?.campaignName || "",
     });
   } catch (err) {
     console.log(err);
@@ -106,6 +107,10 @@ module.exports.submitContactFormCareer = catchAsync(async (req, res) => {
 
 // Landing page submission
 module.exports.submitLandingPageForm = catchAsync(async (req, res) => {
+
+  console.log(req.body);
+
+  return res.status(200).json({ error: "An error occurred while saving the form" });
   try {
     submitDataToCrm(req.body);
     res.status(201).json({ message: "Form submitted successfully" });

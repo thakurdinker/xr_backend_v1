@@ -1,8 +1,18 @@
 const Property = require("../models/properties");
 const catchAsync = require("../utils/seedDB/catchAsync");
-const shuffle = require("../utils/shuffleArray");
 const qs = require("qs");
 const axios = require("axios");
+
+
+// Fisher–Yates shuffle (returns new array)
+function shuffleArray(arr) {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 
 const fetchHomeDatafromStrapi = async () => {
@@ -83,7 +93,6 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
   let newData = [];
   let guides = [];
 
-
   newData = await fetchHomeDatafromStrapi();
   guides = await fetchGuidesDatafromStrapi();
 
@@ -99,6 +108,27 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
     )
     .sort({ createdAt: -1 })
     .limit(10);
+
+  // Get the featured agents from the newData
+  const featuredAgents = newData?.featured_agents || [];
+
+  // Seperate agents based on add_to_special_list
+  const specialListAgents = shuffleArray(featuredAgents.filter(agent => agent.add_to_special_list === true));
+  const normalListAgents = shuffleArray(featuredAgents.filter(agent => agent.add_to_special_list === false));
+
+  // Delete the add_to_special_list field from the agents
+  specialListAgents.forEach(agent => {
+    delete agent.add_to_special_list;
+  });
+  normalListAgents.forEach(agent => {
+    delete agent.add_to_special_list;
+  });
+
+  // Merge the special and normal list agents
+  const allAgents = [...specialListAgents, ...normalListAgents];
+
+  // insert the agents back into the newData
+  newData.featured_agents = allAgents;
 
 
   return res.status(200).json({

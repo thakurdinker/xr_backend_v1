@@ -47,6 +47,7 @@ const propertySearchRouter = require("./routes/propertySearchRouter");
 const fetchSearchFilterRouter = require("./routes/fetchSearchFilterRouter");
 
 const User = require("./models/user");
+const seoUrlMap = require("./utils/seoUrlMap");
 
 const PORT = process.env.PORT;
 const DB_URL =
@@ -114,6 +115,15 @@ app.use(mongoSanitize());
 //   next();
 // });
 
+app.use((req, res, next) => {
+  const path = req.path.endsWith("/") ? req.path : req.path + "/";
+  const destination = seoUrlMap[path];
+  if (destination) {
+    req.url = destination + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "");
+  }
+  next();
+})
+
 // Admin Routes
 app.use("/admin", permissionsRouter);
 app.use("/admin", rolesRouter);
@@ -154,6 +164,11 @@ app.use("/", fetchSearchFilterRouter);
 
 // Resume Upload
 app.use("/resume", require("./routes/resumeUpload"));
+
+
+app.use("*", (req, res) => {
+  return res.status(404).json({ success: false, message: "Page not found" });
+});
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;

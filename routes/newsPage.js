@@ -310,47 +310,50 @@ router.route("/blogs").get(
 // );
 
 // Read a single news article by slug
-router.route("/:contentSlug").get(
-  catchAsync(async (req, res) => {
-    const { contentSlug } = req.params;
-    // console.log(contentSlug);
-    let content = [];
-    content = await Content.find({
-      slug: contentSlug,
-      status: "published",
-    });
+// Disabled this route because it is not used
+// router.route("/:contentSlug").get(
+//   catchAsync(async (req, res) => {
+//     const { contentSlug } = req.params;
+//     // console.log(contentSlug);
+//     let content = [];
+//     content = await Content.find({
+//       slug: contentSlug,
+//       status: "published",
+//     });
 
-    if (content.length === 0) {
-      // This is an extra check for fetching slug from redirect url, if found, for any content slug
-      // Search for the slug in the redirect url,
-      const redirects = await Redirect.find({
-        to: { $regex: contentSlug, $options: "i" }, // 'i' makes it case-insensitive
-      });
+//     console.log("HERE");
 
-      // console.log(redirects);
+//     if (content.length === 0) {
+//       // This is an extra check for fetching slug from redirect url, if found, for any content slug
+//       // Search for the slug in the redirect url,
+//       const redirects = await Redirect.find({
+//         to: { $regex: contentSlug, $options: "i" }, // 'i' makes it case-insensitive
+//       });
 
-      if (redirects.length > 0) {
-        // Handle the matching redirects
-        // console.log("Redirects found: ", redirects);
-        content = await Content.find({
-          slug: redirects[0].from.split("/")[1],
-          status: "published",
-        });
+//       // console.log(redirects);
 
-        if (content) {
-          return res
-            .status(200)
-            .json({ success: true, content, message: "DONE" });
-        }
+//       if (redirects.length > 0) {
+//         // Handle the matching redirects
+//         // console.log("Redirects found: ", redirects);
+//         content = await Content.find({
+//           slug: redirects[0].from.split("/")[1],
+//           status: "published",
+//         });
 
-        return res
-          .status(200)
-          .json({ success: true, content, message: "DONE" });
-      }
-    }
+//         if (content) {
+//           return res
+//             .status(200)
+//             .json({ success: true, content, message: "DONE" });
+//         }
 
-    return res.status(200).json({ success: true, content, message: "DONE" });
-  })
-);
+//         return res
+//           .status(200)
+//           .json({ success: true, content, message: "DONE" });
+//       }
+//     }
+
+//     return res.status(200).json({ success: true, content, message: "DONE" });
+//   })
+// );
 
 module.exports = router;

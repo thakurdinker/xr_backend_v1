@@ -9,8 +9,10 @@ const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const fs = require("fs");
 const path = require("path");
+const qs = require("qs");
 
 const modifyCloudinaryUrl = require("../utils/modifyCloudinaryUrl.js");
+const { default: axios } = require("axios");
 
 const mapTypeNameToSlug = {
   "type-apartment": "apartments",
@@ -19,7 +21,10 @@ const mapTypeNameToSlug = {
   "type-penthouse": "penthouse",
   "type-mansion": "mansions",
   "type-off-plan-projects": "off-plan-projects",
+
 };
+
+
 
 module.exports.getAllProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
@@ -145,6 +150,40 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
 
   const { page = 1, limit = 10, sortOrder = 1 } = req.query;
 
+
+  let strapiProperties = null;
+
+  // Fetch content data from the strapi api
+  const queryStr = qs.stringify({
+    populate: {
+      property_cards: {
+        populate: ["card_image", "property_variants"],
+      },
+      seo: {
+        populate: ["shareImage"]
+      },
+      faqs: true,
+    },
+    filters: {
+      listing_type: {
+        slug: {
+          $eq: saleType,
+        },
+      },
+      property_type: {
+        slug: {
+          $eq: type,
+        },
+      },
+    },
+  }, {
+    encodeValuesOnly: true,
+  });
+
+
+  strapiProperties = await axios.get(`https://admin-v1.xrealty.ae/api/dubai-properties-contents?${queryStr}`);
+
+
   let query = { show_property: true };
   let foundTypeName = null;
 
@@ -155,7 +194,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
   } else if (foundTypeName !== null && saleType === "for-sale") {
     query = { show_property: true, "type.name": foundTypeName };
   } else {
-    return res.status(200).json({ success: true, properties: [] });
+    return res.status(200).json({ success: true, properties: [], content: strapiProperties?.data });
   }
 
   try {
@@ -196,6 +235,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
       properties: newProperties,
       message: "DONE",
       totalPages: Math.ceil(count / limit),
+      content: strapiProperties?.data,
       currentPage: Number(page),
     });
   } catch (error) {

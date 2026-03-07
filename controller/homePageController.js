@@ -43,6 +43,7 @@ const fetchHomeDatafromStrapi = async () => {
         "insightful_blogs",
         "insightful_blogs.cover",
         "insightful_blogs.category",
+        "brokerage_content_section",
       ],
     },
     {

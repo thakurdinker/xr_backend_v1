@@ -31,4 +31,5 @@ module.exports = {
     "/villas-for-sale-in-dubai/": "/dubai-properties/for-sale/type-villa/",
     "/townhouse-for-sale-in-dubai/": "/dubai-properties/for-sale/type-townhouse/",
     "/waterfront-properties-for-sale-in-dubai/": "/dubai-properties/for-sale/type-waterfront/",
+
 };

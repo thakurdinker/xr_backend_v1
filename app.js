@@ -30,6 +30,10 @@ const assestsDeleteRouter = require("./routes/assetsDelete");
 const iconRouter = require("./routes/icons");
 const developerRouter = require("./routes/developer");
 const sitemapRouter = require("./routes/generateSitemap");
+const { webhookRouter: sitemapWebhookRouter } = require("./routes/generateSitemap");
+const sitemapTrigger = require("./middleware/sitemapTrigger");
+const { CronJob } = require("cron");
+const { generateSitemap, forceRegeneration } = require("./utils/generateSitemap/generateSitemap");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -128,20 +132,23 @@ app.use((req, res, next) => {
 app.use("/admin", permissionsRouter);
 app.use("/admin", rolesRouter);
 app.use("/admin", userRouter);
-app.use("/admin", propertyRouter);
-app.use("/admin", contentRouter);
-app.use("/admin", agentRouter);
+app.use("/admin", sitemapTrigger, propertyRouter);       // auto-regen on property CRUD
+app.use("/admin", sitemapTrigger, contentRouter);         // auto-regen on blog/news CRUD
+app.use("/admin", sitemapTrigger, agentRouter);           // auto-regen on agent CRUD
 app.use("/admin", homePageRouter);
 app.use("/admin", propertyTypeRouter);
-app.use("/admin", communityRouter);
+app.use("/admin", sitemapTrigger, communityRouter);       // auto-regen on community CRUD
 app.use("/admin", resetPassRouter);
 app.use("/admin", assestsDeleteRouter);
 app.use("/admin", iconRouter);
-app.use("/admin", developerRouter);
+app.use("/admin", sitemapTrigger, developerRouter);       // auto-regen on developer CRUD
 app.use("/admin", sitemapRouter);
 app.use("/admin", reviewsRouter);
 app.use("/admin", projectOfTheMonthRouter);
-app.use("/admin/redirect-rules", redirectRouter);
+app.use("/admin/redirect-rules", sitemapTrigger, redirectRouter); // auto-regen on redirect CRUD
+
+// Sitemap webhook (for Strapi to call)
+app.use("/api/sitemap", sitemapWebhookRouter);
 
 // Public Routes
 app.use("/", homePageDataRouter);
@@ -180,4 +187,23 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Backend Server Started on PORT : ", PORT);
+
+  // ── Sitemap: generate on startup + schedule every 2 hours ────
+  generateSitemap()
+    .then((result) => {
+      if (result.success) {
+        console.log(`[Sitemap] Startup generation complete — ${result.urlCount} URLs`);
+      } else {
+        console.warn("[Sitemap] Startup generation failed:", result.error);
+      }
+    })
+    .catch((err) => console.error("[Sitemap] Startup generation error:", err));
+
+  // Cron: every 2 hours at minute 0 (00:00, 02:00, 04:00, ...)
+  const sitemapCron = new CronJob("0 */2 * * *", async () => {
+    console.log("[Sitemap] Cron triggered — regenerating...");
+    await generateSitemap();
+  });
+  sitemapCron.start();
+  console.log("[Sitemap] Cron scheduled — every 2 hours");
 });

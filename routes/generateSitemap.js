@@ -108,6 +108,23 @@ router
     }
   });
 
+// ── 2b-alt. Sitemap health check (admin session auth — browser trigger)
+//    GET /admin/generateSitemap/health-check
+router
+  .route("/generateSitemap/health-check")
+  .get(isLoggedIn, isAdmin, async (req, res) => {
+    try {
+      const result = await runHealthCheck();
+      return res.status(200).json(result);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Health check failed",
+        error: err.message,
+      });
+    }
+  });
+
 // ── 2c. Get health check logs (admin session auth)
 //    GET /admin/generateSitemap/audit-logs?limit=50&runId=xxx
 router

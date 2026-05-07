@@ -98,6 +98,9 @@ db.once("open", () => {
   console.log("Database connected");
 });
 
+// Trust the first proxy (AWS ELB) so express-rate-limit and req.ip work correctly
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: true, credentials: true }));
 
 app.use(express.static(path.join(__dirname, "public")));

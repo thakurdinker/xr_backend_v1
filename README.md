@@ -99,6 +99,23 @@ Content-Type: application/json
 ```
 Queues a debounced regeneration. Returns `202 Accepted`.
 
+**Health check (bearer token)**
+```
+POST /admin/generateSitemap/health-check
+Authorization: Bearer <ADMIN_SECRET>
+```
+Checks every URL in the sitemap for 301 redirects, 404s, and other bad status codes. Auto-removes bad URLs and logs results to MongoDB. Returns JSON with `totalChecked`, `badUrls`, `removed`, and `details` array.
+
+**View audit logs (admin session auth)**
+```
+GET /admin/generateSitemap/audit-logs?limit=50&runId=<auditRunId>
+```
+Returns the most recent health check logs from MongoDB. Use `runId` to filter by a specific run.
+
+### Daily Health Check
+
+A cron runs at 3:30 AM daily (after the 2:00 AM sitemap regeneration). It checks every URL in the sitemap by sending a HEAD request and removes any that return 301, 302, 404, 410, or 5xx. All removed URLs are logged in the `sitemapauditlogs` MongoDB collection with the status code, redirect target, and reason.
+
 ### Kill-Switch (Revert to Strapi)
 
 If something goes wrong with the generated sitemap, revert instantly:

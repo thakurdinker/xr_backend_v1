@@ -5,6 +5,7 @@ const {
   forceRegeneration,
   queueRegeneration,
 } = require("../utils/generateSitemap/generateSitemap");
+const { runHealthCheck } = require("../utils/generateSitemap/sitemapHealthCheck");
 const { isLoggedIn, isAdmin } = require("../middleware/middleware");
 const path = require("path");
 const fs = require("fs");
@@ -87,6 +88,49 @@ router
       message: "Force regeneration failed",
       error: result.error,
     });
+  });
+
+// ── 2b. Sitemap health check (bearer token — for CLI / manual use)
+//    POST /admin/generateSitemap/health-check
+//    Authorization: Bearer <ADMIN_SECRET>
+router
+  .route("/generateSitemap/health-check")
+  .post(bearerAuth(ADMIN_SECRET), async (req, res) => {
+    try {
+      const result = await runHealthCheck();
+      return res.status(200).json(result);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Health check failed",
+        error: err.message,
+      });
+    }
+  });
+
+// ── 2c. Get health check logs (admin session auth)
+//    GET /admin/generateSitemap/audit-logs?limit=50&runId=xxx
+router
+  .route("/generateSitemap/audit-logs")
+  .get(isLoggedIn, isAdmin, async (req, res) => {
+    try {
+      const SitemapAuditLog = require("../models/sitemapAuditLog");
+      const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+      const query = req.query.runId ? { auditRunId: req.query.runId } : {};
+
+      const logs = await SitemapAuditLog.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+      return res.status(200).json({ success: true, count: logs.length, logs });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch audit logs",
+        error: err.message,
+      });
+    }
   });
 
 // ── 3. Get current sitemap ───────────────────────────────────────

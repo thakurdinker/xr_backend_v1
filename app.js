@@ -34,6 +34,7 @@ const { webhookRouter: sitemapWebhookRouter } = require("./routes/generateSitema
 const sitemapTrigger = require("./middleware/sitemapTrigger");
 const { CronJob } = require("cron");
 const { generateSitemap, forceRegeneration } = require("./utils/generateSitemap/generateSitemap");
+const { runHealthCheck } = require("./utils/generateSitemap/sitemapHealthCheck");
 
 const homePageDataRouter = require("./routes/homepage");
 const agentsPageRouter = require("./routes/agentPage");
@@ -206,4 +207,23 @@ app.listen(PORT, "0.0.0.0", () => {
   });
   sitemapCron.start();
   console.log("[Sitemap] Cron scheduled — every 2 hours");
+
+  // Cron: daily health check at 03:30 AM (after the 02:00 sitemap regen)
+  const healthCheckCron = new CronJob("30 3 * * *", async () => {
+    console.log("[SitemapAudit] Daily health check triggered...");
+    try {
+      const result = await runHealthCheck();
+      if (result.badUrls > 0) {
+        console.log(
+          `[SitemapAudit] Removed ${result.removed} bad URLs (run: ${result.auditRunId})`
+        );
+      } else {
+        console.log("[SitemapAudit] All URLs healthy — nothing to remove");
+      }
+    } catch (err) {
+      console.error("[SitemapAudit] Daily health check failed:", err);
+    }
+  });
+  healthCheckCron.start();
+  console.log("[SitemapAudit] Daily health check scheduled — 03:30 AM");
 });

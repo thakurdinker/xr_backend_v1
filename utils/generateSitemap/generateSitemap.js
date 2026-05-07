@@ -128,9 +128,18 @@ const STATIC_PAGES = [
 ];
 
 // ── XML helpers ──────────────────────────────────────────────────
+function escapeXml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 function urlEntry(loc, lastmod, changefreq = "daily", priority = "0.9") {
   return `  <url>
-    <loc>${SITE_URL}${loc}</loc>
+    <loc>${escapeXml(SITE_URL + loc)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>

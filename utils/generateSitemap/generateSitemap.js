@@ -1,326 +1,464 @@
 const fs = require("fs");
-const { default: mongoose } = require("mongoose");
-
+const path = require("path");
 const dotenv = require("dotenv");
 
-const path = require("path");
 const Developer = require("../../models/developer");
 const Community = require("../../models/community");
 const Property = require("../../models/properties");
 const Content = require("../../models/content");
-const Agent = require("../../models/agent");
-const Review = require("../../models/reviewsForm");
 const Redirect = require("../../models/redirect");
+const seoUrlMap = require("../seoUrlMap");
+
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
-const DB_URL =
-  process.env.ENV === "development"
-    ? process.env.TEST_DB_URL
-    : process.env.DB_URL;
+// ── Config ───────────────────────────────────────────────────────
+const SITE_URL = "https://www.xrealty.ae";
+const STRAPI_BASE_URL =
+  process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || "";
 
-const generateSitemap = async () => {
-  mongoose.connect(DB_URL);
+const SITEMAP_PATH = path.join(__dirname, "../../public/sitemap.xml");
 
-  const db = mongoose.connection;
-
-  db.on("error", console.error.bind(console, "connection error: "));
-
-  db.once("open", () => {
-    console.log("Database connected");
-  });
-
-  //   <url>
-  //     <loc>https://www.xrealty.ae/communities/</loc>
-  //     <lastmod>${isoDateNow}</lastmod>
-  // 		<changefreq>daily</changefreq>
-  // 		<priority>0.9</priority>
-  // </url>
-
-  let blogsModifiedCount = 0;
-  let realEstateNewsModifiedCount = 0;
-
-  const redirects = await Redirect.find({});
-
-  const isoDateNow = new Date().toISOString();
-
-  const developers = await Developer.find({});
-
-  const communities = await Community.find({});
-  const properties = await Property.find({ show_property: true });
-  const blogs = await Content.find({ status: "published", category: "Blog" });
-  const realEstateNews = await Content.find({
-    status: "published",
-    category: "News",
-  });
-  const agents = await Agent.find({ hidden: false });
-
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url>
-    <loc>https://www.xrealty.ae/</loc>
-    <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>1</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/privacy-policy/</loc>
-    <lastmod>${isoDateNow}</lastmod>
-		<changefreq>weekly</changefreq>
-		<priority>0.8</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/contact-us-dubai-real-estate-agency/</loc>
-    <lastmod>${isoDateNow}</lastmod>
-		<changefreq>weekly</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/about-us/</loc>
-    <lastmod>${isoDateNow}</lastmod>
-		<changefreq>weekly</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/agent/</loc>
-    <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/real-estate-news/</loc>
-      <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/blogs/</loc>
-      <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/apartments-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/townhouses-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/villas-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/penthouse-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/duplex-apartments-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/twin-villas-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-<url>
-    <loc>https://www.xrealty.ae/dubai-properties/mansions-for-sale-in-dubai/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-		<changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-
-<url>
-    <loc>https://www.xrealty.ae/customer-reviews/</loc>
-     <lastmod>${isoDateNow}</lastmod>
-    <changefreq>daily</changefreq>
-		<priority>0.9</priority>
-</url>
-
-${
-  // Developers sitemap
-  developers.length > 0 &&
-  developers
-    .map((developer) => {
-      let developerSlug = encodeURIComponent(developer.developer_slug);
-      return `
-          <url>
-              <loc>${`https://www.xrealty.ae/developer/${developerSlug}/`}</loc>
-              <lastmod>${new Date(developer.updatedAt).toISOString()}</lastmod>
-              <changefreq>daily</changefreq>
-		          <priority>0.9</priority>
-          </url>
-          `;
-    })
-    .join("")
-}
-
-${
-  //   Community Sitemap
-  communities.length > 0 &&
-  communities
-    .map((community) => {
-      let communitySlug = encodeURIComponent(community.slug);
-      return `
-            <url>
-                <loc>${`https://www.xrealty.ae/area/${communitySlug}/`}</loc>
-                <lastmod>${new Date(
-                  community.updatedAt
-                ).toISOString()}</lastmod>
-                <changefreq>daily</changefreq>
-		            <priority>0.9</priority>
-            </url>
-            `;
-    })
-    .join("")
-}
-
-${
-  //   Property Sitemap
-  properties.length > 0 &&
-  properties
-    .map((property) => {
-      let propertyNameSlug = encodeURIComponent(property.property_name_slug);
-      return `
-              <url> 
-                  <loc>${`https://www.xrealty.ae/property/${propertyNameSlug}/`}</loc>
-                  <lastmod>${new Date(
-                    property.updatedAt
-                  ).toISOString()}</lastmod>
-                  <changefreq>daily</changefreq>
-		              <priority>0.9</priority>
-              </url>
-              `;
-    })
-    .join("")
-}
-
-${
-  //   Real Estate News sitemap
-  realEstateNews.length > 0 &&
-  realEstateNews
-    .map((newsAndArticle) => {
-      let newsArticleSlug = encodeURIComponent(newsAndArticle.slug);
-      let path = "";
-
-      for (let i = 0; i < redirects.length; i++) {
-        if (redirects[i].from === `/${newsAndArticle.slug}`) {
-          let temp = encodeURIComponent(redirects[i].to.split("/")[2]);
-          // path = redirects[i].to;
-          path = `/real-estate-news/${temp}/`;
-          realEstateNewsModifiedCount++;
-          break;
-        } else {
-          path = `/${encodeURIComponent(newsAndArticle.slug)}/`;
-        }
-      }
-      return `
-                <url>
-                    <loc>${`https://www.xrealty.ae${path}`}</loc>
-                    <lastmod>${new Date(
-                      newsAndArticle.updatedAt
-                    ).toISOString()}</lastmod>
-                    <changefreq>daily</changefreq>
-		                <priority>0.9</priority>
-                </url>
-                `;
-    })
-    .join("")
-}
-
-${
-  //   Blogs sitemap
-  blogs.length > 0 &&
-  blogs
-    .map((newsAndArticle) => {
-      let blogSlug = encodeURIComponent(newsAndArticle.slug);
-      let path = "";
-
-      for (let i = 0; i < redirects.length; i++) {
-        if (redirects[i].from === `/${newsAndArticle.slug}`) {
-          let temp = encodeURIComponent(redirects[i].to.split("/")[2]);
-          path = `/blogs/${temp}/`;
-          // path = encodeURIComponent(redirects[i].to);
-          blogsModifiedCount++;
-          break;
-        } else {
-          path = `/${encodeURIComponent(newsAndArticle.slug)}/`;
-        }
-      }
-
-      return `
-                <url>
-                    <loc>${`https://www.xrealty.ae${path}`}</loc>
-                    <lastmod>${new Date(
-                      newsAndArticle.updatedAt
-                    ).toISOString()}</lastmod>
-                    <changefreq>daily</changefreq>
-		                <priority>0.9</priority>
-                </url>
-                `;
-    })
-    .join("")
-}
-
-${
-  //   Agent sitemap
-  agents.length > 0 &&
-  agents
-    .map((agent) => {
-      let agentSlug = encodeURIComponent(agent.name_slug);
-      return `
-                  <url>
-                      <loc>${`https://www.xrealty.ae/agent/${agentSlug}/`}</loc>
-                      <lastmod>${new Date(
-                        agent.updatedAt
-                      ).toISOString()}</lastmod>
-                      <changefreq>weekly</changefreq>
-		                  <priority>0.8</priority>
-                  </url>
-                  `;
-    })
-    .join("")
-}
-
-</urlset>
-`;
+// ── Strapi fetch helper ──────────────────────────────────────────
+async function fetchStrapi(endpoint) {
+  const headers = { "Content-Type": "application/json" };
+  if (STRAPI_API_TOKEN) {
+    headers["Authorization"] = `Bearer ${STRAPI_API_TOKEN}`;
+  }
 
   try {
-    fs.writeFileSync(
-      path.join(__dirname, "../../public/sitemap.xml"),
-      sitemap,
-      {
-        encoding: "utf8",
-      }
-    );
-    console.log("genarated Sitemap successfully");
-    console.log("Blogs Modified: ", blogsModifiedCount);
-    console.log("Real Estate News Modified: ", realEstateNewsModifiedCount);
-    return true;
+    const res = await fetch(`${STRAPI_BASE_URL}${endpoint}`, { headers });
+    if (!res.ok) {
+      console.warn(
+        `[Sitemap] Strapi fetch failed: ${endpoint} → ${res.status}`
+      );
+      return [];
+    }
+    const json = await res.json();
+    return json?.data || [];
   } catch (err) {
-    console.log("Error generating sitemap");
-    return false;
+    console.warn(`[Sitemap] Strapi fetch error: ${endpoint} → ${err.message}`);
+    return [];
   }
-  return;
+}
+
+/**
+ * Fetch all pages from a Strapi collection using pagination.
+ * Returns a flat array of all items.
+ */
+async function fetchStrapiAll(endpoint, params = "") {
+  const allItems = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const sep = params ? "&" : "?";
+    const paginationParams = `${params ? "?" + params + sep : "?"}pagination[page]=${page}&pagination[pageSize]=${pageSize}`;
+    const items = await fetchStrapi(`${endpoint}${paginationParams}`);
+
+    if (!items || items.length === 0) break;
+    allItems.push(...items);
+
+    if (items.length < pageSize) break; // last page
+    page++;
+  }
+
+  return allItems;
+}
+
+// ── Static pages ─────────────────────────────────────────────────
+const STATIC_PAGES = [
+  { path: "/", changefreq: "daily", priority: "1.0" },
+  { path: "/about-us/", changefreq: "weekly", priority: "0.9" },
+  {
+    path: "/contact-us-dubai-real-estate-agency/",
+    changefreq: "weekly",
+    priority: "0.9",
+  },
+  { path: "/privacy-policy/", changefreq: "weekly", priority: "0.8" },
+  { path: "/agent/", changefreq: "daily", priority: "0.9" },
+  { path: "/real-estate-news/", changefreq: "daily", priority: "0.9" },
+  { path: "/blogs/", changefreq: "daily", priority: "0.9" },
+  { path: "/dubai-properties/", changefreq: "daily", priority: "0.9" },
+  { path: "/customer-reviews/", changefreq: "daily", priority: "0.9" },
+  { path: "/careers/", changefreq: "weekly", priority: "0.8" },
+  { path: "/guides/", changefreq: "weekly", priority: "0.9" },
+  { path: "/our-publications/", changefreq: "weekly", priority: "0.8" },
+  { path: "/living-experience-dubai/", changefreq: "weekly", priority: "0.8" },
+  { path: "/living-experience-dubai/beachfront/", changefreq: "weekly", priority: "0.8" },
+  { path: "/developer/", changefreq: "daily", priority: "0.9" },
+  { path: "/property-search/", changefreq: "daily", priority: "0.8" },
+  { path: "/dubai-properties/for-sale/type-off-plan-villa-projects/", changefreq: "daily", priority: "0.8" },
+  // Dubai properties by type
+  {
+    path: "/dubai-properties/apartments-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/townhouses-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/villas-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/penthouse-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/duplex-apartments-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/twin-villas-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+  {
+    path: "/dubai-properties/mansions-for-sale-in-dubai/",
+    changefreq: "daily",
+    priority: "0.9",
+  },
+];
+
+// ── XML helpers ──────────────────────────────────────────────────
+function urlEntry(loc, lastmod, changefreq = "daily", priority = "0.9") {
+  return `  <url>
+    <loc>${SITE_URL}${loc}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+  </url>`;
+}
+
+function normalizePath(p) {
+  // Ensure leading slash, trailing slash, decode
+  let normalized = decodeURIComponent(p);
+  if (!normalized.startsWith("/")) normalized = "/" + normalized;
+  if (!normalized.endsWith("/")) normalized = normalized + "/";
+  return normalized.toLowerCase();
+}
+
+// ── Main generator ───────────────────────────────────────────────
+const generateSitemap = async () => {
+  const startTime = Date.now();
+  console.log("[Sitemap] Generation started...");
+
+  // Track all URLs to prevent duplicates — keyed by normalized path
+  const urlMap = new Map();
+
+  function addUrl(rawPath, lastmod, changefreq = "daily", priority = "0.9") {
+    const normalized = normalizePath(rawPath);
+    // Only add if not already present (first-add wins, so add higher-priority sources first)
+    if (!urlMap.has(normalized)) {
+      // Keep the original (non-lowercased) path for the actual URL
+      let cleanPath = decodeURIComponent(rawPath);
+      if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+      if (!cleanPath.endsWith("/")) cleanPath = cleanPath + "/";
+
+      urlMap.set(normalized, { path: cleanPath, lastmod, changefreq, priority });
+    }
+  }
+
+  try {
+    // ── 1. Load redirects (to exclude source paths) ────────────
+    const redirects = await Redirect.find({});
+    const redirectSourcePaths = new Set();
+    const redirectTargetPaths = new Set();
+
+    for (const r of redirects) {
+      const fromNormalized = normalizePath(r.from);
+      const toNormalized = r.to ? normalizePath(r.to) : null;
+
+      // Only exclude if the redirect actually points ELSEWHERE
+      // (skip trailing-slash or self-referencing redirects)
+      if (toNormalized && fromNormalized !== toNormalized) {
+        redirectSourcePaths.add(fromNormalized);
+      }
+
+      // Track redirect targets — these should be in the sitemap
+      if (r.to) {
+        redirectTargetPaths.add(toNormalized);
+      }
+    }
+
+    console.log(
+      `[Sitemap] Loaded ${redirects.length} redirects (${redirectSourcePaths.size} source paths to exclude)`
+    );
+
+    // ── 2. Static pages ────────────────────────────────────────
+    const isoNow = new Date().toISOString();
+    for (const page of STATIC_PAGES) {
+      addUrl(page.path, isoNow, page.changefreq, page.priority);
+    }
+
+    // ── 2b. SEO landing pages (from seoUrlMap) ─────────────────
+    //   These are internal rewrites — the SEO-friendly path is the
+    //   public-facing URL that should appear in the sitemap.
+    for (const seoPath of Object.keys(seoUrlMap)) {
+      addUrl(seoPath, isoNow, "daily", "0.9");
+    }
+    console.log(`[Sitemap] SEO landing pages: ${Object.keys(seoUrlMap).length}`);
+
+    // ── 3. Properties (from MongoDB) ───────────────────────────
+    const properties = await Property.find({ show_property: true }).select(
+      "property_name_slug updatedAt"
+    );
+    for (const p of properties) {
+      addUrl(
+        `/property/${encodeURIComponent(p.property_name_slug)}/`,
+        new Date(p.updatedAt).toISOString(),
+        "daily",
+        "0.9"
+      );
+    }
+    console.log(`[Sitemap] Properties: ${properties.length}`);
+
+    // ── 4. Communities (Strapi priority, MongoDB fallback) ─────
+    // First, load MongoDB communities into the map
+    const mongoCommunities = await Community.find({}).select("slug updatedAt");
+    for (const c of mongoCommunities) {
+      addUrl(
+        `/area/${encodeURIComponent(c.slug)}/`,
+        new Date(c.updatedAt).toISOString(),
+        "daily",
+        "0.9"
+      );
+    }
+
+    // Then, load Strapi communities — these OVERWRITE MongoDB entries (Strapi priority)
+    const strapiCommunities = await fetchStrapiAll(
+      "/api/communities-contents",
+      "fields[0]=community_slug&fields[1]=updatedAt"
+    );
+    for (const c of strapiCommunities) {
+      const slug = c.community_slug;
+      if (!slug) continue;
+
+      const normalized = normalizePath(`/area/${encodeURIComponent(slug)}/`);
+      const cleanPath = `/area/${encodeURIComponent(slug)}/`;
+
+      // Overwrite MongoDB entry with Strapi data (Strapi has priority)
+      urlMap.set(normalized, {
+        path: cleanPath,
+        lastmod: new Date(c.updatedAt).toISOString(),
+        changefreq: "daily",
+        priority: "0.9",
+      });
+    }
+    console.log(
+      `[Sitemap] Communities: ${mongoCommunities.length} (MongoDB) + ${strapiCommunities.length} (Strapi)`
+    );
+
+    // ── 5. Developers (from MongoDB) ───────────────────────────
+    const developers = await Developer.find({}).select(
+      "developer_slug updatedAt"
+    );
+    for (const d of developers) {
+      addUrl(
+        `/developer/${encodeURIComponent(d.developer_slug)}/`,
+        new Date(d.updatedAt).toISOString(),
+        "daily",
+        "0.9"
+      );
+    }
+    console.log(`[Sitemap] Developers: ${developers.length}`);
+
+    // ── 6. Agents (from Strapi, show_profile=true) ──────────────
+    const strapiAgents = await fetchStrapiAll(
+      "/api/agents",
+      "filters[show_profile][$eq]=true&fields[0]=name_slug&fields[1]=updatedAt"
+    );
+    for (const a of strapiAgents) {
+      const slug = a.name_slug;
+      if (!slug) continue;
+      addUrl(
+        `/agent/${encodeURIComponent(slug)}/`,
+        new Date(a.updatedAt).toISOString(),
+        "weekly",
+        "0.8"
+      );
+    }
+    console.log(`[Sitemap] Agents (Strapi): ${strapiAgents.length}`);
+
+    // ── 7. Blogs & News (from MongoDB with redirect mapping) ───
+    const blogs = await Content.find({
+      status: "published",
+      category: "Blog",
+    }).select("slug updatedAt");
+
+    for (const blog of blogs) {
+      // Check if there's a redirect for this slug
+      let blogPath = `/blogs/${encodeURIComponent(blog.slug)}/`;
+      const redirect = redirects.find(
+        (r) => r.from === `/${blog.slug}` || r.from === `/${blog.slug}/`
+      );
+      if (redirect && redirect.to) {
+        blogPath = redirect.to.endsWith("/") ? redirect.to : redirect.to + "/";
+      }
+      addUrl(blogPath, new Date(blog.updatedAt).toISOString(), "daily", "0.9");
+    }
+    console.log(`[Sitemap] Blogs: ${blogs.length}`);
+
+    const news = await Content.find({
+      status: "published",
+      category: "News",
+    }).select("slug updatedAt");
+
+    for (const article of news) {
+      let newsPath = `/real-estate-news/${encodeURIComponent(article.slug)}/`;
+      const redirect = redirects.find(
+        (r) => r.from === `/${article.slug}` || r.from === `/${article.slug}/`
+      );
+      if (redirect && redirect.to) {
+        newsPath = redirect.to.endsWith("/") ? redirect.to : redirect.to + "/";
+      }
+      addUrl(
+        newsPath,
+        new Date(article.updatedAt).toISOString(),
+        "daily",
+        "0.9"
+      );
+    }
+    console.log(`[Sitemap] News: ${news.length}`);
+
+    // ── 8. Guides (from Strapi) ────────────────────────────────
+    const guides = await fetchStrapiAll(
+      "/api/guides",
+      "filters[show_guide][$eq]=true&fields[0]=guide_slug&fields[1]=updatedAt"
+    );
+    for (const g of guides) {
+      const slug = g.guide_slug;
+      if (!slug) continue;
+      addUrl(
+        `/guides/${encodeURIComponent(slug)}/`,
+        new Date(g.updatedAt).toISOString(),
+        "weekly",
+        "0.8"
+      );
+    }
+    console.log(`[Sitemap] Guides (Strapi): ${guides.length}`);
+
+    // ── 9. Articles from Strapi (news, blogs, publications) ────
+    // These may overlap with MongoDB content — Strapi articles that
+    // aren't in MongoDB will get added; duplicates are caught by the Map.
+    const strapiArticles = await fetchStrapiAll(
+      "/api/articles",
+      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug"
+    );
+    for (const article of strapiArticles) {
+      const slug = article.slug;
+      const categorySlug = article.category?.slug;
+      if (!slug || !categorySlug) continue;
+
+      let articlePath = "";
+      if (categorySlug === "news") {
+        articlePath = `/real-estate-news/${encodeURIComponent(slug)}/`;
+      } else if (categorySlug === "blog") {
+        articlePath = `/blogs/${encodeURIComponent(slug)}/`;
+      } else if (categorySlug === "publications") {
+        articlePath = `/our-publications/${encodeURIComponent(slug)}/`;
+      } else {
+        continue;
+      }
+
+      addUrl(
+        articlePath,
+        new Date(article.updatedAt).toISOString(),
+        "daily",
+        "0.9"
+      );
+    }
+    console.log(`[Sitemap] Articles (Strapi): ${strapiArticles.length}`);
+
+    // ── 10. Remove redirect source paths ───────────────────────
+    //   Protect seoUrlMap pages — they take priority over redirects
+    //   because the seoUrlMap middleware intercepts requests first.
+    const protectedPaths = new Set(
+      Object.keys(seoUrlMap).map((p) => normalizePath(p))
+    );
+
+    let removedCount = 0;
+    for (const sourcePath of redirectSourcePaths) {
+      if (urlMap.has(sourcePath) && !protectedPaths.has(sourcePath)) {
+        urlMap.delete(sourcePath);
+        removedCount++;
+      }
+    }
+    if (removedCount > 0) {
+      console.log(
+        `[Sitemap] Removed ${removedCount} URLs that are redirect sources`
+      );
+    }
+
+    // ── 11. Build XML ──────────────────────────────────────────
+    const urlEntries = [];
+    for (const [, entry] of urlMap) {
+      urlEntries.push(
+        urlEntry(entry.path, entry.lastmod, entry.changefreq, entry.priority)
+      );
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urlEntries.join("\n")}
+</urlset>`;
+
+    // ── 12. Write to disk ──────────────────────────────────────
+    fs.writeFileSync(SITEMAP_PATH, xml, { encoding: "utf8" });
+
+    const elapsed = Date.now() - startTime;
+    console.log(
+      `[Sitemap] Generated successfully — ${urlMap.size} URLs in ${elapsed}ms`
+    );
+
+    return { success: true, urlCount: urlMap.size, elapsed };
+  } catch (err) {
+    console.error("[Sitemap] Generation failed:", err);
+    return { success: false, error: err.message };
+  }
 };
 
-// generateSitemap().then(() => mongoose.connection.close());
+// ── Debounced generation ─────────────────────────────────────────
+let debounceTimer = null;
+const DEBOUNCE_MS = 30_000; // 30 seconds
+
+/**
+ * Queue a sitemap regeneration. Multiple calls within DEBOUNCE_MS
+ * are coalesced into a single generation run.
+ */
+function queueRegeneration(reason = "unknown") {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+  console.log(
+    `[Sitemap] Regeneration queued (reason: ${reason}), will run in ${DEBOUNCE_MS / 1000}s...`
+  );
+  debounceTimer = setTimeout(async () => {
+    debounceTimer = null;
+    await generateSitemap();
+  }, DEBOUNCE_MS);
+}
+
+/**
+ * Force immediate regeneration — bypasses the debounce timer.
+ */
+async function forceRegeneration(reason = "force") {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  console.log(`[Sitemap] Force regeneration (reason: ${reason})`);
+  return await generateSitemap();
+}
 
 module.exports = generateSitemap;
+module.exports.generateSitemap = generateSitemap;
+module.exports.queueRegeneration = queueRegeneration;
+module.exports.forceRegeneration = forceRegeneration;

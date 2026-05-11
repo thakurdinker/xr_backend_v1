@@ -27,18 +27,23 @@ exports.getAllIcons = async (req, res) => {
   }
 };
 
-// Get all icons with pagination
+// Get all icons with pagination and optional search
 exports.getIcons = async (req, res) => {
-  const { page = 1, limit = 10 } = req.query; // Default to page 1, limit 10
+  const { page = 1, limit = 10, search } = req.query;
 
   try {
-    const icons = await Icon.find()
+    const query = {};
+    if (search) {
+      query.icon_text = { $regex: search, $options: "i" };
+    }
+
+    const icons = await Icon.find(query)
+      .sort({ updatedAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
 
-    // Count the total number of documents
-    const count = await Icon.countDocuments();
+    const count = await Icon.countDocuments(query);
 
     res.status(200).json({
       success: true,

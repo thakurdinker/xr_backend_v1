@@ -36,13 +36,24 @@ async function checkUrl(url) {
 
 /**
  * Run checks in batches to avoid overwhelming the server.
+ * Calls onProgress(checked, total) after each batch completes.
  */
-async function checkUrlsBatched(urls) {
+async function checkUrlsBatched(urls, onProgress) {
   const results = [];
   for (let i = 0; i < urls.length; i += CONCURRENCY) {
     const batch = urls.slice(i, i + CONCURRENCY);
     const batchResults = await Promise.all(batch.map(checkUrl));
     results.push(...batchResults);
+
+    // Report progress after each batch
+    if (onProgress) {
+      onProgress({
+        phase: "checking",
+        checked: results.length,
+        total: urls.length,
+        lastBatch: batchResults,
+      });
+    }
 
     // Small delay between batches to be gentle on the server
     if (i + CONCURRENCY < urls.length) {
@@ -125,9 +136,12 @@ function escapeRegex(str) {
  * 3. Auto-removes bad URLs from the sitemap
  * 4. Logs everything to MongoDB
  *
+ * @param {function} onProgress - Optional callback for progress events.
+ *   Called with { phase, checked, total, ... } objects.
+ *
  * Returns a summary object.
  */
-async function runHealthCheck() {
+async function runHealthCheck(onProgress) {
   const startTime = Date.now();
   const auditRunId = crypto.randomUUID();
 
@@ -137,8 +151,17 @@ async function runHealthCheck() {
   const urls = extractUrlsFromSitemap();
   console.log(`[SitemapAudit] Checking ${urls.length} URLs...`);
 
-  // 2. Check all URLs
-  const results = await checkUrlsBatched(urls);
+  if (onProgress) {
+    onProgress({
+      phase: "started",
+      auditRunId,
+      total: urls.length,
+      checked: 0,
+    });
+  }
+
+  // 2. Check all URLs (with progress callback)
+  const results = await checkUrlsBatched(urls, onProgress);
 
   // 3. Find bad URLs
   const badResults = results.filter(
@@ -148,6 +171,15 @@ async function runHealthCheck() {
   console.log(
     `[SitemapAudit] Found ${badResults.length} bad URLs out of ${urls.length}`
   );
+
+  if (onProgress) {
+    onProgress({
+      phase: "removing",
+      total: urls.length,
+      checked: urls.length,
+      badUrls: badResults.length,
+    });
+  }
 
   if (badResults.length > 0) {
     // 4. Remove bad URLs from sitemap
@@ -198,6 +230,10 @@ async function runHealthCheck() {
   console.log(
     `[SitemapAudit] Health check complete — ${badResults.length} removed in ${elapsed}ms`
   );
+
+  if (onProgress) {
+    onProgress({ phase: "done", ...summary });
+  }
 
   return summary;
 }

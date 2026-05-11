@@ -10,7 +10,7 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 
 module.exports.isLoggedIn = catchAsync(async (req, res, next) => {
   if (!req.user) {
-    return res.status(200).json({
+    return res.status(401).json({
       success: false,
       message: "You are not logged in",
     });
@@ -24,11 +24,15 @@ module.exports.isAdmin = catchAsync(async (req, res, next) => {
     if (role && role.role_name === "admin") {
       return next();
     }
-    return res.status(200).json({
+    return res.status(403).json({
       success: false,
       message: "You are not Authorized",
     });
   }
+  return res.status(401).json({
+    success: false,
+    message: "You are not logged in",
+  });
 });
 
 module.exports.resetPassRequestMiddleWare = catchAsync(
@@ -59,9 +63,20 @@ module.exports.resetPassRequestMiddleWare = catchAsync(
 );
 
 module.exports.resetPasswordMiddleware = catchAsync(async (req, res, next) => {
-  const { errors } = resetPasswordValidation.validate(req.body);
-  if (errors) {
-    return res.status(422).json({ errors: errors });
+  const { error } = resetPasswordValidation.validate(req.body);
+  if (error) {
+    return res.status(422).json({
+      message: error.details?.[0]?.message || "Invalid request data",
+      error: true,
+    });
+  }
+
+  // Check password and confirmPassword match
+  if (req.body.password !== req.body.confirmPassword) {
+    return res.status(422).json({
+      message: "Passwords do not match",
+      error: true,
+    });
   }
   //get the token from the request
   let resetToken = req.body.resetToken;

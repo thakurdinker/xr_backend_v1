@@ -2,90 +2,117 @@ require("dotenv").config({ path: "../../vars/.env" });
 const mongoose = require("mongoose");
 const Property = require("../../models/properties");
 
+/**
+ * Clean a price string into a plain numeric value.
+ * Handles formats like "AED 1,234,567", " 1,234,567", "1234567", etc.
+ */
+function cleanPrice(raw) {
+  if (!raw) return "0";
+  const cleaned = raw
+    .replace(/AED/gi, "")
+    .replace(/,/g, "")
+    .trim();
+  return cleaned || "0";
+}
+
 const updatePropertiesSchema = async () => {
+  const DB_URL =
+    process.env.ENV === "development"
+      ? process.env.TEST_DB_URL
+      : process.env.DB_URL;
+
+  if (!DB_URL) {
+    console.error("No DB_URL found in env — check vars/.env");
+    process.exit(1);
+  }
+
   try {
-    // Connect to MongoDB
-    await mongoose.connect("");
+    await mongoose.connect(DB_URL);
     console.log("Connected to database");
 
-    // Get all properties
     const properties = await Property.find({});
     console.log(`Found ${properties.length} properties to update`);
 
-    // Update each property
+    let updated = 0;
+    let skipped = 0;
+
     for (const property of properties) {
-      let ratingAndReviewCount = Math.floor(Math.random() * 10000) + 5000;
+      try {
+        // Generate FAQs schema if property has FAQs
+        if (property.faqs && property.faqs.length > 0) {
+          const faqsSchema = {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: property.faqs.map((faq) => ({
+              "@type": "Question",
+              name: faq.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.answer,
+              },
+            })),
+          };
+          property.faqs_schema.properties = faqsSchema;
+        }
 
-      // Generate FAQs schema if property has FAQs
-      if (property.faqs && property.faqs.length > 0) {
-        const faqsSchema = {
+        // Set the schema_org type
+        property.schema_org.type = "RealEstateListing";
+
+        const propertyUrl = `https://www.xrealty.ae/property/${property.property_name_slug}/`;
+
+        // Generate main schema using RealEstateListing
+        const mainSchema = {
           "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: property.faqs.map((faq) => ({
-            "@type": "Question",
-            name: faq.question,
-            acceptedAnswer: {
-              "@type": "Answer",
-              text: faq.answer,
-            },
-          })),
+          "@type": "RealEstateListing",
+          name: property.seo?.meta_title || property.property_name,
+          description:
+            property.seo?.meta_description || property.description,
+          url: propertyUrl,
+          image:
+            property.open_graph?.image || property.images?.[0]?.url || "",
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "AED",
+            price: cleanPrice(property.price),
+            url: propertyUrl,
+            priceValidUntil: new Date(
+              new Date().setFullYear(new Date().getFullYear() + 1)
+            )
+              .toISOString()
+              .split("T")[0],
+            availability: "https://schema.org/LimitedAvailability",
+          },
         };
-        property.faqs_schema.properties = faqsSchema;
+
+        // Add developer as brand if available
+        if (property.developer) {
+          mainSchema.brand = {
+            "@type": "Brand",
+            name: property.developer,
+          };
+        }
+
+        property.schema_org.properties = mainSchema;
+
+        await property.save();
+        updated++;
+        console.log(
+          `[${updated}/${properties.length}] Updated: ${property.property_name}`
+        );
+      } catch (err) {
+        skipped++;
+        console.error(
+          `Skipped "${property.property_name}": ${err.message}`
+        );
       }
-
-      //   change the schema_org type from place to Product
-      property.schema_org.type = "Product";
-
-      // Generate main schema
-      const mainSchema = {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: property.seo?.meta_title || property.property_name,
-        description: property.seo?.meta_description || property.description,
-        brand: {
-          "@type": "Brand",
-          name: property.developer,
-        },
-        offers: {
-          "@type": "Offer",
-          priceCurrency: "AED",
-          url: `https://www.xrealty.ae/property/${property.property_name_slug}/`,
-          price:
-            property.price?.replace("AED", "").trim().replaceAll(",", "") ||
-            "00000000",
-          priceValidUntil: new Date(
-            new Date().setFullYear(new Date().getFullYear() + 1)
-          )
-            .toISOString()
-            .split("T")[0], // keep one year greater than updateAt date
-          itemCondition: "https://schema.org/NewCondition",
-          availability: "https://schema.org/LimitedAvailability",
-        },
-
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "5",
-          bestRating: "5",
-          worstRating: "0",
-          ratingCount: ratingAndReviewCount, // generate a random number between 5000 and 10000
-          reviewCount: ratingAndReviewCount, // generate a random number between 5000 and 10000
-        },
-        image: property.open_graph?.image || property.images?.[0]?.url || "",
-        url: `https://www.xrealty.ae/property/${property.property_name_slug}/`,
-      };
-
-      property.schema_org.properties = mainSchema;
-
-      // Save the updated property
-      await property.save();
-      console.log(`Updated schema for property: ${property.property_name}`);
     }
 
-    console.log("Successfully updated all properties");
+    console.log(
+      `\nDone — ${updated} updated, ${skipped} skipped out of ${properties.length}`
+    );
   } catch (error) {
     console.error("Error updating properties:", error);
   } finally {
-    // Close database connection
     await mongoose.connection.close();
     console.log("Database connection closed");
   }

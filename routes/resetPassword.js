@@ -1,4 +1,5 @@
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const {
   resetPassRequestMiddleWare,
   resetPasswordMiddleware,
@@ -11,8 +12,18 @@ const {
 
 const router = express.Router({ mergeParams: true });
 
+// Rate limit: 5 reset requests per 15 minutes per IP
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: "Too many reset requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   "/resetPasswordRequest",
+  resetLimiter,
   resetPassRequestMiddleWare,
   resetPasswordRequest
 );

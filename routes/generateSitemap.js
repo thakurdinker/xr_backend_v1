@@ -67,6 +67,57 @@ router.route("/generateSitemap").get(isLoggedIn, isAdmin, async (req, res) => {
   });
 });
 
+// ── 1b. Generate sitemap with SSE progress streaming ────────────
+//    GET /admin/generateSitemap/stream
+//    Returns Server-Sent Events with real-time progress updates.
+router
+  .route("/generateSitemap/stream")
+  .get(isLoggedIn, isAdmin, async (req, res) => {
+    // Set SSE headers
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+
+    res.flushHeaders();
+    res.write(": connected\n\n");
+
+    let clientDisconnected = false;
+    req.on("close", () => {
+      clientDisconnected = true;
+    });
+
+    const sendEvent = (eventName, data) => {
+      if (clientDisconnected) return;
+      res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    try {
+      const result = await generateSitemap((progress) => {
+        if (clientDisconnected) return;
+        sendEvent("progress", progress);
+      });
+
+      sendEvent("done", {
+        success: result.success,
+        urlCount: result.urlCount,
+        elapsed: result.elapsed,
+      });
+    } catch (err) {
+      sendEvent("error", {
+        success: false,
+        message: "Sitemap generation failed",
+        error: err.message,
+      });
+    }
+
+    if (!clientDisconnected) {
+      res.end();
+    }
+  });
+
 // ── 2. Force regenerate (bearer token — for CLI / manual use) ────
 //    POST /admin/generateSitemap/force
 //    Authorization: Bearer <ADMIN_SECRET>
@@ -125,22 +176,86 @@ router
     }
   });
 
+// ── 2b-sse. Sitemap health check with SSE progress streaming
+//    GET /admin/generateSitemap/health-check-stream
+//    Returns Server-Sent Events with real-time progress updates.
+router
+  .route("/generateSitemap/health-check-stream")
+  .get(isLoggedIn, isAdmin, async (req, res) => {
+    // Set SSE headers
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no", // disable nginx buffering if present
+    });
+
+    // Flush headers immediately
+    res.flushHeaders();
+
+    // Send a comment to keep connection alive
+    res.write(": connected\n\n");
+
+    // Track if client disconnected
+    let clientDisconnected = false;
+    req.on("close", () => {
+      clientDisconnected = true;
+    });
+
+    const sendEvent = (eventName, data) => {
+      if (clientDisconnected) return;
+      res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    try {
+      const result = await runHealthCheck((progress) => {
+        if (clientDisconnected) return;
+        sendEvent("progress", progress);
+      });
+
+      sendEvent("done", result);
+    } catch (err) {
+      sendEvent("error", {
+        success: false,
+        message: "Health check failed",
+        error: err.message,
+      });
+    }
+
+    // Close the SSE stream
+    if (!clientDisconnected) {
+      res.end();
+    }
+  });
+
 // ── 2c. Get health check logs (admin session auth)
-//    GET /admin/generateSitemap/audit-logs?limit=50&runId=xxx
+//    GET /admin/generateSitemap/audit-logs?page=1&limit=20&runId=xxx
 router
   .route("/generateSitemap/audit-logs")
   .get(isLoggedIn, isAdmin, async (req, res) => {
     try {
       const SitemapAuditLog = require("../models/sitemapAuditLog");
-      const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+      const page = Math.max(parseInt(req.query.page) || 1, 1);
+      const limit = Math.min(parseInt(req.query.limit) || 20, 500);
       const query = req.query.runId ? { auditRunId: req.query.runId } : {};
 
-      const logs = await SitemapAuditLog.find(query)
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean();
+      const [logs, totalLogs] = await Promise.all([
+        SitemapAuditLog.find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        SitemapAuditLog.countDocuments(query),
+      ]);
 
-      return res.status(200).json({ success: true, count: logs.length, logs });
+      return res.status(200).json({
+        success: true,
+        count: logs.length,
+        totalLogs,
+        totalPages: Math.ceil(totalLogs / limit),
+        currentPage: page,
+        logs,
+      });
     } catch (err) {
       return res.status(500).json({
         success: false,

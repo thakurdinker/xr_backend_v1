@@ -47,6 +47,7 @@ const reviewsForm = require("./routes/reviewsForm");
 const reviewsRouter = require("./routes/reviewsRouter");
 const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 const redirectRouter = require("./routes/redirect");
+const dashboardStatsRouter = require("./routes/dashboardStats");
 const aboutUsRouter = require("./routes/aboutUsRouter");
 const propertySearchRouter = require("./routes/propertySearchRouter");
 const fetchSearchFilterRouter = require("./routes/fetchSearchFilterRouter");
@@ -74,15 +75,18 @@ store.on("error", function (e) {
   console.log("SESSION STORE ERROR");
 });
 
+const isProduction = process.env.ENV !== "development";
+
 const sessionConfig = {
   store,
   name: "session",
   secret: SESSION_SECRET,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    // secure: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
@@ -101,7 +105,16 @@ db.once("open", () => {
 // Trust the first proxy (AWS ELB) so express-rate-limit and req.ip work correctly
 app.set("trust proxy", 1);
 
-app.use(cors({ origin: true, credentials: true }));
+const ALLOWED_ORIGINS = isProduction
+  ? [
+      process.env.FRONTEND_URL,
+      "https://www.xrealty.ae",
+      "https://xrealty.ae",
+      "https://admin.xrealty.ae",
+    ].filter(Boolean)
+  : true; // allow all in development
+
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
@@ -150,6 +163,7 @@ app.use("/admin", sitemapRouter);
 app.use("/admin", reviewsRouter);
 app.use("/admin", projectOfTheMonthRouter);
 app.use("/admin/redirect-rules", sitemapTrigger, redirectRouter); // auto-regen on redirect CRUD
+app.use("/admin", dashboardStatsRouter);
 
 // Sitemap webhook (for Strapi to call)
 app.use("/api/sitemap", sitemapWebhookRouter);

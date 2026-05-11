@@ -71,16 +71,14 @@ const resetPassword = async (user, newPassword) => {
       error: true,
     };
   }
-  userToReset.setPassword(newPassword, (err) => {
-    if (err) {
-      return {
-        message: "error resetting password",
-        error: true,
-      };
-    }
-    userToReset.save();
+  // setPassword is promisified by passport-local-mongoose when no callback is passed
+  await new Promise((resolve, reject) => {
+    userToReset.setPassword(newPassword, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
   });
-  console.log("password reset");
+  await userToReset.save();
   return {
     message: "password successfully reset",
     error: false,

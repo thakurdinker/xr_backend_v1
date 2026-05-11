@@ -47,8 +47,8 @@ const newPropertySchema = new Schema(
     gallery_title_2: String,
     gallery_description_1: String,
     gallery_description_2: String,
-    gallery1: [String],
-    gallery2: [String],
+    gallery1: [mongoose.Schema.Types.Mixed],
+    gallery2: [mongoose.Schema.Types.Mixed],
     status: [String], // e.g., "for sale", "latest", "off-plan"
     community_name: String,
     community_name_slug: String,
@@ -232,6 +232,50 @@ function modifyCloudinaryUrl(url) {
 //     }
 //   }
 // });
+
+// ── Pre-save hook: auto-generate schema_org if @type is missing/empty ──
+newPropertySchema.pre("save", function (next) {
+  // Only act if schema_org.properties is missing @type or has an empty @type
+  const schemaProps = this.schema_org?.properties;
+  if (!schemaProps || !schemaProps["@type"]) {
+    const propertyUrl = `https://www.xrealty.ae/property/${this.property_name_slug}/`;
+    const cleanPrice = (raw) => {
+      if (!raw) return "0";
+      return raw.replace(/AED/gi, "").replace(/,/g, "").trim() || "0";
+    };
+
+    const mainSchema = {
+      "@context": "https://schema.org",
+      "@type": "RealEstateListing",
+      name: this.seo?.meta_title || this.property_name || "",
+      description: this.seo?.meta_description || this.description || "",
+      url: propertyUrl,
+      image: this.open_graph?.image || this.images?.[0]?.url || "",
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "AED",
+        price: cleanPrice(this.price),
+        url: propertyUrl,
+        priceValidUntil: new Date(
+          new Date().setFullYear(new Date().getFullYear() + 1)
+        )
+          .toISOString()
+          .split("T")[0],
+        availability: "https://schema.org/LimitedAvailability",
+      },
+    };
+
+    if (this.developer) {
+      mainSchema.brand = { "@type": "Brand", name: this.developer };
+    }
+
+    if (!this.schema_org) this.schema_org = {};
+    this.schema_org.type = "RealEstateListing";
+    this.schema_org.properties = mainSchema;
+  }
+
+  next();
+});
 
 const Property = mongoose.model("Property", newPropertySchema);
 

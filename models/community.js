@@ -26,6 +26,8 @@ const communitySchema = new mongoose.Schema(
       {
         _id: false,
         url: { type: String },
+        alt: { type: String },
+        heading: { type: String },
         description: { type: String },
       },
     ],

@@ -155,9 +155,38 @@ function normalizePath(p) {
 }
 
 // ── Main generator ───────────────────────────────────────────────
-const generateSitemap = async () => {
+const generateSitemap = async (onProgress) => {
   const startTime = Date.now();
   console.log("[Sitemap] Generation started...");
+
+  const STEPS = [
+    "redirects",
+    "static-pages",
+    "seo-pages",
+    "properties",
+    "communities",
+    "developers",
+    "agents",
+    "blogs",
+    "news",
+    "guides",
+    "articles",
+    "dedup",
+    "write",
+  ];
+  let currentStepIdx = 0;
+
+  function reportProgress(step, detail = {}) {
+    if (!onProgress) return;
+    currentStepIdx = STEPS.indexOf(step);
+    onProgress({
+      phase: step,
+      stepNumber: currentStepIdx + 1,
+      totalSteps: STEPS.length,
+      elapsed: Date.now() - startTime,
+      ...detail,
+    });
+  }
 
   // Track all URLs to prevent duplicates — keyed by normalized path
   const urlMap = new Map();
@@ -177,6 +206,7 @@ const generateSitemap = async () => {
 
   try {
     // ── 1. Load redirects (to exclude source paths) ────────────
+    reportProgress("redirects", { message: "Loading redirects…" });
     const redirects = await Redirect.find({});
     const redirectSourcePaths = new Set();
     const redirectTargetPaths = new Set();
@@ -202,12 +232,14 @@ const generateSitemap = async () => {
     );
 
     // ── 2. Static pages ────────────────────────────────────────
+    reportProgress("static-pages", { message: "Adding static pages…", urlCount: urlMap.size });
     const isoNow = new Date().toISOString();
     for (const page of STATIC_PAGES) {
       addUrl(page.path, isoNow, page.changefreq, page.priority);
     }
 
     // ── 2b. SEO landing pages (from seoUrlMap) ─────────────────
+    reportProgress("seo-pages", { message: "Adding SEO landing pages…", urlCount: urlMap.size });
     //   These are internal rewrites — the SEO-friendly path is the
     //   public-facing URL that should appear in the sitemap.
     for (const seoPath of Object.keys(seoUrlMap)) {
@@ -216,6 +248,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] SEO landing pages: ${Object.keys(seoUrlMap).length}`);
 
     // ── 3. Properties (from MongoDB) ───────────────────────────
+    reportProgress("properties", { message: "Fetching properties from MongoDB…", urlCount: urlMap.size });
     const properties = await Property.find({ show_property: true }).select(
       "property_name_slug updatedAt"
     );
@@ -230,6 +263,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] Properties: ${properties.length}`);
 
     // ── 4. Communities (Strapi priority, MongoDB fallback) ─────
+    reportProgress("communities", { message: "Fetching communities…", urlCount: urlMap.size });
     // First, load MongoDB communities into the map
     const mongoCommunities = await Community.find({}).select("slug updatedAt");
     for (const c of mongoCommunities) {
@@ -266,6 +300,7 @@ const generateSitemap = async () => {
     );
 
     // ── 5. Developers (from MongoDB) ───────────────────────────
+    reportProgress("developers", { message: "Fetching developers…", urlCount: urlMap.size });
     const developers = await Developer.find({}).select(
       "developer_slug updatedAt"
     );
@@ -280,6 +315,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] Developers: ${developers.length}`);
 
     // ── 6. Agents (from Strapi, show_profile=true) ──────────────
+    reportProgress("agents", { message: "Fetching agents from Strapi…", urlCount: urlMap.size });
     const strapiAgents = await fetchStrapiAll(
       "/api/agents",
       "filters[show_profile][$eq]=true&fields[0]=name_slug&fields[1]=updatedAt"
@@ -297,6 +333,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] Agents (Strapi): ${strapiAgents.length}`);
 
     // ── 7. Blogs & News (from MongoDB with redirect mapping) ───
+    reportProgress("blogs", { message: "Fetching blogs from MongoDB…", urlCount: urlMap.size });
     const blogs = await Content.find({
       status: "published",
       category: "Blog",
@@ -315,6 +352,7 @@ const generateSitemap = async () => {
     }
     console.log(`[Sitemap] Blogs: ${blogs.length}`);
 
+    reportProgress("news", { message: "Fetching news from MongoDB…", urlCount: urlMap.size });
     const news = await Content.find({
       status: "published",
       category: "News",
@@ -338,6 +376,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] News: ${news.length}`);
 
     // ── 8. Guides (from Strapi) ────────────────────────────────
+    reportProgress("guides", { message: "Fetching guides from Strapi…", urlCount: urlMap.size });
     const guides = await fetchStrapiAll(
       "/api/guides",
       "filters[show_guide][$eq]=true&fields[0]=guide_slug&fields[1]=updatedAt"
@@ -355,6 +394,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] Guides (Strapi): ${guides.length}`);
 
     // ── 9. Articles from Strapi (news, blogs, publications) ────
+    reportProgress("articles", { message: "Fetching articles from Strapi…", urlCount: urlMap.size });
     // These may overlap with MongoDB content — Strapi articles that
     // aren't in MongoDB will get added; duplicates are caught by the Map.
     const strapiArticles = await fetchStrapiAll(
@@ -387,6 +427,7 @@ const generateSitemap = async () => {
     console.log(`[Sitemap] Articles (Strapi): ${strapiArticles.length}`);
 
     // ── 10. Remove redirect source paths ───────────────────────
+    reportProgress("dedup", { message: "Removing redirect sources & deduplicating…", urlCount: urlMap.size });
     //   Protect seoUrlMap pages — they take priority over redirects
     //   because the seoUrlMap middleware intercepts requests first.
     const protectedPaths = new Set(
@@ -407,6 +448,7 @@ const generateSitemap = async () => {
     }
 
     // ── 11. Build XML ──────────────────────────────────────────
+    reportProgress("write", { message: "Building XML & writing to disk…", urlCount: urlMap.size });
     const urlEntries = [];
     for (const [, entry] of urlMap) {
       urlEntries.push(
@@ -458,13 +500,13 @@ function queueRegeneration(reason = "unknown") {
 /**
  * Force immediate regeneration — bypasses the debounce timer.
  */
-async function forceRegeneration(reason = "force") {
+async function forceRegeneration(reason = "force", onProgress) {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
   console.log(`[Sitemap] Force regeneration (reason: ${reason})`);
-  return await generateSitemap();
+  return await generateSitemap(onProgress);
 }
 
 module.exports = generateSitemap;

@@ -27,15 +27,19 @@ const mapTypeNameToSlug = {
 
 
 module.exports.getAllProperties = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10, sortOrder = 1 } = req.query; // Default sortOrder is 1 (ascending)
+  const { page = 1, limit = 10, sortOrder = 1, search = "" } = req.query; // Default sortOrder is 1 (ascending)
   try {
-    const properties = await Property.find({})
+    const filter = search
+      ? { property_name: { $regex: search, $options: "i" } }
+      : {};
+
+    const properties = await Property.find(filter)
       .sort({ order: sortOrder }) // Sort based on the 'order' field
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
 
-    const count = await Property.countDocuments();
+    const count = await Property.countDocuments(filter);
 
     return res.status(200).json({
       success: true,

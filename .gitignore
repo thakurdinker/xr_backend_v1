@@ -131,3 +131,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Generated sitemap
+public/sitemap.xml
+
+# Debug / comparison output files
+generated_urls_v2.txt
+in_gen_not_live_v2.txt
+in_live_not_gen_v2.txt

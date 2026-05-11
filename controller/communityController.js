@@ -107,14 +107,18 @@ module.exports.getAll = catchAsync(async (req, res) => {
 
 // Read all communities for admin panel
 module.exports.getAllForAdmin = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, search = "" } = req.query;
   try {
-    const communities = await Community.find({})
+    const filter = search
+      ? { name: { $regex: search, $options: "i" } }
+      : {};
+
+    const communities = await Community.find(filter)
       .limit(limit)
       .skip((page - 1) * limit)
       .exec();
 
-    const count = await Community.countDocuments();
+    const count = await Community.countDocuments(filter);
     return res.status(200).json({
       success: true,
       communities,

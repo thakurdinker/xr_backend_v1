@@ -4,11 +4,41 @@ const router = express.Router();
 const Redirect = require("../models/redirect");
 const { isLoggedIn, isAdmin } = require("../middleware/middleware");
 
-// Get all redirect rules
+// Get redirect rules with optional pagination and search
 router.get("/", async (req, res) => {
   try {
-    const redirects = await Redirect.find({});
-    res.status(200).json(redirects);
+    const { page, search } = req.query;
+
+    // If no page param, return all redirects (backward compatible)
+    if (!page) {
+      const redirects = await Redirect.find({});
+      return res.status(200).json(redirects);
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limit = 10;
+    const skip = (pageNum - 1) * limit;
+
+    let query = {};
+    if (search && search.trim()) {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
+      query = {
+        $or: [{ from: searchRegex }, { to: searchRegex }],
+      };
+    }
+
+    const [redirects, totalCount] = await Promise.all([
+      Redirect.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Redirect.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      redirects,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: pageNum,
+      totalCount,
+    });
   } catch (error) {
     console.error("Error fetching redirects:", error);
     res.status(500).json({ message: "Server error" });

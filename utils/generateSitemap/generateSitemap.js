@@ -7,6 +7,7 @@ const Community = require("../../models/community");
 const Property = require("../../models/properties");
 const Content = require("../../models/content");
 const Redirect = require("../../models/redirect");
+const Sitemap = require("../../models/sitemap");
 const seoUrlMap = require("../seoUrlMap");
 
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
@@ -463,6 +464,18 @@ ${urlEntries.join("\n")}
 
     // ── 12. Write to disk ──────────────────────────────────────
     fs.writeFileSync(SITEMAP_PATH, xml, { encoding: "utf8" });
+
+    // ── 13. Save to MongoDB (shared across all instances) ─────
+    try {
+      await Sitemap.findOneAndUpdate(
+        {},
+        { content: xml, urlCount: urlMap.size, generatedAt: new Date() },
+        { upsert: true, new: true }
+      );
+      console.log(`[Sitemap] Saved to MongoDB (${urlMap.size} URLs)`);
+    } catch (mongoErr) {
+      console.warn(`[Sitemap] MongoDB save failed (non-fatal): ${mongoErr.message}`);
+    }
 
     const elapsed = Date.now() - startTime;
     console.log(

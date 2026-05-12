@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 
-const Developer = require("../../models/developer");
 const Community = require("../../models/community");
 const Property = require("../../models/properties");
 const Content = require("../../models/content");
@@ -300,20 +299,23 @@ const generateSitemap = async (onProgress) => {
       `[Sitemap] Communities: ${mongoCommunities.length} (MongoDB) + ${strapiCommunities.length} (Strapi)`
     );
 
-    // ── 5. Developers (from MongoDB) ───────────────────────────
-    reportProgress("developers", { message: "Fetching developers…", urlCount: urlMap.size });
-    const developers = await Developer.find({}).select(
-      "developer_slug updatedAt"
+    // ── 5. Developers (from Strapi) ──────────────────────────
+    reportProgress("developers", { message: "Fetching developers from Strapi…", urlCount: urlMap.size });
+    const strapiDevelopers = await fetchStrapiAll(
+      "/api/developers",
+      "fields[0]=developer_slug&fields[1]=updatedAt"
     );
-    for (const d of developers) {
+    for (const d of strapiDevelopers) {
+      const slug = d.developer_slug;
+      if (!slug) continue;
       addUrl(
-        `/developer/${encodeURIComponent(d.developer_slug)}/`,
+        `/developer/${encodeURIComponent(slug)}/`,
         new Date(d.updatedAt).toISOString(),
         "daily",
         "0.9"
       );
     }
-    console.log(`[Sitemap] Developers: ${developers.length}`);
+    console.log(`[Sitemap] Developers (Strapi): ${strapiDevelopers.length}`);
 
     // ── 6. Agents (from Strapi, show_profile=true) ──────────────
     reportProgress("agents", { message: "Fetching agents from Strapi…", urlCount: urlMap.size });

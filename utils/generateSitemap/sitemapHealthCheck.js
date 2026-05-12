@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const SitemapAuditLog = require("../../models/sitemapAuditLog");
+const Sitemap = require("../../models/sitemap");
 
 const SITEMAP_PATH = path.join(__dirname, "../../public/sitemap.xml");
 
@@ -92,7 +93,7 @@ function extractUrlsFromSitemap() {
  * Remove specific URLs from the sitemap XML file.
  * Removes the entire <url>...</url> block for each bad URL.
  */
-function removeUrlsFromSitemap(urlsToRemove) {
+async function removeUrlsFromSitemap(urlsToRemove) {
   if (urlsToRemove.length === 0) return 0;
 
   let xml = fs.readFileSync(SITEMAP_PATH, "utf8");
@@ -119,7 +120,21 @@ function removeUrlsFromSitemap(urlsToRemove) {
   }
 
   if (removedCount > 0) {
+    // Save cleaned sitemap to local disk
     fs.writeFileSync(SITEMAP_PATH, xml, { encoding: "utf8" });
+
+    // Also update MongoDB so all instances serve the cleaned version
+    try {
+      const urlCount = (xml.match(/<loc>/g) || []).length;
+      await Sitemap.findOneAndUpdate(
+        {},
+        { content: xml, urlCount, generatedAt: new Date() },
+        { upsert: true }
+      );
+      console.log(`[SitemapAudit] Updated MongoDB with cleaned sitemap (${urlCount} URLs)`);
+    } catch (mongoErr) {
+      console.warn(`[SitemapAudit] MongoDB update failed (non-fatal): ${mongoErr.message}`);
+    }
   }
 
   return removedCount;
@@ -184,7 +199,7 @@ async function runHealthCheck(onProgress) {
   if (badResults.length > 0) {
     // 4. Remove bad URLs from sitemap
     const urlsToRemove = badResults.map((r) => r.url);
-    const removedCount = removeUrlsFromSitemap(urlsToRemove);
+    const removedCount = await removeUrlsFromSitemap(urlsToRemove);
     console.log(`[SitemapAudit] Removed ${removedCount} URLs from sitemap`);
 
     // 5. Log to MongoDB

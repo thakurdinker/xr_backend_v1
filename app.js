@@ -206,41 +206,40 @@ app.use((err, req, res, next) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Backend Server Started on PORT : ", PORT);
 
-  // ── Sitemap: generate on startup + schedule every 2 hours ────
-  generateSitemap()
-    .then((result) => {
-      if (result.success) {
-        console.log(`[Sitemap] Startup generation complete — ${result.urlCount} URLs`);
-      } else {
-        console.warn("[Sitemap] Startup generation failed:", result.error);
-      }
-    })
-    .catch((err) => console.error("[Sitemap] Startup generation error:", err));
+  // ── Helper: generate sitemap + run health check ───────────────
+  async function generateAndClean(reason) {
+    const result = await generateSitemap();
+    if (!result.success) {
+      console.warn(`[Sitemap] Generation failed (${reason}):`, result.error);
+      return;
+    }
+    console.log(`[Sitemap] ${reason} generation complete — ${result.urlCount} URLs`);
 
-  // Cron: every 2 hours at minute 0 (00:00, 02:00, 04:00, ...)
-  const sitemapCron = new CronJob("0 */2 * * *", async () => {
-    console.log("[Sitemap] Cron triggered — regenerating...");
-    await generateSitemap();
-  });
-  sitemapCron.start();
-  console.log("[Sitemap] Cron scheduled — every 2 hours");
-
-  // Cron: daily health check at 03:30 AM (after the 02:00 sitemap regen)
-  const healthCheckCron = new CronJob("30 3 * * *", async () => {
-    console.log("[SitemapAudit] Daily health check triggered...");
+    // Auto health check after startup and cron (not CRUD-triggered)
     try {
-      const result = await runHealthCheck();
-      if (result.badUrls > 0) {
+      console.log(`[SitemapAudit] Auto health check starting (${reason})...`);
+      const audit = await runHealthCheck();
+      if (audit.badUrls > 0) {
         console.log(
-          `[SitemapAudit] Removed ${result.removed} bad URLs (run: ${result.auditRunId})`
+          `[SitemapAudit] Removed ${audit.removed} bad URLs (run: ${audit.auditRunId})`
         );
       } else {
         console.log("[SitemapAudit] All URLs healthy — nothing to remove");
       }
     } catch (err) {
-      console.error("[SitemapAudit] Daily health check failed:", err);
+      console.error(`[SitemapAudit] Auto health check failed (${reason}):`, err);
     }
+  }
+
+  // ── Sitemap: generate + clean on startup ─────────────────────
+  generateAndClean("Startup")
+    .catch((err) => console.error("[Sitemap] Startup error:", err));
+
+  // Cron: every 2 hours — regenerate + auto health check
+  const sitemapCron = new CronJob("0 */2 * * *", async () => {
+    console.log("[Sitemap] Cron triggered — regenerating...");
+    await generateAndClean("Cron");
   });
-  healthCheckCron.start();
-  console.log("[SitemapAudit] Daily health check scheduled — 03:30 AM");
+  sitemapCron.start();
+  console.log("[Sitemap] Cron scheduled — every 2 hours (with auto health check)");
 });

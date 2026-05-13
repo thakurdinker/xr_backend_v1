@@ -48,6 +48,7 @@ const reviewsRouter = require("./routes/reviewsRouter");
 const projectOfTheMonthRouter = require("./routes/projectOfTheMonthRouter");
 const redirectRouter = require("./routes/redirect");
 const dashboardStatsRouter = require("./routes/dashboardStats");
+const prerenderCacheRouter = require("./routes/prerenderCache");
 const aboutUsRouter = require("./routes/aboutUsRouter");
 const propertySearchRouter = require("./routes/propertySearchRouter");
 const fetchSearchFilterRouter = require("./routes/fetchSearchFilterRouter");
@@ -164,6 +165,7 @@ app.use("/admin", reviewsRouter);
 app.use("/admin", projectOfTheMonthRouter);
 app.use("/admin/redirect-rules", sitemapTrigger, redirectRouter); // auto-regen on redirect CRUD
 app.use("/admin", dashboardStatsRouter);
+app.use("/admin/prerender-cache", prerenderCacheRouter);
 
 // Sitemap webhook (for Strapi to call)
 app.use("/api/sitemap", sitemapWebhookRouter);

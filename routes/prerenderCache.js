@@ -79,6 +79,16 @@ router.delete("/all", requireAuth, (req, res) => {
 const PRERENDER_TOKEN = process.env.PRERENDER_TOKEN || "";
 const SITE_BASE = process.env.SITE_BASE_URL || "https://www.xrealty.ae";
 
+/** Safely parse a prerender.io response (may return plain text or JSON) */
+async function parsePrerenderResponse(response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
 /**
  * POST /admin/prerender-cache/purge
  * Body: { url: "/property/some-slug/" }
@@ -103,7 +113,7 @@ router.post("/purge", requireAuth, async (req, res) => {
       body: JSON.stringify({ prerenderToken: PRERENDER_TOKEN, query: fullUrl }),
     });
 
-    const data = await response.json();
+    const data = await parsePrerenderResponse(response);
     console.log(`[PrerenderCache] Purge ${fullUrl}:`, response.status, data);
 
     if (response.ok) {
@@ -139,7 +149,7 @@ router.post("/recache", requireAuth, async (req, res) => {
       body: JSON.stringify({ prerenderToken: PRERENDER_TOKEN, url: fullUrl }),
     });
 
-    const data = await response.json();
+    const data = await parsePrerenderResponse(response);
     console.log(`[PrerenderCache] Recache ${fullUrl}:`, response.status, data);
 
     if (response.ok) {
@@ -176,7 +186,7 @@ router.post("/purge-and-recache", requireAuth, async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prerenderToken: PRERENDER_TOKEN, query: fullUrl }),
     });
-    const purgeData = await purgeRes.json();
+    const purgeData = await parsePrerenderResponse(purgeRes);
     console.log(`[PrerenderCache] Purge+Recache step 1 (purge) ${fullUrl}:`, purgeRes.status, purgeData);
 
     if (!purgeRes.ok) {
@@ -196,7 +206,7 @@ router.post("/purge-and-recache", requireAuth, async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prerenderToken: PRERENDER_TOKEN, url: fullUrl }),
     });
-    const recacheData = await recacheRes.json();
+    const recacheData = await parsePrerenderResponse(recacheRes);
     console.log(`[PrerenderCache] Purge+Recache step 2 (recache) ${fullUrl}:`, recacheRes.status, recacheData);
 
     if (recacheRes.ok) {

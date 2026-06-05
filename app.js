@@ -52,6 +52,7 @@ const prerenderCacheRouter = require("./routes/prerenderCache");
 const aboutUsRouter = require("./routes/aboutUsRouter");
 const propertySearchRouter = require("./routes/propertySearchRouter");
 const fetchSearchFilterRouter = require("./routes/fetchSearchFilterRouter");
+const openHouseRsvpRouter = require("./routes/openHouseRsvp");
 
 const User = require("./models/user");
 const seoUrlMap = require("./utils/seoUrlMap");
@@ -188,6 +189,9 @@ app.use("/", reviewsForm);
 app.use("/", iconRouter);
 app.use("/", propertySearchRouter);
 app.use("/", fetchSearchFilterRouter);
+
+// Open House RSVP
+app.use("/api/openhouse", openHouseRsvpRouter);
 
 // Resume Upload
 app.use("/resume", require("./routes/resumeUpload"));

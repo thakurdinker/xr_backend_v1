@@ -402,32 +402,44 @@ const generateSitemap = async (onProgress) => {
     // aren't in MongoDB will get added; duplicates are caught by the Map.
     const strapiArticles = await fetchStrapiAll(
       "/api/articles",
-      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug"
+      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug"
     );
+
+    // Map category slug → hub base path.
+    const HUB_BASE = {
+      news: "/real-estate-news/",
+      blog: "/blogs/",
+      publications: "/our-publications/",
+    };
+
+    let nestedArticleCount = 0;
     for (const article of strapiArticles) {
       const slug = article.slug;
       const categorySlug = article.category?.slug;
-      if (!slug || !categorySlug) continue;
+      const hubBase = HUB_BASE[categorySlug];
+      if (!slug || !hubBase) continue;
 
-      let articlePath = "";
-      if (categorySlug === "news") {
-        articlePath = `/real-estate-news/${encodeURIComponent(slug)}/`;
-      } else if (categorySlug === "blog") {
-        articlePath = `/blogs/${encodeURIComponent(slug)}/`;
-      } else if (categorySlug === "publications") {
-        articlePath = `/our-publications/${encodeURIComponent(slug)}/`;
+      const subSlug = article.sub_category?.slug;
+      const lastmod = new Date(article.updatedAt).toISOString();
+
+      if (subSlug) {
+        // Canonical URL is nested: /{hub}/{sub-category}/{slug}/
+        // Only the Strapi article entry is affected here — MongoDB-sourced
+        // URLs (properties, legacy blogs/news) are left untouched.
+        addUrl(
+          `${hubBase}${encodeURIComponent(subSlug)}/${encodeURIComponent(slug)}/`,
+          lastmod,
+          "daily",
+          "0.9"
+        );
+        nestedArticleCount++;
       } else {
-        continue;
+        addUrl(`${hubBase}${encodeURIComponent(slug)}/`, lastmod, "daily", "0.9");
       }
-
-      addUrl(
-        articlePath,
-        new Date(article.updatedAt).toISOString(),
-        "daily",
-        "0.9"
-      );
     }
-    console.log(`[Sitemap] Articles (Strapi): ${strapiArticles.length}`);
+    console.log(
+      `[Sitemap] Articles (Strapi): ${strapiArticles.length} (${nestedArticleCount} nested under a sub-category)`
+    );
 
     // ── 10. Remove redirect source paths ───────────────────────
     reportProgress("dedup", { message: "Removing redirect sources & deduplicating…", urlCount: urlMap.size });

@@ -244,10 +244,15 @@ newPropertySchema.pre("save", function (next) {
       return raw.replace(/AED/gi, "").replace(/,/g, "").trim() || "0";
     };
 
+    const rawName = this.seo?.meta_title || this.property_name || "";
+    const name = rawName.includes("| Xperience Realty")
+      ? rawName
+      : `${rawName} | Xperience Realty`;
+
     const mainSchema = {
       "@context": "https://schema.org",
       "@type": "RealEstateListing",
-      name: this.seo?.meta_title || this.property_name || "",
+      name,
       description: this.seo?.meta_description || this.description || "",
       url: propertyUrl,
       image: this.open_graph?.image || this.images?.[0]?.url || "",
@@ -264,10 +269,6 @@ newPropertySchema.pre("save", function (next) {
         availability: "https://schema.org/LimitedAvailability",
       },
     };
-
-    if (this.developer) {
-      mainSchema.brand = { "@type": "Brand", name: this.developer };
-    }
 
     if (!this.schema_org) this.schema_org = {};
     this.schema_org.type = "RealEstateListing";

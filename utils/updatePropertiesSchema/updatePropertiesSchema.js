@@ -61,10 +61,15 @@ const updatePropertiesSchema = async () => {
         const propertyUrl = `https://www.xrealty.ae/property/${property.property_name_slug}/`;
 
         // Generate main schema using RealEstateListing
+        const rawName = property.seo?.meta_title || property.property_name || "";
+        const name = rawName.includes("| Xperience Realty")
+          ? rawName
+          : `${rawName} | Xperience Realty`;
+
         const mainSchema = {
           "@context": "https://schema.org",
           "@type": "RealEstateListing",
-          name: property.seo?.meta_title || property.property_name,
+          name,
           description:
             property.seo?.meta_description || property.description,
           url: propertyUrl,
@@ -83,14 +88,6 @@ const updatePropertiesSchema = async () => {
             availability: "https://schema.org/LimitedAvailability",
           },
         };
-
-        // Add developer as brand if available
-        if (property.developer) {
-          mainSchema.brand = {
-            "@type": "Brand",
-            name: property.developer,
-          };
-        }
 
         property.schema_org.properties = mainSchema;
 

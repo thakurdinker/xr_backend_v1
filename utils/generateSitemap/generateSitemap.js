@@ -19,6 +19,30 @@ const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || "";
 
 const SITEMAP_PATH = path.join(__dirname, "../../public/sitemap.xml");
 
+// ── Frontend cache revalidation ──────────────────────────────────
+// The Next.js frontend serves /sitemap.xml by proxying this generated sitemap
+// (the admin/sitemap endpoint) behind a ~1h cache (edge s-maxage + Next
+// data-cache, tag "sitemap"). Without a nudge, a fresh regeneration takes up to
+// an hour to appear live. A fire-and-forget POST to /api/revalidate busts the
+// "sitemap" tag so the live sitemap updates within seconds. Mirrors
+// routes/redirect.js's revalidateFrontend(); no-ops when REVALIDATE_SECRET is
+// unset (the frontend then falls back to its cache TTL).
+const MAIN_FRONTEND_URL =
+  process.env.MAIN_FRONTEND_URL || "https://www.xrealty.ae";
+const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "";
+
+function revalidateFrontendSitemap() {
+  if (!REVALIDATE_SECRET) return; // not configured → rely on the frontend cache TTL
+  fetch(`${MAIN_FRONTEND_URL}/api/revalidate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret: REVALIDATE_SECRET, tags: ["sitemap"] }),
+    signal: AbortSignal.timeout(5000),
+  }).catch((err) => {
+    console.error("[Sitemap] frontend revalidate failed:", err.message);
+  });
+}
+
 // ── Strapi fetch helper ──────────────────────────────────────────
 async function fetchStrapi(endpoint) {
   const headers = { "Content-Type": "application/json" };
@@ -516,6 +540,12 @@ ${urlEntries.join("\n")}
     } catch (mongoErr) {
       console.warn(`[Sitemap] MongoDB save failed (non-fatal): ${mongoErr.message}`);
     }
+
+    // ── 14. Nudge the frontend to drop its cached /sitemap.xml ────
+    // Fires on every regen path (admin button, content/redirect auto-trigger,
+    // cron) since they all funnel through this function — so the live sitemap
+    // reflects this run within seconds instead of lagging up to ~1h.
+    revalidateFrontendSitemap();
 
     const elapsed = Date.now() - startTime;
     console.log(

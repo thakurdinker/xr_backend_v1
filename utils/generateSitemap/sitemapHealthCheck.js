@@ -144,23 +144,53 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Human-readable reason for a bad URL result. */
+function describeBadResult(r) {
+  return r.statusCode === 0
+    ? `Request failed: ${r.error || "timeout"}`
+    : r.statusCode === 301 || r.statusCode === 308
+    ? `Permanent redirect → ${r.redirectTarget || "unknown"}`
+    : r.statusCode === 302 || r.statusCode === 307
+    ? `Temporary redirect → ${r.redirectTarget || "unknown"}`
+    : r.statusCode === 404
+    ? "Page not found"
+    : r.statusCode === 410
+    ? "Page gone (410)"
+    : `Server error (${r.statusCode})`;
+}
+
 /**
  * Main health check function.
  * 1. Reads all URLs from the sitemap
- * 2. Checks each URL for bad status codes (301, 404, etc.)
- * 3. Auto-removes bad URLs from the sitemap
+ * 2. Checks each URL for bad status codes (3xx / 404 / 410 / 5xx / timeout)
+ * 3. REPORTS the bad ones (default) — or removes them if explicitly opted in
  * 4. Logs everything to MongoDB
+ *
+ * REPORT-ONLY by default. Since PR #148 the generator emits only canonical 200
+ * URLs, so a redirect found here is almost always a real page caught mid-move
+ * (e.g. an article whose sub-category just changed, whose old nested URL now
+ * 308s). Auto-deleting those would drop live pages from the sitemap until the
+ * next full regen — net harm. Regeneration is the source of truth; this is a
+ * monitor. Editor/content changes already trigger a regen (Strapi webhook), so
+ * genuine drift self-heals there, not here.
  *
  * @param {function} onProgress - Optional callback for progress events.
  *   Called with { phase, checked, total, ... } objects.
+ * @param {{autoRemove?: boolean}} [options] - Pass { autoRemove: true } to opt
+ *   INTO the old destructive behaviour (prune flagged URLs from disk + MongoDB).
+ *   Use only after reviewing the report.
  *
  * Returns a summary object.
  */
-async function runHealthCheck(onProgress) {
+async function runHealthCheck(onProgress, { autoRemove = false } = {}) {
   const startTime = Date.now();
   const auditRunId = crypto.randomUUID();
 
-  console.log(`[SitemapAudit] Starting health check (run: ${auditRunId})...`);
+  console.log(
+    `[SitemapAudit] Starting health check (run: ${auditRunId}, mode: ${
+      autoRemove ? "auto-remove" : "report-only"
+    })...`
+  );
 
   // 1. Extract URLs
   const urls = extractUrlsFromSitemap();
@@ -189,37 +219,34 @@ async function runHealthCheck(onProgress) {
 
   if (onProgress) {
     onProgress({
-      phase: "removing",
+      phase: autoRemove ? "removing" : "reporting",
       total: urls.length,
       checked: urls.length,
       badUrls: badResults.length,
     });
   }
 
+  let removed = 0;
   if (badResults.length > 0) {
-    // 4. Remove bad URLs from sitemap
-    const urlsToRemove = badResults.map((r) => r.url);
-    const removedCount = await removeUrlsFromSitemap(urlsToRemove);
-    console.log(`[SitemapAudit] Removed ${removedCount} URLs from sitemap`);
+    // 4. Remove ONLY when explicitly opted in; otherwise leave the sitemap
+    //    untouched (report-only). The generator is the source of truth.
+    if (autoRemove) {
+      removed = await removeUrlsFromSitemap(badResults.map((r) => r.url));
+      console.log(`[SitemapAudit] Removed ${removed} URLs from sitemap`);
+    } else {
+      console.log(
+        `[SitemapAudit] Report-only — sitemap left unchanged (${badResults.length} flagged)`
+      );
+    }
 
-    // 5. Log to MongoDB
+    // 5. Log to MongoDB — action reflects whether we removed or just flagged.
+    const action = autoRemove ? "removed" : "flagged";
     const logEntries = badResults.map((r) => ({
       url: r.url,
       statusCode: r.statusCode,
       redirectTarget: r.redirectTarget,
-      action: "removed",
-      reason:
-        r.statusCode === 0
-          ? `Request failed: ${r.error || "timeout"}`
-          : r.statusCode === 301 || r.statusCode === 308
-          ? `Permanent redirect → ${r.redirectTarget || "unknown"}`
-          : r.statusCode === 302 || r.statusCode === 307
-          ? `Temporary redirect → ${r.redirectTarget || "unknown"}`
-          : r.statusCode === 404
-          ? "Page not found"
-          : r.statusCode === 410
-          ? "Page gone (410)"
-          : `Server error (${r.statusCode})`,
+      action,
+      reason: describeBadResult(r),
       auditRunId,
     }));
 
@@ -230,20 +257,23 @@ async function runHealthCheck(onProgress) {
   const elapsed = Date.now() - startTime;
   const summary = {
     success: true,
+    mode: autoRemove ? "auto-remove" : "report-only",
     auditRunId,
     totalChecked: urls.length,
     badUrls: badResults.length,
-    removed: badResults.length,
+    flagged: badResults.length,
+    removed,
     elapsed,
     details: badResults.map((r) => ({
       url: r.url,
       statusCode: r.statusCode,
       redirectTarget: r.redirectTarget,
+      reason: describeBadResult(r),
     })),
   };
 
   console.log(
-    `[SitemapAudit] Health check complete — ${badResults.length} removed in ${elapsed}ms`
+    `[SitemapAudit] Health check complete — ${badResults.length} flagged, ${removed} removed in ${elapsed}ms`
   );
 
   if (onProgress) {

@@ -149,7 +149,10 @@ router
   .route("/generateSitemap/health-check")
   .post(bearerAuth(ADMIN_SECRET), async (req, res) => {
     try {
-      const result = await runHealthCheck();
+      // Report-only by default; pass ?remove=true (or { remove: true }) to prune.
+      const result = await runHealthCheck(null, {
+        autoRemove: req.query.remove === "true" || req.body?.remove === true,
+      });
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({
@@ -166,7 +169,10 @@ router
   .route("/generateSitemap/health-check")
   .get(isLoggedIn, isAdmin, async (req, res) => {
     try {
-      const result = await runHealthCheck();
+      // Report-only by default; pass ?remove=true (or { remove: true }) to prune.
+      const result = await runHealthCheck(null, {
+        autoRemove: req.query.remove === "true" || req.body?.remove === true,
+      });
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({
@@ -209,10 +215,14 @@ router
     };
 
     try {
-      const result = await runHealthCheck((progress) => {
-        if (clientDisconnected) return;
-        sendEvent("progress", progress);
-      });
+      const result = await runHealthCheck(
+        (progress) => {
+          if (clientDisconnected) return;
+          sendEvent("progress", progress);
+        },
+        // Report-only by default; pass ?remove=true to prune.
+        { autoRemove: req.query.remove === "true" }
+      );
 
       sendEvent("done", result);
     } catch (err) {

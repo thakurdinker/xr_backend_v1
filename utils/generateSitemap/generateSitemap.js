@@ -33,10 +33,19 @@ const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "";
 
 function revalidateFrontendSitemap() {
   if (!REVALIDATE_SECRET) return; // not configured → rely on the frontend cache TTL
-  fetch(`${MAIN_FRONTEND_URL}/api/revalidate`, {
+  // POST to the trailing-slash URL directly (site is trailingSlash:true, so the
+  // bare path 308-redirects) and bust BOTH the cache tag AND the route path:
+  //   - tags:["sitemap"]      → the data cache of the admin/sitemap fetch
+  //   - paths:["/sitemap.xml"]→ the route's own response/edge cache (the route
+  //                             sets s-maxage, which the tag alone may not purge)
+  fetch(`${MAIN_FRONTEND_URL}/api/revalidate/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ secret: REVALIDATE_SECRET, tags: ["sitemap"] }),
+    body: JSON.stringify({
+      secret: REVALIDATE_SECRET,
+      tags: ["sitemap"],
+      paths: ["/sitemap.xml"],
+    }),
     signal: AbortSignal.timeout(5000),
   }).catch((err) => {
     console.error("[Sitemap] frontend revalidate failed:", err.message);

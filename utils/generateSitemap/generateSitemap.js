@@ -79,7 +79,10 @@ const STATIC_PAGES = [
   { path: "/agent/", changefreq: "daily", priority: "0.9" },
   { path: "/real-estate-news/", changefreq: "daily", priority: "0.9" },
   { path: "/blogs/", changefreq: "daily", priority: "0.9" },
-  { path: "/dubai-properties/", changefreq: "daily", priority: "0.9" },
+  // NOTE: bare /dubai-properties/ is intentionally absent — the frontend
+  // 301-redirects it to /off-plan-projects-for-sale-in-dubai/ (a sitemap must
+  // not list redirecting URLs). The canonical by-type listing pages are added
+  // below.
   { path: "/customer-reviews/", changefreq: "daily", priority: "0.9" },
   { path: "/careers/", changefreq: "weekly", priority: "0.8" },
   { path: "/guides/", changefreq: "weekly", priority: "0.9" },
@@ -88,43 +91,19 @@ const STATIC_PAGES = [
   { path: "/living-experience-dubai/beachfront/", changefreq: "weekly", priority: "0.8" },
   { path: "/developer/", changefreq: "daily", priority: "0.9" },
   { path: "/property-search/", changefreq: "daily", priority: "0.8" },
-  { path: "/dubai-properties/for-sale/type-off-plan-villa-projects/", changefreq: "daily", priority: "0.8" },
-  // Dubai properties by type
-  {
-    path: "/dubai-properties/apartments-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/townhouses-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/villas-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/penthouse-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/duplex-apartments-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/twin-villas-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    path: "/dubai-properties/mansions-for-sale-in-dubai/",
-    changefreq: "daily",
-    priority: "0.9",
-  },
+  // Canonical by-type listing pages. The /dubai-properties/<type> shortcut URLs
+  // 301-redirect to these clean slugs (see frontend redirects.ts), so the clean
+  // slugs are the sitemap canonicals. Dropped here vs the old list:
+  // /dubai-properties/<type> (redirecting), duplex-/twin-villas- and
+  // for-sale/type-off-plan-villa-projects (no frontend route → 404). The
+  // /dubai-properties/[saleType]/[type] filtered space is open-ended and
+  // self-canonical, so it is not enumerated.
+  { path: "/apartments-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
+  { path: "/villas-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
+  { path: "/townhouse-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
+  { path: "/penthouse-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
+  { path: "/mansions-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
+  { path: "/off-plan-projects-for-sale-in-dubai/", changefreq: "daily", priority: "0.9" },
 ];
 
 // ── XML helpers ──────────────────────────────────────────────────
@@ -212,12 +191,23 @@ const generateSitemap = async (onProgress) => {
     const redirectTargetPaths = new Set();
 
     for (const r of redirects) {
+      if (!r.from) continue;
+
+      // The site runs trailingSlash:true, so incoming paths ALWAYS have a
+      // trailing slash — a redirect whose `from` lacks one never fires (it's
+      // dead, and the frontend drops it for the same reason). normalizePath()
+      // below adds a slash, which would otherwise resurrect these ~780 dead
+      // rules and wrongly strip the matching LIVE URL from the sitemap (e.g. a
+      // stale `/villas-for-sale-in-dubai` → /blogs/... rule deleting the live
+      // /villas-for-sale-in-dubai/ listing). So only trailing-slash sources can
+      // exclude a URL — matching the frontend proxy's behaviour.
+      const fromHasSlash = r.from.trim().endsWith("/");
       const fromNormalized = normalizePath(r.from);
       const toNormalized = r.to ? normalizePath(r.to) : null;
 
-      // Only exclude if the redirect actually points ELSEWHERE
-      // (skip trailing-slash or self-referencing redirects)
-      if (toNormalized && fromNormalized !== toNormalized) {
+      // Only exclude if the redirect actually fires (trailing-slash source) and
+      // points ELSEWHERE (skip self-referencing / trailing-slash-only redirects).
+      if (fromHasSlash && toNormalized && fromNormalized !== toNormalized) {
         redirectSourcePaths.add(fromNormalized);
       }
 
@@ -402,32 +392,80 @@ const generateSitemap = async (onProgress) => {
     // aren't in MongoDB will get added; duplicates are caught by the Map.
     const strapiArticles = await fetchStrapiAll(
       "/api/articles",
-      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug"
+      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug"
     );
+
+    // category slug → hub base path. Canonical article URLs nest under their
+    // sub-category when one is set (/{hub}/{sub}/{slug}/), matching the
+    // frontend's articlePath(); flat (/{hub}/{slug}/) otherwise.
+    const HUB_BASE = {
+      news: "/real-estate-news/",
+      blog: "/blogs/",
+      publications: "/our-publications/",
+    };
+
+    // Distinct blog sub-categories → their landing pages (/blogs/<sub>/), with
+    // the latest article date in that sub-category as lastmod.
+    const blogSubLastmod = new Map();
+    // Flat URLs to drop when the same article is emitted nested: the legacy
+    // MongoDB Content sections (6 & 7) emit /{hub}/{slug}/ for the same slug, so
+    // without this a sub-categorised article would appear BOTH flat (redirecting)
+    // and nested (canonical). Keyed by normalizePath to match urlMap.
+    const flatArticleKeysToDrop = new Set();
+
+    let nestedArticleCount = 0;
     for (const article of strapiArticles) {
       const slug = article.slug;
       const categorySlug = article.category?.slug;
-      if (!slug || !categorySlug) continue;
+      const hubBase = HUB_BASE[categorySlug];
+      if (!slug || !hubBase) continue;
 
-      let articlePath = "";
-      if (categorySlug === "news") {
-        articlePath = `/real-estate-news/${encodeURIComponent(slug)}/`;
-      } else if (categorySlug === "blog") {
-        articlePath = `/blogs/${encodeURIComponent(slug)}/`;
-      } else if (categorySlug === "publications") {
-        articlePath = `/our-publications/${encodeURIComponent(slug)}/`;
+      const subSlug = article.sub_category?.slug;
+      const lastmod = new Date(article.updatedAt).toISOString();
+
+      if (subSlug) {
+        addUrl(
+          `${hubBase}${encodeURIComponent(subSlug)}/${encodeURIComponent(slug)}/`,
+          lastmod,
+          "daily",
+          "0.9"
+        );
+        flatArticleKeysToDrop.add(
+          normalizePath(`${hubBase}${encodeURIComponent(slug)}/`)
+        );
+        nestedArticleCount++;
+        // Only blog sub-categories have dedicated landing pages on the frontend.
+        if (categorySlug === "blog") {
+          const prev = blogSubLastmod.get(subSlug);
+          if (!prev || lastmod > prev) blogSubLastmod.set(subSlug, lastmod);
+        }
       } else {
-        continue;
+        addUrl(`${hubBase}${encodeURIComponent(slug)}/`, lastmod, "daily", "0.9");
       }
+    }
+    console.log(
+      `[Sitemap] Articles (Strapi): ${strapiArticles.length} (${nestedArticleCount} nested under a sub-category)`
+    );
 
-      addUrl(
-        articlePath,
-        new Date(article.updatedAt).toISOString(),
-        "daily",
-        "0.9"
+    // Drop the flat counterparts of nested articles (emitted by the legacy
+    // MongoDB sections) so each article appears once, at its canonical URL.
+    let flatDropped = 0;
+    for (const key of flatArticleKeysToDrop) {
+      if (urlMap.delete(key)) flatDropped++;
+    }
+    if (flatDropped > 0) {
+      console.log(
+        `[Sitemap] Dropped ${flatDropped} flat article URLs superseded by a nested canonical`
       );
     }
-    console.log(`[Sitemap] Articles (Strapi): ${strapiArticles.length}`);
+
+    // Blog sub-category landing pages (/blogs/<sub-category>/) — SSR hub pages.
+    for (const [subSlug, lastmod] of blogSubLastmod) {
+      addUrl(`/blogs/${encodeURIComponent(subSlug)}/`, lastmod, "weekly", "0.8");
+    }
+    console.log(
+      `[Sitemap] Blog sub-category landing pages: ${blogSubLastmod.size}`
+    );
 
     // ── 10. Remove redirect source paths ───────────────────────
     reportProgress("dedup", { message: "Removing redirect sources & deduplicating…", urlCount: urlMap.size });

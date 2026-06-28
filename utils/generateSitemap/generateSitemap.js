@@ -52,6 +52,41 @@ function revalidateFrontendSitemap() {
   });
 }
 
+/**
+ * Fetch the static page list owned by the frontend (/api/static-routes), so a
+ * page added in the Next.js app flows into the sitemap without a backend edit.
+ * Returns a validated [{ path, changefreq, priority }] array, or null on any
+ * failure — the caller then falls back to the hardcoded STATIC_PAGES, so the
+ * sitemap never loses its static pages if the frontend is briefly unreachable.
+ * `cache: no-store` so each regen sees the currently-deployed list.
+ */
+async function fetchFrontendStaticRoutes() {
+  try {
+    const res = await fetch(`${MAIN_FRONTEND_URL}/api/static-routes/`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) {
+      console.warn(`[Sitemap] static-routes fetch failed (${res.status}); using built-in list`);
+      return null;
+    }
+    const data = await res.json();
+    const routes = Array.isArray(data?.routes) ? data.routes : null;
+    if (!routes) return null;
+    const cleaned = routes
+      .filter((r) => r && typeof r.path === "string" && r.path.startsWith("/"))
+      .map((r) => ({
+        path: r.path,
+        changefreq: typeof r.changefreq === "string" ? r.changefreq : "weekly",
+        priority: typeof r.priority === "string" ? r.priority : "0.8",
+      }));
+    return cleaned.length > 0 ? cleaned : null; // empty/garbage → fall back
+  } catch (err) {
+    console.warn(`[Sitemap] static-routes fetch errored (${err.message}); using built-in list`);
+    return null;
+  }
+}
+
 // ── Strapi fetch helper ──────────────────────────────────────────
 async function fetchStrapi(endpoint) {
   const headers = { "Content-Type": "application/json" };
@@ -255,9 +290,18 @@ const generateSitemap = async (onProgress) => {
     );
 
     // ── 2. Static pages ────────────────────────────────────────
+    // Prefer the frontend-owned list (/api/static-routes) so new Next.js pages
+    // appear without a backend edit; fall back to the built-in STATIC_PAGES.
     reportProgress("static-pages", { message: "Adding static pages…", urlCount: urlMap.size });
     const isoNow = new Date().toISOString();
-    for (const page of STATIC_PAGES) {
+    const frontendRoutes = await fetchFrontendStaticRoutes();
+    const staticPages = frontendRoutes || STATIC_PAGES;
+    console.log(
+      `[Sitemap] Static pages: ${staticPages.length} (source: ${
+        frontendRoutes ? "frontend /api/static-routes" : "built-in fallback"
+      })`
+    );
+    for (const page of staticPages) {
       addUrl(page.path, isoNow, page.changefreq, page.priority);
     }
 

@@ -191,12 +191,23 @@ const generateSitemap = async (onProgress) => {
     const redirectTargetPaths = new Set();
 
     for (const r of redirects) {
+      if (!r.from) continue;
+
+      // The site runs trailingSlash:true, so incoming paths ALWAYS have a
+      // trailing slash — a redirect whose `from` lacks one never fires (it's
+      // dead, and the frontend drops it for the same reason). normalizePath()
+      // below adds a slash, which would otherwise resurrect these ~780 dead
+      // rules and wrongly strip the matching LIVE URL from the sitemap (e.g. a
+      // stale `/villas-for-sale-in-dubai` → /blogs/... rule deleting the live
+      // /villas-for-sale-in-dubai/ listing). So only trailing-slash sources can
+      // exclude a URL — matching the frontend proxy's behaviour.
+      const fromHasSlash = r.from.trim().endsWith("/");
       const fromNormalized = normalizePath(r.from);
       const toNormalized = r.to ? normalizePath(r.to) : null;
 
-      // Only exclude if the redirect actually points ELSEWHERE
-      // (skip trailing-slash or self-referencing redirects)
-      if (toNormalized && fromNormalized !== toNormalized) {
+      // Only exclude if the redirect actually fires (trailing-slash source) and
+      // points ELSEWHERE (skip self-referencing / trailing-slash-only redirects).
+      if (fromHasSlash && toNormalized && fromNormalized !== toNormalized) {
         redirectSourcePaths.add(fromNormalized);
       }
 

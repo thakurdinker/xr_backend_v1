@@ -78,11 +78,16 @@ module.exports = catchAsync(async (req, res) => {
         }
     });
 
-    // Stage 1: Filter by Community (Case-insensitive)
+    // Stage 1: Filter by Community (Case-insensitive). Match on the SLUG (the
+    // value the search dropdown now sends, via /user/search-filters) OR the
+    // legacy NAME, so older shared links / clients that still pass a name keep
+    // working during the switch. `community` is regex-escaped before use.
     if (community) {
+        const safe = String(community).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const rx = { $regex: `^${safe}$`, $options: "i" };
         pipeline.push({
             $match: {
-                community_name: { $regex: `^${community}$`, $options: "i" },
+                $or: [{ community_name_slug: rx }, { community_name: rx }],
             },
         });
     }

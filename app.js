@@ -57,10 +57,48 @@ const User = require("./models/user");
 const seoUrlMap = require("./utils/seoUrlMap");
 
 const PORT = process.env.PORT;
-const DB_URL =
-  process.env.ENV === "development"
-    ? process.env.TEST_DB_URL
-    : process.env.DB_URL;
+
+const isDevelopment = process.env.ENV === "development";
+
+// Which database to read. Deliberately DECOUPLED from ENV.
+//
+// This used to be `ENV === "development" ? TEST_DB_URL : DB_URL`, which meant
+// the only way to see live data locally was to set ENV=production — and that
+// also flips ALLOWED_ORIGINS to the strict production list (no localhost) and
+// sets cookie.secure/sameSite=none, so CORS and sessions both break over plain
+// http://localhost. Keep ENV=development and set USE_LIVE_DB=true instead.
+const useLiveDb =
+  String(process.env.USE_LIVE_DB || "").toLowerCase() === "true" ||
+  !isDevelopment;
+
+const DB_URL = useLiveDb ? process.env.DB_URL : process.env.TEST_DB_URL;
+
+if (!DB_URL) {
+  console.error(
+    `FATAL: ${useLiveDb ? "DB_URL" : "TEST_DB_URL"} is not set in vars/.env`
+  );
+  process.exit(1);
+}
+
+// Name the target database on stdout. Silently reading production from a dev
+// machine is how test records end up in live collections.
+const dbName = (DB_URL.split("/").pop() || "").split("?")[0];
+if (isDevelopment && useLiveDb) {
+  console.warn(
+    [
+      "",
+      "  ==========================================================",
+      "   WARNING: development server connected to the LIVE database",
+      `   database: ${dbName}`,
+      "   Writes from this process affect the production site.",
+      "   Unset USE_LIVE_DB in vars/.env to return to the test DB.",
+      "  ==========================================================",
+      "",
+    ].join("\n")
+  );
+} else {
+  console.log(`Database target: ${dbName} (live=${useLiveDb})`);
+}
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
@@ -76,7 +114,9 @@ store.on("error", function (e) {
   console.log("SESSION STORE ERROR");
 });
 
-const isProduction = process.env.ENV !== "development";
+// Derived from ENV only — never from which database is in use. Reading live
+// data locally must not change CORS or cookie security.
+const isProduction = !isDevelopment;
 
 const sessionConfig = {
   store,
@@ -145,6 +185,39 @@ app.use((req, res, next) => {
   }
   next();
 })
+
+// ── Live-database write guard ─────────────────────────────────────
+// Active only when a DEVELOPMENT process is pointed at the live database
+// (ENV=development + USE_LIVE_DB=true). Reads pass through; anything that could
+// mutate production is refused before it reaches a route. Deployed instances
+// (ENV=production) are unaffected.
+//
+// Set LIVE_DB_ALLOW_WRITES=true in vars/.env to bypass — needed for admin
+// login, which writes a session document.
+const LIVE_DB_READ_ONLY =
+  isDevelopment &&
+  useLiveDb &&
+  String(process.env.LIVE_DB_ALLOW_WRITES || "").toLowerCase() !== "true";
+
+if (LIVE_DB_READ_ONLY) {
+  const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+  app.use((req, res, next) => {
+    if (SAFE_METHODS.has(req.method)) return next();
+    console.warn(
+      `[live-db-guard] BLOCKED ${req.method} ${req.originalUrl} from ${req.ip}`
+    );
+    return res.status(423).json({
+      success: false,
+      message:
+        "Refusing to write: this local development server is connected to the " +
+        "LIVE database. Set LIVE_DB_ALLOW_WRITES=true in vars/.env to override, " +
+        "or unset USE_LIVE_DB to work against the test database.",
+    });
+  });
+  console.warn(
+    "[live-db-guard] read-only mode active — non-GET requests will be refused"
+  );
+}
 
 // Admin Routes
 app.use("/admin", permissionsRouter);

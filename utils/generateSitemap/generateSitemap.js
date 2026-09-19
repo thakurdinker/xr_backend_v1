@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 
 const Community = require("../../models/community");
 const Property = require("../../models/properties");
-const Content = require("../../models/content");
 const Redirect = require("../../models/redirect");
 const Sitemap = require("../../models/sitemap");
 const seoUrlMap = require("../seoUrlMap");
@@ -88,6 +87,12 @@ async function fetchFrontendStaticRoutes() {
 }
 
 // ── Strapi fetch helper ──────────────────────────────────────────
+/**
+ * One Strapi request. Returns the item array, or null when the REQUEST failed
+ * (non-2xx / network / bad JSON). null is deliberately distinct from []: an
+ * empty collection is a valid answer, a failed request is not, and callers that
+ * would emit a badly truncated sitemap need to tell the two apart.
+ */
 async function fetchStrapi(endpoint) {
   const headers = { "Content-Type": "application/json" };
   if (STRAPI_API_TOKEN) {
@@ -100,21 +105,21 @@ async function fetchStrapi(endpoint) {
       console.warn(
         `[Sitemap] Strapi fetch failed: ${endpoint} → ${res.status}`
       );
-      return [];
+      return null;
     }
     const json = await res.json();
     return json?.data || [];
   } catch (err) {
     console.warn(`[Sitemap] Strapi fetch error: ${endpoint} → ${err.message}`);
-    return [];
+    return null;
   }
 }
 
 /**
- * Fetch all pages from a Strapi collection using pagination.
- * Returns a flat array of all items.
+ * Fetch all pages of a Strapi collection. Returns { items, failed } — `failed`
+ * is true when any page request errored, so the items are known-incomplete.
  */
-async function fetchStrapiAll(endpoint, params = "") {
+async function fetchStrapiAllChecked(endpoint, params = "") {
   const allItems = [];
   let page = 1;
   const pageSize = 100;
@@ -124,14 +129,25 @@ async function fetchStrapiAll(endpoint, params = "") {
     const paginationParams = `${params ? "?" + params + sep : "?"}pagination[page]=${page}&pagination[pageSize]=${pageSize}`;
     const items = await fetchStrapi(`${endpoint}${paginationParams}`);
 
-    if (!items || items.length === 0) break;
+    if (items === null) return { items: allItems, failed: true };
+    if (items.length === 0) break;
     allItems.push(...items);
 
     if (items.length < pageSize) break; // last page
     page++;
   }
 
-  return allItems;
+  return { items: allItems, failed: false };
+}
+
+/**
+ * Fetch all pages from a Strapi collection using pagination.
+ * Returns a flat array of all items (partial on failure — callers that cannot
+ * tolerate a partial result should use fetchStrapiAllChecked instead).
+ */
+async function fetchStrapiAll(endpoint, params = "") {
+  const { items } = await fetchStrapiAllChecked(endpoint, params);
+  return items;
 }
 
 // ── Static pages ─────────────────────────────────────────────────
@@ -145,7 +161,10 @@ const STATIC_PAGES = [
   },
   { path: "/privacy-policy/", changefreq: "weekly", priority: "0.8" },
   { path: "/agent/", changefreq: "daily", priority: "0.9" },
-  { path: "/real-estate-news/", changefreq: "daily", priority: "0.9" },
+  // NOTE: /real-estate-news/ and /our-publications/ are intentionally absent —
+  // both hubs now 308-redirect (the frontend's /api/static-routes already omits
+  // them). They are only reachable here when that fetch fails and this fallback
+  // is used, so leaving them in would let an outage inject redirecting URLs.
   { path: "/blogs/", changefreq: "daily", priority: "0.9" },
   // NOTE: bare /dubai-properties/ is intentionally absent — the frontend
   // 301-redirects it to /off-plan-projects-for-sale-in-dubai/ (a sitemap must
@@ -154,7 +173,6 @@ const STATIC_PAGES = [
   { path: "/customer-reviews/", changefreq: "daily", priority: "0.9" },
   { path: "/careers/", changefreq: "weekly", priority: "0.8" },
   { path: "/guides/", changefreq: "weekly", priority: "0.9" },
-  { path: "/our-publications/", changefreq: "weekly", priority: "0.8" },
   { path: "/living-experience-dubai/", changefreq: "weekly", priority: "0.8" },
   { path: "/living-experience-dubai/beachfront/", changefreq: "weekly", priority: "0.8" },
   { path: "/developer/", changefreq: "daily", priority: "0.9" },
@@ -284,8 +302,6 @@ const generateSitemap = async (onProgress) => {
     "communities",
     "developers",
     "agents",
-    "blogs",
-    "news",
     "guides",
     "articles",
     "dedup",
@@ -480,50 +496,17 @@ const generateSitemap = async (onProgress) => {
     }
     console.log(`[Sitemap] Agents (Strapi): ${strapiAgents.length}`);
 
-    // ── 7. Blogs & News (from MongoDB with redirect mapping) ───
-    reportProgress("blogs", { message: "Fetching blogs from MongoDB…", urlCount: urlMap.size });
-    const blogs = await Content.find({
-      status: "published",
-      category: "Blog",
-    }).select("slug updatedAt");
+    // NOTE: the MongoDB `Content` collection is deliberately NOT a source of
+    // article URLs. It is legacy: routes/newsPage.js still LISTS it (/blogs,
+    // /real-estate-news) but its per-slug detail route is commented out, so no
+    // Content row has a page — every URL derived from one 404s. Strapi is the
+    // source of truth for articles, and section 8 enumerates it. Of the 258
+    // published Content rows, not one contributed a live URL; they contributed
+    // 9 dead ones, including slugs no slugifier produces ("Freehold-vs-Leasehold",
+    // "…rashid-yachts-&-marina…", "…starting-at-$1.6-million"), which are stored
+    // verbatim in Content.slug — this generator never synthesised them.
 
-    for (const blog of blogs) {
-      // Check if there's a redirect for this slug
-      let blogPath = `/blogs/${encodeURIComponent(blog.slug)}/`;
-      const redirect = redirects.find(
-        (r) => r.from === `/${blog.slug}` || r.from === `/${blog.slug}/`
-      );
-      if (redirect && redirect.to) {
-        blogPath = redirect.to.endsWith("/") ? redirect.to : redirect.to + "/";
-      }
-      addUrl(blogPath, new Date(blog.updatedAt).toISOString(), "daily", "0.9");
-    }
-    console.log(`[Sitemap] Blogs: ${blogs.length}`);
-
-    reportProgress("news", { message: "Fetching news from MongoDB…", urlCount: urlMap.size });
-    const news = await Content.find({
-      status: "published",
-      category: "News",
-    }).select("slug updatedAt");
-
-    for (const article of news) {
-      let newsPath = `/real-estate-news/${encodeURIComponent(article.slug)}/`;
-      const redirect = redirects.find(
-        (r) => r.from === `/${article.slug}` || r.from === `/${article.slug}/`
-      );
-      if (redirect && redirect.to) {
-        newsPath = redirect.to.endsWith("/") ? redirect.to : redirect.to + "/";
-      }
-      addUrl(
-        newsPath,
-        new Date(article.updatedAt).toISOString(),
-        "daily",
-        "0.9"
-      );
-    }
-    console.log(`[Sitemap] News: ${news.length}`);
-
-    // ── 8. Guides (from Strapi) ────────────────────────────────
+    // ── 7. Guides (from Strapi) ────────────────────────────────
     reportProgress("guides", { message: "Fetching guides from Strapi…", urlCount: urlMap.size });
     const guides = await fetchStrapiAll(
       "/api/guides",
@@ -541,14 +524,24 @@ const generateSitemap = async (onProgress) => {
     }
     console.log(`[Sitemap] Guides (Strapi): ${guides.length}`);
 
-    // ── 9. Articles from Strapi (news, blogs, publications) ────
+    // ── 8. Articles from Strapi (news, blogs, publications) ────
     reportProgress("articles", { message: "Fetching articles from Strapi…", urlCount: urlMap.size });
-    // These may overlap with MongoDB content — Strapi articles that
-    // aren't in MongoDB will get added; duplicates are caught by the Map.
-    const strapiArticles = await fetchStrapiAll(
-      "/api/articles",
-      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug&populate[seo][fields][0]=canonicalUrl"
-    );
+    // Strapi is the ONLY source of article URLs (see the note above section 7),
+    // so a failed or empty fetch here is not a sitemap with fewer articles — it
+    // is a sitemap with no articles at all, roughly 56% of the site. Abort
+    // instead, leaving the last good sitemap in MongoDB untouched.
+    const { items: strapiArticles, failed: articlesFetchFailed } =
+      await fetchStrapiAllChecked(
+        "/api/articles",
+        "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug&populate[seo][fields][0]=canonicalUrl"
+      );
+    if (articlesFetchFailed || strapiArticles.length === 0) {
+      throw new Error(
+        `Strapi article fetch ${
+          articlesFetchFailed ? "failed" : "returned 0 articles"
+        } — refusing to publish a sitemap with no article URLs`
+      );
+    }
 
     // Distinct blog sub-categories → their landing pages (/blogs/<sub>/), with
     // the latest article date in that sub-category as lastmod.
@@ -564,14 +557,11 @@ const generateSitemap = async (onProgress) => {
     //   articleCanonicalKeys — the one URL per article that must survive.
     //   legacyArticleKeys    — every flat /{hub}/{slug}/ shape of a Strapi
     //                          article, under EVERY hub, not just its current
-    //                          one. The legacy MongoDB Content sections (7)
-    //                          emit from a stored `category` string that goes
-    //                          stale the moment an article is re-filed, so an
-    //                          article that moved news → blog is emitted at
-    //                          /real-estate-news/<slug>/ while its canonical
-    //                          lives at /blogs/<sub>/<slug>/. Enumerating all
-    //                          hubs catches hub moves and sub-category moves
-    //                          alike, today and for the next one.
+    //                          one. Retained as a backstop now that the MongoDB
+    //                          Content sections are gone: any other source that
+    //                          learns to emit an article path (the frontend's
+    //                          /api/static-routes, seoUrlMap, a future feed)
+    //                          cannot reintroduce a redirecting flat URL.
     // Both keyed by normalizePath to match urlMap.
     const articleCanonicalKeys = new Set();
     const legacyArticleKeys = new Set();
@@ -616,8 +606,7 @@ const generateSitemap = async (onProgress) => {
     // Drop every legacy article shape that is not itself some article's
     // canonical. Subtracting articleCanonicalKeys keeps a flat-canonical
     // article (no sub-category) in place, and keeps both entries should two
-    // distinct articles ever share a slug across hubs. Articles that exist only
-    // in MongoDB Content are untouched — their slugs never enter these sets.
+    // distinct articles ever share a slug across hubs.
     let legacyDropped = 0;
     for (const key of legacyArticleKeys) {
       if (articleCanonicalKeys.has(key) || protectedPaths.has(key)) continue;
@@ -637,7 +626,7 @@ const generateSitemap = async (onProgress) => {
       `[Sitemap] Blog sub-category landing pages: ${blogSubLastmod.size}`
     );
 
-    // ── 10. Remove redirect source paths ───────────────────────
+    // ── 9. Remove redirect source paths ───────────────────────
     reportProgress("dedup", { message: "Removing redirect sources & deduplicating…", urlCount: urlMap.size });
     //   protectedPaths (seoUrlMap pages) is built at the top of this function —
     //   those pages take priority over redirects because the seoUrlMap
@@ -655,7 +644,7 @@ const generateSitemap = async (onProgress) => {
       );
     }
 
-    // ── 11. Build XML ──────────────────────────────────────────
+    // ── 10. Build XML ──────────────────────────────────────────
     reportProgress("write", { message: "Building XML & writing to disk…", urlCount: urlMap.size });
     const urlEntries = [];
     for (const [, entry] of urlMap) {
@@ -669,10 +658,10 @@ const generateSitemap = async (onProgress) => {
 ${urlEntries.join("\n")}
 </urlset>`;
 
-    // ── 12. Write to disk ──────────────────────────────────────
+    // ── 11. Write to disk ──────────────────────────────────────
     fs.writeFileSync(SITEMAP_PATH, xml, { encoding: "utf8" });
 
-    // ── 13. Save to MongoDB (shared across all instances) ─────
+    // ── 12. Save to MongoDB (shared across all instances) ─────
     try {
       await Sitemap.findOneAndUpdate(
         {},
@@ -684,7 +673,7 @@ ${urlEntries.join("\n")}
       console.warn(`[Sitemap] MongoDB save failed (non-fatal): ${mongoErr.message}`);
     }
 
-    // ── 14. Nudge the frontend to drop its cached /sitemap.xml ────
+    // ── 13. Nudge the frontend to drop its cached /sitemap.xml ────
     // Fires on every regen path (admin button, content/redirect auto-trigger,
     // cron) since they all funnel through this function — so the live sitemap
     // reflects this run within seconds instead of lagging up to ~1h.

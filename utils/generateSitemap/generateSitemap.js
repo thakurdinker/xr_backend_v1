@@ -201,6 +201,76 @@ function normalizePath(p) {
   return normalized.toLowerCase();
 }
 
+// ── Article canonical paths ──────────────────────────────────────
+// category slug → hub base path. Canonical article URLs nest under their
+// sub-category when one is set (/{hub}/{sub}/{slug}/), matching the frontend's
+// articlePath(); flat (/{hub}/{slug}/) otherwise.
+const HUB_BASE = {
+  news: "/real-estate-news/",
+  blog: "/blogs/",
+  publications: "/our-publications/",
+};
+const HUB_BASES = Object.values(HUB_BASE);
+
+/**
+ * Read an article's own sub-categorised path out of its Strapi `seo.canonicalUrl`,
+ * used only as a fallback when the `sub_category` relation is empty (a handful of
+ * articles carry the sub-category in this field alone, and the frontend routes them
+ * by it — /blogs/<slug>/ then 308s to the nested form).
+ *
+ * canonicalUrl is a hand-edited SEO field, so it is trusted only when it plainly
+ * describes THIS article's location: an on-site absolute URL of the shape
+ * /{known-hub}/{sub}/{this-slug}/. Editorial cross-canonicals pointing at a
+ * different (often deleted) article, bare hub URLs and typo'd schemes are rejected
+ * — the caller then falls back to the derived path. Returns { path, subSlug } or null.
+ */
+function subPathFromCanonicalUrl(canonicalUrl, slug) {
+  if (typeof canonicalUrl !== "string") return null;
+  const trimmed = canonicalUrl.trim();
+  if (!trimmed.startsWith(`${SITE_URL}/`)) return null;
+
+  let p = trimmed.slice(SITE_URL.length).split("?")[0].split("#")[0];
+  if (!p.endsWith("/")) p += "/";
+
+  const segments = p.split("/").filter(Boolean);
+  if (segments.length !== 3) return null; // not /{hub}/{sub}/{slug}/
+  if (!HUB_BASES.includes(`/${segments[0]}/`)) return null;
+
+  let leaf;
+  try {
+    leaf = decodeURIComponent(segments[2]);
+  } catch {
+    return null; // malformed percent-encoding
+  }
+  if (leaf.toLowerCase() !== slug.toLowerCase()) return null; // another article
+
+  return { path: p, subSlug: decodeURIComponent(segments[1]) };
+}
+
+/**
+ * The single URL an article resolves to today, derived from the same live Strapi
+ * fields the frontend uses (category + sub_category, then seo.canonicalUrl).
+ * Never a stored legacy path — so an article that is re-filed moves in the sitemap
+ * on the next regeneration instead of leaving a redirecting URL behind.
+ * Returns { path, subSlug } (subSlug null when the article sits flat under its hub).
+ */
+function resolveArticlePath(article, hubBase, slug) {
+  const encSlug = encodeURIComponent(slug);
+
+  const subSlug = article.sub_category?.slug;
+  if (subSlug) {
+    return {
+      path: `${hubBase}${encodeURIComponent(subSlug)}/${encSlug}/`,
+      subSlug,
+    };
+  }
+
+  const fromSeo = subPathFromCanonicalUrl(article.seo?.canonicalUrl, slug);
+  if (fromSeo) return fromSeo;
+
+  return { path: `${hubBase}${encSlug}/`, subSlug: null };
+}
+
 // ── Main generator ───────────────────────────────────────────────
 const generateSitemap = async (onProgress) => {
   const startTime = Date.now();
@@ -237,6 +307,14 @@ const generateSitemap = async (onProgress) => {
 
   // Track all URLs to prevent duplicates — keyed by normalized path
   const urlMap = new Map();
+
+  // seoUrlMap pages are never pruned — the seoUrlMap middleware intercepts
+  // those requests before any redirect or article route can claim them, so
+  // they are always live 200s. Used by both the article-canonical pruning
+  // (section 9) and the redirect-source pruning (section 10).
+  const protectedPaths = new Set(
+    Object.keys(seoUrlMap).map((p) => normalizePath(p))
+  );
 
   function addUrl(rawPath, lastmod, changefreq = "daily", priority = "0.9") {
     const normalized = normalizePath(rawPath);
@@ -469,26 +547,34 @@ const generateSitemap = async (onProgress) => {
     // aren't in MongoDB will get added; duplicates are caught by the Map.
     const strapiArticles = await fetchStrapiAll(
       "/api/articles",
-      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug"
+      "fields[0]=slug&fields[1]=updatedAt&populate[category][fields][0]=slug&populate[sub_category][fields][0]=slug&populate[seo][fields][0]=canonicalUrl"
     );
-
-    // category slug → hub base path. Canonical article URLs nest under their
-    // sub-category when one is set (/{hub}/{sub}/{slug}/), matching the
-    // frontend's articlePath(); flat (/{hub}/{slug}/) otherwise.
-    const HUB_BASE = {
-      news: "/real-estate-news/",
-      blog: "/blogs/",
-      publications: "/our-publications/",
-    };
 
     // Distinct blog sub-categories → their landing pages (/blogs/<sub>/), with
     // the latest article date in that sub-category as lastmod.
     const blogSubLastmod = new Map();
-    // Flat URLs to drop when the same article is emitted nested: the legacy
-    // MongoDB Content sections (6 & 7) emit /{hub}/{slug}/ for the same slug, so
-    // without this a sub-categorised article would appear BOTH flat (redirecting)
-    // and nested (canonical). Keyed by normalizePath to match urlMap.
-    const flatArticleKeysToDrop = new Set();
+
+    // Canonical-path bookkeeping. Strapi IS the live source of truth for where
+    // an article resolves — resolveArticlePath() reads the same fields the
+    // frontend routes by (articlePath() / /api/article-canonical), and every
+    // OTHER shape of that article's URL 30x-redirects to it. Crucially, none of
+    // those moves is recorded as a Mongo redirect row, so the redirect pruning
+    // in section 10 cannot see them.
+    //
+    //   articleCanonicalKeys — the one URL per article that must survive.
+    //   legacyArticleKeys    — every flat /{hub}/{slug}/ shape of a Strapi
+    //                          article, under EVERY hub, not just its current
+    //                          one. The legacy MongoDB Content sections (7)
+    //                          emit from a stored `category` string that goes
+    //                          stale the moment an article is re-filed, so an
+    //                          article that moved news → blog is emitted at
+    //                          /real-estate-news/<slug>/ while its canonical
+    //                          lives at /blogs/<sub>/<slug>/. Enumerating all
+    //                          hubs catches hub moves and sub-category moves
+    //                          alike, today and for the next one.
+    // Both keyed by normalizePath to match urlMap.
+    const articleCanonicalKeys = new Set();
+    const legacyArticleKeys = new Set();
 
     let nestedArticleCount = 0;
     for (const article of strapiArticles) {
@@ -497,42 +583,49 @@ const generateSitemap = async (onProgress) => {
       const hubBase = HUB_BASE[categorySlug];
       if (!slug || !hubBase) continue;
 
-      const subSlug = article.sub_category?.slug;
       const lastmod = new Date(article.updatedAt).toISOString();
+      const { path: canonicalPath, subSlug } = resolveArticlePath(
+        article,
+        hubBase,
+        slug
+      );
+
+      addUrl(canonicalPath, lastmod, "daily", "0.9");
+      articleCanonicalKeys.add(normalizePath(canonicalPath));
+
+      // Every flat hub shape of this slug is a legacy path — including the one
+      // under the article's own current hub (stale when the sub-category moved).
+      const encSlug = encodeURIComponent(slug);
+      for (const base of HUB_BASES) {
+        legacyArticleKeys.add(normalizePath(`${base}${encSlug}/`));
+      }
 
       if (subSlug) {
-        addUrl(
-          `${hubBase}${encodeURIComponent(subSlug)}/${encodeURIComponent(slug)}/`,
-          lastmod,
-          "daily",
-          "0.9"
-        );
-        flatArticleKeysToDrop.add(
-          normalizePath(`${hubBase}${encodeURIComponent(slug)}/`)
-        );
         nestedArticleCount++;
         // Only blog sub-categories have dedicated landing pages on the frontend.
         if (categorySlug === "blog") {
           const prev = blogSubLastmod.get(subSlug);
           if (!prev || lastmod > prev) blogSubLastmod.set(subSlug, lastmod);
         }
-      } else {
-        addUrl(`${hubBase}${encodeURIComponent(slug)}/`, lastmod, "daily", "0.9");
       }
     }
     console.log(
       `[Sitemap] Articles (Strapi): ${strapiArticles.length} (${nestedArticleCount} nested under a sub-category)`
     );
 
-    // Drop the flat counterparts of nested articles (emitted by the legacy
-    // MongoDB sections) so each article appears once, at its canonical URL.
-    let flatDropped = 0;
-    for (const key of flatArticleKeysToDrop) {
-      if (urlMap.delete(key)) flatDropped++;
+    // Drop every legacy article shape that is not itself some article's
+    // canonical. Subtracting articleCanonicalKeys keeps a flat-canonical
+    // article (no sub-category) in place, and keeps both entries should two
+    // distinct articles ever share a slug across hubs. Articles that exist only
+    // in MongoDB Content are untouched — their slugs never enter these sets.
+    let legacyDropped = 0;
+    for (const key of legacyArticleKeys) {
+      if (articleCanonicalKeys.has(key) || protectedPaths.has(key)) continue;
+      if (urlMap.delete(key)) legacyDropped++;
     }
-    if (flatDropped > 0) {
+    if (legacyDropped > 0) {
       console.log(
-        `[Sitemap] Dropped ${flatDropped} flat article URLs superseded by a nested canonical`
+        `[Sitemap] Dropped ${legacyDropped} legacy article URLs superseded by a canonical path`
       );
     }
 
@@ -546,12 +639,9 @@ const generateSitemap = async (onProgress) => {
 
     // ── 10. Remove redirect source paths ───────────────────────
     reportProgress("dedup", { message: "Removing redirect sources & deduplicating…", urlCount: urlMap.size });
-    //   Protect seoUrlMap pages — they take priority over redirects
-    //   because the seoUrlMap middleware intercepts requests first.
-    const protectedPaths = new Set(
-      Object.keys(seoUrlMap).map((p) => normalizePath(p))
-    );
-
+    //   protectedPaths (seoUrlMap pages) is built at the top of this function —
+    //   those pages take priority over redirects because the seoUrlMap
+    //   middleware intercepts requests first.
     let removedCount = 0;
     for (const sourcePath of redirectSourcePaths) {
       if (urlMap.has(sourcePath) && !protectedPaths.has(sourcePath)) {
@@ -647,5 +737,9 @@ async function forceRegeneration(reason = "force", onProgress) {
 
 module.exports = generateSitemap;
 module.exports.generateSitemap = generateSitemap;
+// Exposed for verification — lets the article canonical resolution be exercised
+// against live Strapi data without running a full generation.
+module.exports.HUB_BASE = HUB_BASE;
+module.exports.resolveArticlePath = resolveArticlePath;
 module.exports.queueRegeneration = queueRegeneration;
 module.exports.forceRegeneration = forceRegeneration;

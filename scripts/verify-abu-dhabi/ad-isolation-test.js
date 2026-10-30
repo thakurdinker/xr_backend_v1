@@ -23,6 +23,11 @@ const check = (name, ok, extra = "") => { ok ? pass++ : fail++; console.log(`${o
 const get = async (p) => (await fetch(API + p)).json();
 const post = async (p, b) => (await fetch(API + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) })).json();
 const slugsIn = (arr, key = "property_name_slug") => (arr || []).map((x) => x[key] || x.slug);
+// Other zz-test-* rows (for example the seed-ad-demo.js demo data) may exist in
+// the dev db. The "exactly this" checks ignore them, and only them, so any
+// other unexpected Abu Dhabi data still fails.
+const isOtherTestRow = (slug) => typeof slug === "string" && slug.startsWith("zz-test-") && slug !== AREA && slug !== PROP;
+const own = (slugs) => slugs.filter((s) => !isOtherTestRow(s));
 
 async function cleanup() {
   await Property.deleteMany({ property_name_slug: PROP });
@@ -64,18 +69,19 @@ async function cleanup() {
   const dubaiList = await get("/area/communities/");
   check("Dubai area list excludes the AD area", !slugsIn(dubaiList.communities, "community_slug").includes(AREA));
   const adList = await get("/area/communities/?emirate=abu-dhabi");
-  const adListSlugs = slugsIn(adList.communities, "community_slug");
+  const adListSlugs = own(slugsIn(adList.communities, "community_slug"));
   check("AD area list = only the AD area (no Strapi/Dubai leakage)", adListSlugs.length === 1 && adListSlugs[0] === AREA, JSON.stringify(adListSlugs));
 
   // Landing pages
   const offplan = await get("/off-plan-projects-for-sale-in-dubai/?page=1");
   check("Dubai off-plan landing unchanged (same total pages, AD absent)", offplan.totalPages === offplanBefore.totalPages && !offplan.properties.some((p) => p.slug === PROP));
   const adOffplan = await get("/off-plan-projects-for-sale-in-abu-dhabi/?page=1");
-  check("AD off-plan landing lists the AD property with an /abu-dhabi/ URL", adOffplan.properties?.length === 1 && adOffplan.properties[0].url === `https://www.xrealty.ae/abu-dhabi/property/${PROP}/`);
+  const adOffplanOwn = (adOffplan.properties || []).filter((p) => !isOtherTestRow(p.slug));
+  check("AD off-plan landing lists the AD property with an /abu-dhabi/ URL", adOffplanOwn.length === 1 && adOffplanOwn[0].url === `https://www.xrealty.ae/abu-dhabi/property/${PROP}/`, JSON.stringify(slugsIn(adOffplan.properties)));
   const adApts = await get("/apartments-for-sale-in-abu-dhabi/?page=1");
   check("AD apartments landing lists it", adApts.properties?.some((p) => p.slug === PROP));
   const adVillas = await get("/villas-for-sale-in-abu-dhabi/?page=1");
-  check("AD villas landing is empty (property is an apartment)", adVillas.properties?.length === 0);
+  check("AD villas landing is empty (property is an apartment)", own(slugsIn(adVillas.properties)).length === 0);
   check("AD landing never gets Dubai Strapi copy", (adOffplan.content?.data || []).length === 0);
   const dApts = await get("/apartments-for-sale-in-dubai/?page=1");
   check("Dubai apartments landing excludes AD property", !dApts.properties.some((p) => p.slug === PROP));
@@ -85,12 +91,15 @@ async function cleanup() {
   check("developer page (Dubai) excludes AD property", !slugsIn(devDubai.developerProperties).includes(PROP));
   check("developer emirates = Dubai + Abu Dhabi", JSON.stringify(devDubai.emirates) === '["Dubai","Abu Dhabi"]', JSON.stringify(devDubai.emirates));
   const devAD = await get(`/label/${DEV}?emirate=abu-dhabi&page=1&limit=200`);
-  check("developer page (AD) = only the AD property", JSON.stringify(slugsIn(devAD.developerProperties)) === JSON.stringify([PROP]));
-  check("developer AD communities = only the AD area", JSON.stringify(slugsIn(devAD.developerCommunities, "slug")) === JSON.stringify([AREA]));
+  check("developer page (AD) = only the AD property", JSON.stringify(own(slugsIn(devAD.developerProperties))) === JSON.stringify([PROP]));
+  check("developer AD communities = only the AD area", JSON.stringify(own(slugsIn(devAD.developerCommunities, "slug"))) === JSON.stringify([AREA]));
   const devs = await get("/admin/developers");
   check("developer list (no filter) unchanged count", devs.data.length === 12);
   const devsAD = await get("/admin/developers?emirate=abu-dhabi");
-  check("developer list ?emirate=abu-dhabi = emaar only", JSON.stringify(devsAD.data.map((d) => d.developer_slug)) === JSON.stringify([DEV]));
+  // A developer whose live AD projects are all other zz-test rows is test data too.
+  const liveAD = await Property.find({ show_property: true, emirate: "Abu Dhabi" }).select("developer_name_slug property_name_slug").lean();
+  const testOnlyDevs = new Set(liveAD.map((p) => p.developer_name_slug).filter((d) => d !== DEV && liveAD.filter((p) => p.developer_name_slug === d).every((p) => isOtherTestRow(p.property_name_slug))));
+  check("developer list ?emirate=abu-dhabi = emaar only", JSON.stringify(devsAD.data.map((d) => d.developer_slug).filter((d) => !testOnlyDevs.has(d))) === JSON.stringify([DEV]), JSON.stringify(devsAD.data.map((d) => d.developer_slug)));
   const devsDubai = await get("/admin/developers?emirate=dubai");
   check("developer list ?emirate=dubai keeps all 12", devsDubai.data.length === 12);
 
@@ -98,7 +107,7 @@ async function cleanup() {
   const s1 = await post("/property-search", { page: 1, limit: 500 });
   check("search excludes AD property by default", !slugsIn(s1.data || s1.properties).includes(PROP));
   const s2 = await post("/property-search", { page: 1, limit: 500, emirate: "abu-dhabi" });
-  check("search with emirate=abu-dhabi finds only it", JSON.stringify(slugsIn(s2.data || s2.properties)) === JSON.stringify([PROP]));
+  check("search with emirate=abu-dhabi finds only it", JSON.stringify(own(slugsIn(s2.data || s2.properties))) === JSON.stringify([PROP]));
   const f = await get("/user/search-filters");
   check("search filters exclude AD community", !f.data.communities.some((c) => c.slug === AREA));
   const home = await get("/");
@@ -110,7 +119,7 @@ async function cleanup() {
   const ad = (await Sitemap.findOne(Sitemap.ABU_DHABI).lean()).content;
   check("main sitemap has no AD URLs", !main.includes("zz-test") && !main.includes("xrealty.ae/abu-dhabi/"));
   const adLocs = [...ad.matchAll(/<loc>([^<]+)/g)].map((m) => m[1].replace("https://www.xrealty.ae", ""));
-  check("AD sitemap lists hub, areas list, area, property and live landings", ["/abu-dhabi/", "/abu-dhabi/areas/", `/abu-dhabi/areas/${AREA}/`, `/abu-dhabi/property/${PROP}/`, "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/"].every((u) => adLocs.includes(u)) && !adLocs.includes("/villas-for-sale-in-abu-dhabi/"), JSON.stringify(adLocs));
+  check("AD sitemap lists hub, areas list, developers list, area, property and live landings", ["/abu-dhabi/", "/abu-dhabi/areas/", "/abu-dhabi/developers/", `/abu-dhabi/areas/${AREA}/`, `/abu-dhabi/property/${PROP}/`, "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/"].every((u) => adLocs.includes(u)) && !adLocs.includes("/villas-for-sale-in-abu-dhabi/"), JSON.stringify(adLocs));
   check("emaar (both emirates) stays in main sitemap, not AD", main.includes(`/developer/${DEV}/`) && !adLocs.includes(`/developer/${DEV}/`));
   check("main sitemap URL count unchanged (910)", (main.match(/<loc>/g) || []).length === 910, String((main.match(/<loc>/g) || []).length));
   const served = await (await fetch(API + "/admin/sitemap-abu-dhabi")).text();
@@ -124,7 +133,20 @@ async function cleanup() {
   await cleanup();
   await generateSitemap();
   const restored = (await Sitemap.findOne(Sitemap.ABU_DHABI).lean()).content;
-  check("cleanup: AD sitemap empty again", !restored.includes("<loc>"));
+  // Empty again, unless other zz-test rows are in the dev db: then only their
+  // URLs and the section pages they fill may remain.
+  const otherTestRows =
+    (await Property.countDocuments({ property_name_slug: /^zz-test-/, emirate: "Abu Dhabi" })) +
+    (await Community.countDocuments({ slug: /^zz-test-/, emirate: "Abu Dhabi" }));
+  const sectionPages = new Set(["/abu-dhabi/", "/abu-dhabi/areas/", "/abu-dhabi/developers/", "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/", "/villas-for-sale-in-abu-dhabi/"]);
+  const restoredLocs = [...restored.matchAll(/<loc>([^<]+)/g)].map((m) => m[1].replace("https://www.xrealty.ae", ""));
+  check(
+    "cleanup: AD sitemap empty again (apart from other zz-test rows)",
+    otherTestRows === 0
+      ? restoredLocs.length === 0
+      : restoredLocs.every((u) => sectionPages.has(u) || u.includes("/zz-test-") || [...testOnlyDevs].some((d) => u === `/developer/${d}/`)),
+    JSON.stringify(restoredLocs)
+  );
   await mongoose.disconnect();
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

@@ -12,6 +12,7 @@ const axios = require("axios");
 const qs = require("qs");
 const {
   DUBAI,
+  EMIRATES,
   parseEmirate,
   emirateFilter,
   emirateOf,
@@ -319,6 +320,26 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
       });
     }
 
+    // Moving the area to another emirate moves its properties with it. Refuse
+    // the move when one of their slugs is already used there, before anything
+    // is saved. The model's pre-save hook repeats this for other save paths.
+    if (
+      EMIRATES.includes(req.body.emirate) &&
+      req.body.emirate !== emirateOf(community)
+    ) {
+      const clashes = await Community.findAreaMoveClashes(
+        community.slug, // still the stored slug: the body is not applied yet
+        req.body.emirate
+      );
+      if (clashes.length) {
+        return res.status(200).json({
+          success: false,
+          isUpdated: false,
+          message: Community.areaMoveClashMessage(req.body.emirate, clashes),
+        });
+      }
+    }
+
     Object.keys(req.body).forEach((update) => {
       if (
         typeof req.body[update] === "object" &&
@@ -338,7 +359,12 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
       .status(200)
       .json({ success: true, isUpdated: true, community, message: "DONE" });
   } catch (error) {
-    res.status(200).json({ success: false, isUpdated: false, message: error });
+    // An Error object serialises to {}; send its text so the admin can act.
+    res.status(200).json({
+      success: false,
+      isUpdated: false,
+      message: error?.message || String(error),
+    });
   }
 });
 

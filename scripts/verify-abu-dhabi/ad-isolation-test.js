@@ -81,7 +81,8 @@ async function cleanup() {
   const adApts = await get("/apartments-for-sale-in-abu-dhabi/?page=1");
   check("AD apartments landing lists it", adApts.properties?.some((p) => p.slug === PROP));
   const adVillas = await get("/villas-for-sale-in-abu-dhabi/?page=1");
-  check("AD villas landing is empty (property is an apartment)", own(slugsIn(adVillas.properties)).length === 0);
+  // An error response has no properties array; it must fail, not count as empty.
+  check("AD villas landing is empty (property is an apartment)", adVillas.success === true && Array.isArray(adVillas.properties) && own(slugsIn(adVillas.properties)).length === 0, JSON.stringify({ success: adVillas.success, message: adVillas.message }));
   check("AD landing never gets Dubai Strapi copy", (adOffplan.content?.data || []).length === 0);
   const dApts = await get("/apartments-for-sale-in-dubai/?page=1");
   check("Dubai apartments landing excludes AD property", !dApts.properties.some((p) => p.slug === PROP));

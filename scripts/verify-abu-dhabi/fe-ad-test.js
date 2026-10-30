@@ -1,5 +1,10 @@
 // Frontend Abu Dhabi routing test: local Next (:3100) + local backend + DEV db.
 // Inserts zz-test-* docs via the real models, checks pages, then deletes them.
+//
+// Pages are cached by Next (ISR), so the test refreshes each path through the
+// site's /api/revalidate before it fetches it. Start Next with
+// REVALIDATE_SECRET=<any value> and run this script with the same value in
+// FE_REVALIDATE_SECRET.
 process.env.MAIN_FRONTEND_URL = "http://127.0.0.1:9";
 const path = require("path");
 const BE = path.resolve(__dirname, "../..");
@@ -15,7 +20,13 @@ if ((url.split("/").pop() || "").split("?")[0] !== "xrealty_website_dev_backend"
 const AREA = "zz-test-saadiyat", PROP = "zz-test-ad-project";
 let pass = 0, fail = 0;
 const check = (n, ok, x = "") => { ok ? pass++ : fail++; console.log(`${ok ? "PASS" : "FAIL"}  ${n}${x ? "  — " + x : ""}`); };
-const page = async (p) => { const r = await fetch(FE + p, { redirect: "manual" }); return { status: r.status, html: await r.text() }; };
+const SECRET = process.env.FE_REVALIDATE_SECRET;
+if (!SECRET) throw new Error("Set FE_REVALIDATE_SECRET to the REVALIDATE_SECRET the local Next server runs with (see the header comment)");
+const revalidate = async (p) => {
+  const r = await fetch(FE + "/api/revalidate/", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ secret: SECRET, path: p }) });
+  if (!r.ok) throw new Error(`revalidate ${p} failed: ${r.status} ${await r.text()}`);
+};
+const page = async (p) => { await revalidate(p); const r = await fetch(FE + p, { redirect: "manual" }); return { status: r.status, html: await r.text() }; };
 const ld = (html) => [...html.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)].map((m) => JSON.parse(m[1]));
 const canonical = (html) => (html.match(/<link rel="canonical" href="([^"]+)"/) || [])[1];
 const cleanup = async () => { await Property.deleteMany({ property_name_slug: PROP }); await Community.deleteMany({ slug: AREA }); };
@@ -55,7 +66,8 @@ const cleanup = async () => { await Property.deleteMany({ property_name_slug: PR
   check("Strapi-only Dubai area not at AD URL (404)", (await page("/abu-dhabi/areas/dubai-hills-estate/")).status === 404);
 
   const dev = await page("/developer/emaar-properties/");
-  check("developer page does not list the AD project yet (Phase 1 section)", !dev.html.includes(PROP));
+  check("developer page lists the AD project in its Abu Dhabi section", dev.html.includes('id="abu-dhabi-properties"') && dev.html.includes(`href="/abu-dhabi/property/${PROP}/"`));
+  check("developer page never links the AD project at its Dubai URL", !dev.html.includes(`href="/property/${PROP}/"`));
   const landing = await page("/off-plan-projects-for-sale-in-abu-dhabi/");
   check("AD off-plan landing renders and links /abu-dhabi/property/", landing.status === 200 && landing.html.includes(`/abu-dhabi/property/${PROP}/`), String(landing.status));
   const dl = await page("/off-plan-projects-for-sale-in-dubai/");

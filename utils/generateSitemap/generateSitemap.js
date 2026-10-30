@@ -313,10 +313,30 @@ const ABU_DHABI_LANDING_TYPES = {
  * sitemap never advertises a page that 404s; with no Abu Dhabi data it is an
  * empty <urlset>.
  */
-async function writeAbuDhabiSitemap(urls, properties, isoNow) {
+/**
+ * Whether /abu-dhabi/developers/ has content. The page lists a developer only
+ * when it is in Strapi, in Mongo (the backend's developer list) and has a live
+ * Abu Dhabi project, and 404s when none qualify (xr_client src/lib/abuDhabi.ts,
+ * getAbuDhabiDevelopers). The Abu Dhabi sitemap lists the page on the same
+ * condition, so it never advertises a 404 and never misses a live page.
+ * Both-emirate developers count too.
+ *
+ * @param {Array<{developer_slug?: string}>} strapiDevelopers
+ * @param {Set<string>} mongoDeveloperSlugs
+ * @param {Map<string, Set<string>>} developerEmirates emirates of each developer's live properties
+ */
+function hasAbuDhabiListDeveloper(strapiDevelopers, mongoDeveloperSlugs, developerEmirates) {
+  return strapiDevelopers.some(
+    (d) =>
+      Boolean(d.developer_slug) &&
+      mongoDeveloperSlugs.has(d.developer_slug) &&
+      Boolean(developerEmirates.get(d.developer_slug)?.has(ABU_DHABI))
+  );
+}
+
+async function writeAbuDhabiSitemap(urls, properties, isoNow, hasDeveloper) {
   const adProperties = properties.filter((p) => emirateOf(p) === ABU_DHABI);
   const hasArea = urls.some((u) => u.path.startsWith("/abu-dhabi/areas/"));
-  const hasDeveloper = urls.some((u) => u.path.startsWith("/developer/"));
 
   const pages = [];
   if (hasArea || adProperties.length) pages.push("/abu-dhabi/");
@@ -554,9 +574,16 @@ const generateSitemap = async (onProgress) => {
       if (!developerEmirates.has(key)) developerEmirates.set(key, new Set());
       developerEmirates.get(key).add(emirateOf(p));
     }
+    const mongoDevelopers = await Developer.find({})
+      .select("developer_slug noindex")
+      .lean();
     const noindexDevelopers = new Set(
-      (await Developer.find({ noindex: true }).select("developer_slug").lean())
-        .map((d) => d.developer_slug)
+      mongoDevelopers.filter((d) => d.noindex).map((d) => d.developer_slug)
+    );
+    const hasAbuDhabiDeveloper = hasAbuDhabiListDeveloper(
+      strapiDevelopers,
+      new Set(mongoDevelopers.map((d) => d.developer_slug)),
+      developerEmirates
     );
     for (const d of strapiDevelopers) {
       const slug = d.developer_slug;
@@ -775,7 +802,7 @@ ${urlEntries.join("\n")}
     }
 
     // ── 12b. Abu Dhabi sitemap ────────────────────────────────
-    await writeAbuDhabiSitemap(abuDhabiUrls, properties, isoNow);
+    await writeAbuDhabiSitemap(abuDhabiUrls, properties, isoNow, hasAbuDhabiDeveloper);
 
     // ── 13. Nudge the frontend to drop its cached /sitemap.xml ────
     // Fires on every regen path (admin button, content/redirect auto-trigger,
@@ -834,5 +861,6 @@ module.exports.generateSitemap = generateSitemap;
 // against live Strapi data without running a full generation.
 module.exports.HUB_BASE = HUB_BASE;
 module.exports.resolveArticlePath = resolveArticlePath;
+module.exports.hasAbuDhabiListDeveloper = hasAbuDhabiListDeveloper;
 module.exports.queueRegeneration = queueRegeneration;
 module.exports.forceRegeneration = forceRegeneration;

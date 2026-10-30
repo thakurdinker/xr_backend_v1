@@ -34,6 +34,8 @@ Duplicate slugs are rejected with a readable message (the admin panel shows it a
 ## Sitemap
 `utils/generateSitemap/generateSitemap.js` keeps Abu Dhabi areas/properties and Abu Dhabi-only developers out of `/sitemap.xml` and writes them to the Abu Dhabi sitemap (`writeAbuDhabiSitemap()`), together with the hub/list/landing pages once they have content. `noindex` areas and developers are left out of both.
 
+`/abu-dhabi/developers/` is listed when `hasAbuDhabiListDeveloper()` is true. It uses the page's own condition: a developer that is in Strapi, is in Mongo and has a live Abu Dhabi project. Both-emirate developers count. So the sitemap never lists the page while it returns 404, and never misses it while it is live.
+
 ## Backfill — `scripts/backfillEmirate.js`
 Dry run by default; only `$set`s `emirate`. Reports orphaned properties and duplicate slugs.
 ```
@@ -53,8 +55,8 @@ ENV=development USE_LIVE_DB=false MAIN_FRONTEND_URL=http://127.0.0.1:9 node app.
 |---|---|
 | `capture-api.js <outDir>` + `compare-api.js <a> <b> [--ignore=regex]` | snapshot ~430 public responses and diff two snapshots. Use `--ignore='featured_agents\|\.(emirate\|emirates\|noindex)$'` to compare old vs new code |
 | `crawl.js <sitemap.xml> <out.json> [base]` + `compare-crawl.js <a> <b>` | crawl a local Next build (`NEXT_PUBLIC_API_URL=http://localhost:3333`, port 3100) and diff SEO fields per page |
-| `ad-isolation-test.js` | inserts temporary Abu Dhabi data, checks every endpoint + sitemaps, cleans up (35 checks) |
-| `fe-ad-test.js` | same against the local Next build (19 checks) |
+| `ad-isolation-test.js` | inserts temporary Abu Dhabi data, checks every endpoint + sitemaps, cleans up (35 checks). Checks that expect exactly the test's own rows ignore other `zz-test-*` rows (for example the demo data), and only those. |
+| `fe-ad-test.js` | same against the local Next build (20 checks). Next caches pages, so the script refreshes each path through `/api/revalidate` before it fetches it. Start Next with `REVALIDATE_SECRET=<value>` and run the script with `FE_REVALIDATE_SECRET=<same value>`. |
 | `seed-ad-demo.js [--rm]` | demo Abu Dhabi area + property (clones of Dubai Marina / The Yards Plaza, labelled TEST) for local previews |
 
 ## Gotchas

@@ -168,8 +168,10 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
 
   let strapiProperties = null;
 
-  // Fetch content data from the strapi api
-  const queryStr = qs.stringify({
+  // Fetch content data from the strapi api. The response also returns this
+  // query as `contentQuery`, so the frontend's draft preview can request the
+  // same Strapi entry (as a draft) without rebuilding the filters.
+  const contentQuery = {
     populate: {
       property_cards: {
         populate: ["card_image", "property_variants"],
@@ -193,7 +195,8 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
         },
       },
     },
-  }, {
+  };
+  const queryStr = qs.stringify(contentQuery, {
     encodeValuesOnly: true,
   });
 
@@ -215,7 +218,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
       ...emirateFilter(emirate),
     };
   } else {
-    return res.status(200).json({ success: true, properties: [], content: strapiProperties?.data });
+    return res.status(200).json({ success: true, properties: [], content: strapiProperties?.data, contentQuery });
   }
 
   try {
@@ -258,6 +261,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
       totalPages: Math.ceil(count / limit),
       content: strapiProperties?.data,
       currentPage: Number(page),
+      contentQuery,
     });
   } catch (error) {
     console.log(error);

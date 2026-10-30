@@ -127,7 +127,7 @@ async function removeUrlsFromSitemap(urlsToRemove) {
     try {
       const urlCount = (xml.match(/<loc>/g) || []).length;
       await Sitemap.findOneAndUpdate(
-        {},
+        Sitemap.MAIN,
         { content: xml, urlCount, generatedAt: new Date() },
         { upsert: true }
       );

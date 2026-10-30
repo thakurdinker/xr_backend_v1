@@ -10,6 +10,12 @@ const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const Property = require("../models/properties");
 const axios = require("axios");
 const qs = require("qs");
+const {
+  DUBAI,
+  parseEmirate,
+  emirateFilter,
+  emirateOf,
+} = require("../utils/emirate");
 
 const STRAPI_BASE_URL =
   process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
@@ -27,6 +33,21 @@ const normaliseSlug = (slug) => (slug || "").trim().toLowerCase();
 
 module.exports.normaliseSlug = normaliseSlug;
 
+// Area slugs are unique across both emirates (Area.slug has a unique index);
+// checked up front so the admin panel gets a readable message.
+const communitySlugTaken = (slug, excludeId) => {
+  const safe = normaliseSlug(slug).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return safe
+    ? Community.exists({
+        slug: { $regex: `^\\s*${safe}\\s*$`, $options: "i" },
+        ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+      })
+    : null;
+};
+
+const COMMUNITY_SLUG_CLASH_MESSAGE =
+  "An area with this slug already exists. Choose a different slug.";
+
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
   // const { error } = communityValidationSchema.validate(req.body);
@@ -39,6 +60,13 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
   // }
 
   try {
+    if (await communitySlugTaken(req.body.slug)) {
+      return res.status(200).json({
+        success: false,
+        isCreated: false,
+        message: COMMUNITY_SLUG_CLASH_MESSAGE,
+      });
+    }
     const community = new Community(req.body);
     await community.save();
     return res.status(200).json({
@@ -59,19 +87,35 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
 // Read all communities
 module.exports.getAll = catchAsync(async (req, res) => {
   // const { page = 1, limit = 10 } = req.query;
+  // ?emirate=abu-dhabi for /abu-dhabi/areas/; default Dubai.
+  const emirate = parseEmirate(req.query.emirate);
+  if (!emirate) {
+    return res.status(400).json({ success: false, message: "Invalid emirate" });
+  }
   try {
-    const communities = await Community.find({})
+    const allCommunities = await Community.find({})
       // .limit(limit)
       // .skip((page - 1) * limit)
-      .select("name slug description images");
+      .select("name slug description images emirate");
+
+    // An area's emirate lives on its Mongo record. Strapi-only areas have no
+    // record and are Dubai (they predate the Abu Dhabi section).
+    const emirateBySlug = new Map(
+      allCommunities.map((c) => [normaliseSlug(c.slug), emirateOf(c)])
+    );
+    const inEmirate = (slug) => (emirateBySlug.get(slug) || DUBAI) === emirate;
+    const communities = allCommunities.filter((c) =>
+      inEmirate(normaliseSlug(c.slug))
+    );
 
     // Only LIVE properties are counted. The /area/:slug detail page filters on
     // show_property: true, so counting unfiltered here made the listing
     // advertise more projects than the detail page actually renders (Dubai
     // Islands showed "6" but rendered 5).
-    const properties = await Property.find({ show_property: true }).select(
-      "community_name community_name_slug"
-    );
+    const properties = await Property.find({
+      show_property: true,
+      ...emirateFilter(emirate),
+    }).select("community_name community_name_slug");
 
     // Tally live properties per normalised slug — one pass instead of the old
     // O(communities x properties) nested filter.
@@ -111,13 +155,15 @@ module.exports.getAll = catchAsync(async (req, res) => {
 
     const communityWithPropertiesStrapiData = (
       strapiCommunitiesData?.data ?? []
-    ).map((community) => ({
-      community_name: (community?.community_name || "").trim(),
-      community_slug: normaliseSlug(community?.community_slug),
-      community_description: community?.seo?.metaDescription,
-      community_images: [{ url: community?.hero_image?.url, description: community?.seo?.metaDescription }],
-      properties: 0,
-    }));
+    )
+      .filter((community) => inEmirate(normaliseSlug(community?.community_slug)))
+      .map((community) => ({
+        community_name: (community?.community_name || "").trim(),
+        community_slug: normaliseSlug(community?.community_slug),
+        community_description: community?.seo?.metaDescription,
+        community_images: [{ url: community?.hero_image?.url, description: community?.seo?.metaDescription }],
+        properties: 0,
+      }));
 
     // De-duplicate by slug. Both stores hold some of the same communities
     // (Dubai Islands, Downtown Dubai, DAMAC Hills 1/2, ... — 12 slugs in all),
@@ -259,6 +305,17 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
         success: false,
         isUpdated: false,
         message: "Community Not Found",
+      });
+    }
+
+    if (
+      req.body.slug !== undefined &&
+      (await communitySlugTaken(req.body.slug, community._id))
+    ) {
+      return res.status(200).json({
+        success: false,
+        isUpdated: false,
+        message: COMMUNITY_SLUG_CLASH_MESSAGE,
       });
     }
 

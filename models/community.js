@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { EMIRATES, DEFAULT_EMIRATE } = require("../utils/emirate");
 
 const communitySchema = new mongoose.Schema(
   {
@@ -59,6 +60,11 @@ const communitySchema = new mongoose.Schema(
     order: Number,
     developer: String,
     developer_name_slug: String,
+    // Which emirate this area belongs to. Properties inherit it (see the
+    // pre-save hook in models/properties.js). Missing on legacy rows = Dubai.
+    emirate: { type: String, enum: EMIRATES, default: DEFAULT_EMIRATE },
+    // SEO-controlled: keep this area page out of search indexes.
+    noindex: { type: Boolean, default: false },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -136,6 +142,23 @@ function modifyCloudinaryUrl(url) {
 //     }
 //   }
 // });
+
+// Moving an area to another emirate moves its properties with it.
+communitySchema.pre("save", function (next) {
+  this.$locals.emirateChanged = !this.isNew && this.isModified("emirate");
+  next();
+});
+
+communitySchema.post("save", async function (doc) {
+  if (!doc.$locals.emirateChanged || !doc.slug) return;
+  const slug = doc.slug.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await mongoose
+    .model("Property")
+    .updateMany(
+      { community_name_slug: { $regex: `^\\s*${slug}\\s*$`, $options: "i" } },
+      { $set: { emirate: doc.emirate } }
+    );
+});
 
 const Community = mongoose.model("Community", communitySchema);
 

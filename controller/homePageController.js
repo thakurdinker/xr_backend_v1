@@ -1,4 +1,5 @@
 const Property = require("../models/properties");
+const { DUBAI, emirateFilter } = require("../utils/emirate");
 const catchAsync = require("../utils/seedDB/catchAsync");
 const qs = require("qs");
 const axios = require("axios");
@@ -99,10 +100,11 @@ module.exports.getHomePage = catchAsync(async (req, res) => {
 
 
 
-  // Xperience New Projects
+  // Xperience New Projects (the homepage is Dubai's)
   const properties = await Property.find({
     featured: true,
     show_property: true,
+    ...emirateFilter(DUBAI),
   })
     .select(
       "_id property_name property_name_slug price location features images type community_name community_name_slug developer developer_name_slug order status"

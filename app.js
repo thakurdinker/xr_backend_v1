@@ -55,6 +55,7 @@ const openHouseRsvpRouter = require("./routes/openHouseRsvp");
 
 const User = require("./models/user");
 const seoUrlMap = require("./utils/seoUrlMap");
+const abuDhabiSeoUrlMap = require("./utils/abuDhabiSeoUrlMap");
 
 const PORT = process.env.PORT;
 
@@ -179,7 +180,7 @@ app.use(mongoSanitize());
 
 app.use((req, res, next) => {
   const path = req.path.endsWith("/") ? req.path : req.path + "/";
-  const destination = seoUrlMap[path];
+  const destination = seoUrlMap[path] || abuDhabiSeoUrlMap[path];
   if (destination) {
     req.url = destination + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "");
   }
@@ -253,6 +254,7 @@ app.use("/", propertyTypeRouter);
 app.use("/area", communityPageRouter);
 app.use("/property/:propertySlug", propertyPageRouter);
 app.use("/dubai-properties", allProperties);
+app.use("/abu-dhabi-properties", allProperties.abuDhabiRouter);
 app.use("/about-us", aboutUsRouter);
 app.use("/", newsPageRouter);
 app.use("/", submitForm);

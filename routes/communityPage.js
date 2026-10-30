@@ -4,6 +4,12 @@
 // const shuffle = require("../utils/shuffleArray");
 // const Property = require("../models/properties");
 // const communityController = require("../controller/communityController");
+const {
+  DUBAI,
+  ABU_DHABI,
+  parseEmirate,
+  emirateFilter,
+} = require("../utils/emirate");
 
 // const router = express.Router({ mergeParams: true });
 
@@ -88,6 +94,12 @@ router.route("/:communitySlug").get(
     const limit = Math.max(0, Number(propertiesLimit) || 0);
     const page = Math.max(1, Number(propertiesPage) || 1);
 
+    // ?emirate=abu-dhabi for /abu-dhabi/areas/; default Dubai.
+    const emirate = parseEmirate(req.query.emirate);
+    if (!emirate) {
+      return res.status(400).json({ success: false, message: "Invalid emirate" });
+    }
+
     // if (
     //   !req.query.propertiesPage ||
     //   !req.query.propertiesLimit ||
@@ -131,7 +143,24 @@ router.route("/:communitySlug").get(
     try {
       const community = await Community.findOne({
         slug: slugMatcher(communitySlug),
+        ...emirateFilter(emirate),
       }).populate({ path: "amenities.icons" });
+
+      // The area exists, but in the other emirate. The frontend 404s on this
+      // instead of rendering the page from its Strapi copy alone.
+      if (!community) {
+        const elsewhere = await Community.exists({
+          slug: slugMatcher(communitySlug),
+          ...emirateFilter(emirate === DUBAI ? ABU_DHABI : DUBAI),
+        });
+        if (elsewhere) {
+          return res.status(200).json({
+            success: false,
+            wrongEmirate: true,
+            message: "Community belongs to another emirate",
+          });
+        }
+      }
 
       // Disable for now as we are adding new communities from the strapi backend
 
@@ -144,6 +173,7 @@ router.route("/:communitySlug").get(
       const propertyFilter = {
         community_name_slug: slugMatcher(communitySlug),
         show_property: true,
+        ...emirateFilter(emirate),
       };
 
       // Properties in the community. Pagination is opt-in: pass

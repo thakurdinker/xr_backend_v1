@@ -1,8 +1,15 @@
 const catchAsync = require("../utils/seedDB/catchAsync");
 const Property = require("../models/properties");
+const { parseEmirate, emirateFilter } = require("../utils/emirate");
 
 module.exports = catchAsync(async (req, res) => {
     const { propertyType, bedroom, priceRange, community, page = 1, limit = 20 } = req.body;
+
+    // Search covers one emirate: Dubai unless the body asks for "abu-dhabi".
+    const emirate = parseEmirate(req.body.emirate);
+    if (!emirate) {
+        return res.status(400).json({ success: false, message: "Invalid emirate" });
+    }
 
 
     // Parse pagination parameters
@@ -71,10 +78,11 @@ module.exports = catchAsync(async (req, res) => {
     // 3. Build Aggregation Pipeline
     const pipeline = [];
 
-    // Stage 0: Only show properties where show_property is true
+    // Stage 0: Only show properties where show_property is true, in this emirate
     pipeline.push({
         $match: {
-            show_property: true
+            show_property: true,
+            ...emirateFilter(emirate),
         }
     });
 

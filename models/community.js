@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
-const { EMIRATES, DEFAULT_EMIRATE } = require("../utils/emirate");
+const {
+  EMIRATES,
+  DEFAULT_EMIRATE,
+  emirateFilter,
+} = require("../utils/emirate");
 
 const communitySchema = new mongoose.Schema(
   {
@@ -143,21 +147,84 @@ function modifyCloudinaryUrl(url) {
 //   }
 // });
 
-// Moving an area to another emirate moves its properties with it.
-communitySchema.pre("save", function (next) {
+// The clash check and the move both select an area's properties with this
+// case-insensitive, whitespace-tolerant match on community_name_slug.
+const areaPropertiesFilter = (areaSlug) => {
+  const slug = areaSlug.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return {
+    community_name_slug: { $regex: `^\\s*${slug}\\s*$`, $options: "i" },
+  };
+};
+
+/**
+ * Property slugs are unique only within an emirate (see findSlugClash in
+ * controller/propertiesController.js). Moving an area takes its properties to
+ * the destination emirate, so any of their slugs already used there would give
+ * two properties the same URL. Returns those slugs, sorted (empty = safe move).
+ */
+communitySchema.statics.findAreaMoveClashes = async function (
+  areaSlug,
+  emirate
+) {
+  if (!areaSlug || !areaSlug.trim()) return [];
+  const Property = mongoose.model("Property");
+  const own = await Property.find(
+    areaPropertiesFilter(areaSlug),
+    "_id property_name_slug",
+    { lean: true }
+  );
+  const ownSlugs = [
+    ...new Set(own.map((p) => p.property_name_slug).filter(Boolean)),
+  ];
+  if (!ownSlugs.length) return [];
+  const clashes = await Property.find(
+    {
+      property_name_slug: { $in: ownSlugs },
+      ...emirateFilter(emirate),
+      _id: { $nin: own.map((p) => p._id) },
+    },
+    "property_name_slug",
+    { lean: true }
+  );
+  return [...new Set(clashes.map((p) => p.property_name_slug))].sort();
+};
+
+// One message for the admin panel response and the model guard below.
+communitySchema.statics.areaMoveClashMessage = (emirate, slugs) =>
+  `Cannot move this area to ${emirate}: these project slugs already exist ` +
+  `there: ${slugs.join(", ")}. Change those slugs first.`;
+
+// At save time the slug may already hold a new value, but the properties still
+// point at the slug the area was loaded with. Remember that one.
+communitySchema.post("init", function () {
+  this.$locals.loadedSlug = this.slug;
+});
+
+// Moving an area to another emirate moves its properties with it. Refuse the
+// save when that move would duplicate a property URL, so neither the area nor
+// its properties change.
+communitySchema.pre("save", async function () {
   this.$locals.emirateChanged = !this.isNew && this.isModified("emirate");
-  next();
+  if (!this.$locals.emirateChanged) return;
+  const Community = this.constructor;
+  const clashes = await Community.findAreaMoveClashes(
+    this.$locals.loadedSlug ?? this.slug,
+    this.emirate
+  );
+  if (clashes.length) {
+    throw new Error(Community.areaMoveClashMessage(this.emirate, clashes));
+  }
 });
 
 communitySchema.post("save", async function (doc) {
-  if (!doc.$locals.emirateChanged || !doc.slug) return;
-  const slug = doc.slug.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const areaSlug = doc.$locals.loadedSlug ?? doc.slug;
+  doc.$locals.loadedSlug = doc.slug; // later saves of this doc start from here
+  if (!doc.$locals.emirateChanged || !areaSlug || !areaSlug.trim()) return;
   await mongoose
     .model("Property")
-    .updateMany(
-      { community_name_slug: { $regex: `^\\s*${slug}\\s*$`, $options: "i" } },
-      { $set: { emirate: doc.emirate } }
-    );
+    .updateMany(areaPropertiesFilter(areaSlug), {
+      $set: { emirate: doc.emirate },
+    });
 });
 
 const Community = mongoose.model("Community", communitySchema);

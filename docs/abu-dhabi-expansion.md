@@ -7,7 +7,7 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 - `models/properties.js` — `emirate`, **always** derived from the community in a pre-save hook (`Property.emirateForCommunity()`); anything sent in the request body is overwritten. The schema_org URL uses the emirate's path.
 - `models/developer.js` — `noindex`.
 - `models/sitemap.js` — `name`; the Abu Dhabi sitemap is stored as `name: "abu-dhabi"`. Use `Sitemap.MAIN` / `Sitemap.ABU_DHABI` as filters (the original doc has no name).
-- No new indexes on purpose (tiny collections; avoids an index build on production at deploy).
+- No schema indexes on purpose (tiny collections; avoids an index build on production at deploy). The one new index, on live property slugs per emirate, is created by a script (see "Slug index" below).
 
 ## Shared helper — `utils/emirate.js`
 `parseEmirate()` (missing → Dubai, unknown → `null` → 400), `emirateFilter()` (Dubai = `emirate != "Abu Dhabi"`, so legacy rows are Dubai), `emirateOf()`, `propertyPath()`, `areaPath()`.
@@ -31,6 +31,10 @@ Abu Dhabi landing slugs live in **`utils/abuDhabiSeoUrlMap.js`** (rewritten by t
 ## Admin writes
 Duplicate slugs are rejected with a readable message (the admin panel shows it as a toast): property slugs are unique **per emirate**, area and developer slugs globally.
 
+The code checks run before the write, so two concurrent writes can both pass them (#163). The slug index below closes that gap. When the index refuses a write, the handlers map the duplicate-key error (`E11000`) to the same message: `SLUG_CLASH_MESSAGE` for a property create or update, `Community.areaMoveClashMessage()` for an area move. Duplicate keys on `order` keep their old handling.
+
+`updateCommunity` saves the area in a transaction (`mongoose.connection.transaction()`). The post-save hook moves the area's properties in the same transaction. A duplicate-key error in that move rolls back the area write too, so a move never stops halfway. Transactions need a replica set: Atlas is one; a local standalone `mongod` now rejects every area update.
+
 ## Sitemap
 `utils/generateSitemap/generateSitemap.js` keeps Abu Dhabi areas/properties and Abu Dhabi-only developers out of `/sitemap.xml` and writes them to the Abu Dhabi sitemap (`writeAbuDhabiSitemap()`), together with the hub/list/landing pages once they have content. `noindex` areas and developers are left out of both.
 
@@ -45,6 +49,31 @@ node scripts/backfillEmirate.js --live          # dry run, DB_URL (production)
 node scripts/backfillEmirate.js --live --apply  # write production — release owner only
 ```
 Already applied to the dev DB; **never run against production yet**.
+
+## Slug index — `scripts/createPropertySlugIndex.js`
+Creates the unique index `uniq_live_property_slug_per_emirate` on `{ emirate: 1, property_name_slug: 1 }`. Spec and checks: `utils/propertySlugIndex.js`. The index is not in the `Property` schema on purpose: `autoIndex` would build it at boot, before the backfill.
+
+The index is partial: it covers only live properties (`show_property: true`) with a string `emirate` and slug. Only live properties own a public URL, so hidden duplicates do not block it.
+
+Dry run by default. The script refuses (exit code 1) when a live property has no `emirate` or when two live properties share a slug in one emirate. It reports hidden duplicates only. When the index already exists, it does nothing. It never changes a document.
+```
+node scripts/createPropertySlugIndex.js                 # dry run, TEST_DB_URL
+node scripts/createPropertySlugIndex.js --apply         # create, TEST_DB_URL
+node scripts/createPropertySlugIndex.js --live          # dry run, DB_URL (production)
+node scripts/createPropertySlugIndex.js --live --apply  # create on production — release owner only
+```
+Release order on production:
+1. Deploy this backend.
+2. Run the backfill: `node scripts/backfillEmirate.js --live`, then `--live --apply`.
+3. Run `node scripts/createPropertySlugIndex.js --live` (dry run). Resolve each live duplicate it reports with the SEO team.
+4. Run `node scripts/createPropertySlugIndex.js --live --apply`.
+
+Until step 4, production has only the code checks, and the race from #163 stays open. The dev DB dry run passes; it reports one hidden duplicate (`the-heights-country-club-and-wellness`, Dubai). The index is not created on the dev DB yet.
+
+Real-MongoDB tests (opt-in; `npm test` skips them): `test/integration/propertySlugIndex.test.js`. The file header has the commands. They need a local single-node replica set:
+```
+MONGOD_URL='mongodb://127.0.0.1:27391/?replicaSet=rs0' node --test test/integration/
+```
 
 ## Verification scripts — `scripts/verify-abu-dhabi/`
 All refuse to run unless `TEST_DB_URL` is `xrealty_website_dev_backend`. Run the backend first:

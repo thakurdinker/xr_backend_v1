@@ -17,6 +17,7 @@ const {
   emirateFilter,
   emirateOf,
 } = require("../utils/emirate");
+const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
 const STRAPI_BASE_URL =
   process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
@@ -340,25 +341,38 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
       }
     }
 
-    Object.keys(req.body).forEach((update) => {
-      if (
-        typeof req.body[update] === "object" &&
-        !Array.isArray(req.body[update])
-      ) {
-        Object.keys(req.body[update]).forEach((nestedUpdate) => {
-          community[update][nestedUpdate] = req.body[update][nestedUpdate];
-        });
-      } else {
-        community[update] = req.body[update];
-      }
+    // Save in a transaction: the post-save hook moves the area's properties,
+    // and a duplicate-key error there must roll back the area write too
+    // (issue #163). transaction() may run this callback more than once, so each
+    // run loads the stored area again and applies the request body to it.
+    let saved;
+    await mongoose.connection.transaction(async (session) => {
+      saved = await Community.findById(community._id, null, { session });
+      if (!saved) throw new Error("Community Not Found");
+      applyCommunityUpdate(saved, req.body);
+      await saved.save({ session });
     });
 
-    await community.save();
-
-    return res
-      .status(200)
-      .json({ success: true, isUpdated: true, community, message: "DONE" });
+    return res.status(200).json({
+      success: true,
+      isUpdated: true,
+      community: saved,
+      message: "DONE",
+    });
   } catch (error) {
+    // The unique slug index caught a clash that the checks above missed (a
+    // concurrent write). Name the emirate and the slug, as the check does.
+    if (isSlugDuplicateKey(error)) {
+      const { emirate, property_name_slug } = error.keyValue || {};
+      return res.status(200).json({
+        success: false,
+        isUpdated: false,
+        message: Community.areaMoveClashMessage(
+          emirate || req.body.emirate,
+          property_name_slug ? [property_name_slug] : ["(unknown)"]
+        ),
+      });
+    }
     // An Error object serialises to {}; send its text so the admin can act.
     res.status(200).json({
       success: false,
@@ -367,6 +381,20 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
     });
   }
 });
+
+// Copies the request body onto a loaded area. Plain objects (seo, location,
+// ...) are merged one key deep; everything else replaces the stored value.
+function applyCommunityUpdate(community, body) {
+  Object.keys(body).forEach((update) => {
+    if (typeof body[update] === "object" && !Array.isArray(body[update])) {
+      Object.keys(body[update]).forEach((nestedUpdate) => {
+        community[update][nestedUpdate] = body[update][nestedUpdate];
+      });
+    } else {
+      community[update] = body[update];
+    }
+  });
+}
 
 // Delete a community by ID
 module.exports.delete = catchAsync(async (req, res) => {

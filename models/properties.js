@@ -126,6 +126,11 @@ const newPropertySchema = new Schema(
       type: { type: String, default: "" },
     },
     order: { type: Number, required: true, unique: true },
+    // Live property slugs are also unique per emirate, through the index
+    // uniq_live_property_slug_per_emirate on { emirate, property_name_slug }.
+    // Do not declare it here: autoIndex would build it at boot, before the
+    // emirate backfill. scripts/createPropertySlugIndex.js creates it (spec in
+    // utils/propertySlugIndex.js, release step in docs/abu-dhabi-expansion.md).
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

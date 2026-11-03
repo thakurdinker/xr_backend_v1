@@ -20,6 +20,7 @@ const {
   emirateFilter,
   propertyPath,
 } = require("../utils/emirate");
+const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
 const mapTypeNameToSlug = {
   "type-apartment": "apartments",
@@ -473,7 +474,11 @@ module.exports.createProperty = catchAsync(async (req, res) => {
     return res.status(200).json({
       success: false,
       isCreated: false,
-      message: error.message || "Fail to Add Property",
+      // A concurrent write took the slug after findSlugClash ran; the unique
+      // slug index (utils/propertySlugIndex.js) refused this one.
+      message: isSlugDuplicateKey(error)
+        ? SLUG_CLASH_MESSAGE
+        : error.message || "Fail to Add Property",
     });
   }
 });
@@ -532,9 +537,12 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       .status(200)
       .json({ success: true, isUpdated: true, property, message: "DONE" });
   } catch (error) {
-    res
-      .status(200)
-      .json({ success: false, isUpdated: false, message: error.message });
+    res.status(200).json({
+      success: false,
+      isUpdated: false,
+      // Same as in createProperty: the unique slug index refused the write.
+      message: isSlugDuplicateKey(error) ? SLUG_CLASH_MESSAGE : error.message,
+    });
   }
 });
 

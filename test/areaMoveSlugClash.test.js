@@ -65,6 +65,9 @@ beforeEach(() => {
     writes.community.push({ where, update });
     return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
   });
+  // No server, so no session: run the transaction callback once, as a commit.
+  // test/integration/ covers the real transaction.
+  mock.method(mongoose.connection, "transaction", async (fn) => fn(null));
 });
 
 afterEach(() => mock.restoreAll());

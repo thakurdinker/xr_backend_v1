@@ -5,7 +5,7 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 ## Model changes
 - `models/community.js` — `emirate` (`"Dubai" | "Abu Dhabi"`, default Dubai), `noindex`. A post-save hook moves the area's properties when its emirate changes.
 - `models/properties.js` — `emirate`, **always** derived from the community in a pre-save hook (`Property.emirateForCommunity()`); anything sent in the request body is overwritten. The schema_org URL uses the emirate's path.
-- `models/developer.js` — `noindex`.
+- `models/developer.js` — `noindex`. No editor sets it any more: the admin panel's developer pages were removed in May 2026 (admin `e754c04`), and developers are added in Strapi (see below).
 - `models/sitemap.js` — `name`; the Abu Dhabi sitemap is stored as `name: "abu-dhabi"`. Use `Sitemap.MAIN` / `Sitemap.ABU_DHABI` as filters (the original doc has no name).
 - No schema indexes on purpose (tiny collections; avoids an index build on production at deploy). The one new index, on live property slugs per emirate, is created by a script (see "Slug index" below).
 
@@ -18,8 +18,8 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 | `GET /property/:slug?emirate=` | scoped; other emirate → `success:false` |
 | `GET /area/:slug?emirate=` | community + properties scoped; area of the other emirate → `{ success:false, wrongEmirate:true }` |
 | `GET /area/communities?emirate=` | Mongo + Strapi merge scoped; Strapi-only areas are Dubai |
-| `GET /label/:slug?emirate=` | properties, slideshow, communities scoped; adds `emirates`, `noindex` |
-| `GET /admin/developers?emirate=` | unfiltered by default (admin panel uses it); every developer gets `emirates` |
+| `GET /label/:slug?emirate=` | properties, slideshow, communities scoped; adds `emirates`, `noindex`. Serves a developer that is in Mongo **or** Strapi (502 if Strapi can't be checked); 404 otherwise |
+| `GET /admin/developers?emirate=` | unfiltered by default (admin panel uses it); every developer gets `emirates`. Mongo records first, unchanged, then Strapi-only developers (`source: "strapi"`); Mongo-only if Strapi is down |
 | `POST /property-search` (`emirate` in body), `GET /user/search-filters?emirate=` | scoped |
 | `GET /` homepage featured | Dubai only |
 | `/dubai-properties/...` | Dubai only |
@@ -27,6 +27,14 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 | `GET /admin/sitemap-abu-dhabi` | **new** — Abu Dhabi sitemap XML |
 
 Abu Dhabi landing slugs live in **`utils/abuDhabiSeoUrlMap.js`** (rewritten by the same middleware as `seoUrlMap.js`) and are deliberately **not** in `seoUrlMap.js`, whose keys all go into the main sitemap.
+
+## Developers from Strapi — `utils/strapiDevelopers.js`
+Developers are added in Strapi; the 12 Mongo `Developer` records predate that. Properties link to a developer by slug (`developer_name_slug`), so:
+- `mergeDevelopers()` — the developer list is the Mongo records (order and names unchanged; a Mongo record wins on a shared slug, e.g. Mongo "Beyond" vs Strapi "Beyond Developments") followed by Strapi-only developers by name. Each Strapi-only entry has `id` (its Strapi `documentId`), `developer_name`, `developer_slug`, `source: "strapi"`.
+- `fetchStrapiDevelopers()` / `strapiDeveloperExists()` — read Strapi (`STRAPI_BASE_URL`, optional `STRAPI_API_TOKEN`, 5 s timeout).
+- Live properties alone never make a developer: rows carry stray slugs (`""` on 9 live properties, `Nshama` on 1 in the dev DB).
+
+To test a Strapi-only developer without touching Strapi, point `STRAPI_BASE_URL` at a local proxy that adds a fake entry to `/api/developers`.
 
 ## Admin writes
 Duplicate slugs are rejected with a readable message (the admin panel shows it as a toast): property slugs are unique **per emirate**, area and developer slugs globally.
@@ -38,7 +46,7 @@ The code checks run before the write, so two concurrent writes can both pass the
 ## Sitemap
 `utils/generateSitemap/generateSitemap.js` keeps Abu Dhabi areas/properties and Abu Dhabi-only developers out of `/sitemap.xml` and writes them to the Abu Dhabi sitemap (`writeAbuDhabiSitemap()`), together with the hub/list/landing pages once they have content. `noindex` areas and developers are left out of both.
 
-`/abu-dhabi/developers/` is listed when `hasAbuDhabiListDeveloper()` is true. It uses the page's own condition: a developer that is in Strapi, is in Mongo and has a live Abu Dhabi project. Both-emirate developers count. So the sitemap never lists the page while it returns 404, and never misses it while it is live.
+`/abu-dhabi/developers/` is listed when `hasAbuDhabiListDeveloper()` is true. It uses the page's own condition: a developer that is in Strapi and has a live Abu Dhabi project. Both-emirate developers count. So the sitemap never lists the page while it returns 404, and never misses it while it is live.
 
 ## Backfill — `scripts/backfillEmirate.js`
 Dry run by default; only `$set`s `emirate`. Reports orphaned properties and duplicate slugs.

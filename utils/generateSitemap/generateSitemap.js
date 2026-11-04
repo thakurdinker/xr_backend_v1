@@ -315,21 +315,19 @@ const ABU_DHABI_LANDING_TYPES = {
  */
 /**
  * Whether /abu-dhabi/developers/ has content. The page lists a developer only
- * when it is in Strapi, in Mongo (the backend's developer list) and has a live
- * Abu Dhabi project, and 404s when none qualify (xr_client src/lib/abuDhabi.ts,
+ * when it is in Strapi and has a live Abu Dhabi project, and 404s when none
+ * qualify (xr_client src/lib/abuDhabi.ts,
  * getAbuDhabiDevelopers). The Abu Dhabi sitemap lists the page on the same
  * condition, so it never advertises a 404 and never misses a live page.
  * Both-emirate developers count too.
  *
  * @param {Array<{developer_slug?: string}>} strapiDevelopers
- * @param {Set<string>} mongoDeveloperSlugs
  * @param {Map<string, Set<string>>} developerEmirates emirates of each developer's live properties
  */
-function hasAbuDhabiListDeveloper(strapiDevelopers, mongoDeveloperSlugs, developerEmirates) {
+function hasAbuDhabiListDeveloper(strapiDevelopers, developerEmirates) {
   return strapiDevelopers.some(
     (d) =>
       Boolean(d.developer_slug) &&
-      mongoDeveloperSlugs.has(d.developer_slug) &&
       Boolean(developerEmirates.get(d.developer_slug)?.has(ABU_DHABI))
   );
 }
@@ -582,7 +580,6 @@ const generateSitemap = async (onProgress) => {
     );
     const hasAbuDhabiDeveloper = hasAbuDhabiListDeveloper(
       strapiDevelopers,
-      new Set(mongoDevelopers.map((d) => d.developer_slug)),
       developerEmirates
     );
     for (const d of strapiDevelopers) {

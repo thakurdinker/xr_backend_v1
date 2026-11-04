@@ -8,6 +8,10 @@ const {
   parseEmirate,
   emirateOf,
 } = require("../utils/emirate");
+const {
+  fetchStrapiDevelopers,
+  mergeDevelopers,
+} = require("../utils/strapiDevelopers");
 const { isLoggedIn } = require("../middleware/middleware");
 
 const router = express.Router({ mergeParams: true });
@@ -55,13 +59,29 @@ router.route("/developers").post(isLoggedIn, async (req, res) => {
 // projects there (a developer with none counts as Dubai). Without it every
 // developer is returned, as the admin panel expects. Each developer carries
 // its `emirates` either way.
+// Developers are added in Strapi now, so Strapi developers without a Mongo
+// record are appended (see utils/strapiDevelopers.js). If Strapi is down the
+// list falls back to the Mongo records.
 router.route("/developers").get(async (req, res) => {
   const emirate = req.query.emirate ? parseEmirate(req.query.emirate) : null;
   if (req.query.emirate && !emirate) {
     return res.status(400).json({ success: false, message: "Invalid emirate" });
   }
   try {
-    const developers = await Developer.find({}).sort({ order: 1 }).exec();
+    const [mongoDevelopers, strapiDevelopers] = await Promise.all([
+      Developer.find({}).sort({ order: 1 }).exec(),
+      fetchStrapiDevelopers().catch((err) => {
+        console.warn(
+          "[developers] Strapi fetch failed — serving Mongo-only list:",
+          err.message
+        );
+        return [];
+      }),
+    ]);
+    const developers = mergeDevelopers(
+      mongoDevelopers.map((d) => d.toJSON()),
+      strapiDevelopers
+    );
 
     const liveBySlug = new Map();
     const live = await Property.find({ show_property: true })
@@ -82,7 +102,7 @@ router.route("/developers").get(async (req, res) => {
 
     developers
       .map((developer) => ({
-        ...developer.toJSON(),
+        ...developer,
         emirates: emiratesOf(developer.developer_slug),
       }))
       .filter((developer) => !emirate || developer.emirates.includes(emirate))

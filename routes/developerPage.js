@@ -14,6 +14,7 @@ const {
   emirateOf,
   propertyPath,
 } = require("../utils/emirate");
+const { strapiDeveloperExists } = require("../utils/strapiDevelopers");
 
 const router = express.Router({ mergeParams: true });
 
@@ -43,11 +44,27 @@ router.route("/").get(
         )
         .exec();
 
+      // Developers are added in Strapi now, so one without a Mongo record is
+      // served when Strapi has it (its content comes from Strapi; this route
+      // only adds projects and communities). Properties alone don't make a
+      // developer: live rows carry stray slugs such as "Nshama".
       if (!developer) {
-        return res.status(404).json({
-          success: false,
-          message: "Developer not found",
-        });
+        let inStrapi;
+        try {
+          inStrapi = await strapiDeveloperExists(developerNameSlug);
+        } catch (err) {
+          console.error(`[label] Strapi check failed for ${developerNameSlug}:`, err.message);
+          return res.status(502).json({
+            success: false,
+            message: "Developer lookup failed",
+          });
+        }
+        if (!inStrapi) {
+          return res.status(404).json({
+            success: false,
+            message: "Developer not found",
+          });
+        }
       }
 
       // Find the properties associated with the developer
@@ -132,7 +149,7 @@ router.route("/").get(
       // Generate regex patterns for each predefined order entry
 
       // Generate regex patterns
-      const regexPatterns = developer?.predefinedCommunitiesOrder?.map(
+      const regexPatterns = (developer?.predefinedCommunitiesOrder ?? []).map(
         (name) => {
           const pattern = name
             .toLowerCase()
@@ -174,7 +191,7 @@ router.route("/").get(
         slideShowData,
         developerCommunities: sortedCommunities,
         emirates,
-        noindex: Boolean(developer.noindex),
+        noindex: Boolean(developer?.noindex),
         message: "DONE",
         totalPages: Math.ceil(propertiesCount / limit),
         currentPage: Number(page),

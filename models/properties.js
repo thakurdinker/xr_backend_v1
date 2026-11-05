@@ -5,6 +5,7 @@ const {
   SITE_URL,
   propertyPath,
 } = require("../utils/emirate");
+const { fetchStrapiCommunityEmirate } = require("../utils/strapiCommunities");
 
 const Schema = mongoose.Schema;
 
@@ -249,7 +250,8 @@ function modifyCloudinaryUrl(url) {
 
 // ── Pre-save hook: inherit emirate from the community ──
 // Runs before the schema_org hook below, which builds the URL from it. A
-// property whose community isn't in Mongo (e.g. a Strapi-only area) is Dubai.
+// property whose community isn't in Mongo uses Strapi's emirate relation when
+// available, then retains the historical Dubai fallback if Strapi is unavailable.
 newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
   const slug = (communitySlug || "")
     .trim()
@@ -261,7 +263,17 @@ newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
         .select("emirate")
         .lean()
     : null;
-  return community?.emirate || DEFAULT_EMIRATE;
+  if (community?.emirate) return community.emirate;
+
+  if (communitySlug) {
+    try {
+      const strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
+      if (strapiEmirate) return strapiEmirate;
+    } catch (error) {
+      // Preserve the historical default when Strapi is unavailable.
+    }
+  }
+  return DEFAULT_EMIRATE;
 };
 
 newPropertySchema.pre("save", async function () {

@@ -21,6 +21,10 @@ const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
 const STRAPI_BASE_URL =
   process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
+const {
+  fetchStrapiCommunities,
+  mergeCommunities,
+} = require("../utils/strapiCommunities");
 
 /**
  * Canonical form of a community slug.
@@ -247,7 +251,28 @@ module.exports.getAllForAdmin = catchAsync(async (req, res) => {
 
 module.exports.getAllCommunities = catchAsync(async (req, res) => {
   try {
-    const communities = await Community.find({});
+    const mongoCommunities = await Community.find({}).lean();
+
+    // Areas are authored in Strapi now, so Strapi areas without a Mongo record
+    // are appended (see utils/strapiCommunities.js) — otherwise they cannot be
+    // picked when creating a property. A Mongo record still wins on a shared
+    // slug: `name` is stored on every Property and the two stores disagree
+    // about it for most shared areas.
+    //
+    // Strapi has no emirate field, so a Strapi-only area arrives with
+    // `emirate: null`. That is "unknown", NOT Dubai — the admin form shows it
+    // as unset and refuses to save a property against it, because
+    // Property.emirateForCommunity() would otherwise silently file it as Dubai.
+    let strapiCommunities = [];
+    try {
+      strapiCommunities = await fetchStrapiCommunities();
+    } catch (err) {
+      console.warn(
+        "[getAllCommunities] Strapi fetch failed — serving Mongo-only list:",
+        err.message
+      );
+    }
+    const communities = mergeCommunities(mongoCommunities, strapiCommunities);
 
     return res.status(200).json({
       success: true,

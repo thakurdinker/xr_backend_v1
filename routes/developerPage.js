@@ -6,6 +6,16 @@ const fs = require("fs");
 const path = require("path");
 const Developer = require("../models/developer");
 const Community = require("../models/community");
+const {
+  DUBAI,
+  EMIRATES,
+  parseEmirate,
+  emirateFilter,
+  emirateOf,
+  propertyPath,
+} = require("../utils/emirate");
+const { fetchStrapiDevelopers, strapiEmiratesOf } = require("../utils/strapiDevelopers");
+const { strapiDeveloperExists } = require("../utils/strapiDevelopers");
 
 const router = express.Router({ mergeParams: true });
 
@@ -13,53 +23,98 @@ router.route("/").get(
   catchAsync(async (req, res) => {
     const { page = 1, limit = 9 } = req.query;
     const { developerNameSlug } = req.params;
+    // Developer pages are shared across emirates: the page fetches its Dubai
+    // projects (default) and, separately, ?emirate=abu-dhabi for its Abu Dhabi
+    // section. Every property query below is scoped to the one emirate.
+    const emirate = parseEmirate(req.query.emirate);
+    if (!emirate) {
+      return res.status(400).json({ success: false, message: "Invalid emirate" });
+    }
+    const liveInEmirate = {
+      developer_name_slug: developerNameSlug,
+      show_property: true,
+      ...emirateFilter(emirate),
+    };
     try {
       // Find the developer details from the database
       const developer = await Developer.findOne({
         developer_slug: developerNameSlug,
       })
         .select(
-          "logo_img_url developer_name developer_slug description heading meta_title meta_description meta_keywords predefinedCommunitiesOrder"
+          "logo_img_url developer_name developer_slug description heading meta_title meta_description meta_keywords predefinedCommunitiesOrder noindex"
         )
         .exec();
 
+      // Developers are added in Strapi now, so one without a Mongo record is
+      // served when Strapi has it (its content comes from Strapi; this route
+      // only adds projects and communities). Properties alone don't make a
+      // developer: live rows carry stray slugs such as "Nshama".
       if (!developer) {
-        return res.status(404).json({
-          success: false,
-          message: "Developer not found",
-        });
+        let inStrapi;
+        try {
+          inStrapi = await strapiDeveloperExists(developerNameSlug);
+        } catch (err) {
+          console.error(`[label] Strapi check failed for ${developerNameSlug}:`, err.message);
+          return res.status(502).json({
+            success: false,
+            message: "Developer lookup failed",
+          });
+        }
+        if (!inStrapi) {
+          return res.status(404).json({
+            success: false,
+            message: "Developer not found",
+          });
+        }
       }
 
       // Find the properties associated with the developer
-      const developerProperties = await Property.find({
-        developer_name_slug: developerNameSlug,
-        show_property: true,
-      })
+      const developerProperties = await Property.find(liveInEmirate)
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip((page - 1) * limit)
         .select(
-          "_id property_name property_name_slug price  images community_name community_name_slug developer developer_name_slug"
+          "_id property_name property_name_slug price  images community_name community_name_slug developer developer_name_slug emirate"
         )
 
         .exec();
 
       // get all unqiue communities
-      const uniqueCommunities = await Property.distinct("community_name_slug", {
-        developer_name_slug: developerNameSlug,
-        show_property: true,
-      });
+      const uniqueCommunities = await Property.distinct(
+        "community_name_slug",
+        liveInEmirate
+      );
 
       // Count the number of properties
-      const propertiesCount = await Property.countDocuments({
-        developer_name_slug: developerNameSlug,
-        show_property: true,
-      });
+      const propertiesCount = await Property.countDocuments(liveInEmirate);
+
+      // Strapi tags are authoritative when present. Legacy developers without
+      // a Strapi tag retain the live-property fallback.
+      const liveEmirates = new Set(
+        (
+          await Property.find({
+            developer_name_slug: developerNameSlug,
+            show_property: true,
+          })
+            .select("emirate")
+            .lean()
+        ).map(emirateOf)
+      );
+      let emirates = EMIRATES.filter((e) => liveEmirates.has(e));
+      try {
+        const strapiDeveloper = (await fetchStrapiDevelopers()).find(
+          (developer) => developer.developer_slug === developerNameSlug
+        );
+        const tagged = strapiEmiratesOf(strapiDeveloper);
+        if (tagged.length) emirates = tagged;
+      } catch (strapiError) {
+        console.warn("[developer] Strapi developer lookup failed:", strapiError.message);
+      }
+      if (emirates.length === 0) emirates.push(DUBAI);
 
       // Find slide_show (Newly Launched) properties
       const newly_launched_properties = await Property.find({
-        developer_name_slug: developerNameSlug,
-        show_property: true,
+        ...liveInEmirate,
         show_slideShow: true,
       }).sort("-createdAt");
 
@@ -71,8 +126,9 @@ router.route("/").get(
           community_name: property?.community_name,
           property_name: property?.property_name,
           slogan: property?.section_1?.heading,
+          // Historically without a trailing slash; kept as-is.
           learnMore: property?.property_name_slug
-            ? `/property/${property?.property_name_slug}`
+            ? propertyPath(property.property_name_slug, emirateOf(property)).replace(/\/$/, "")
             : `/developer/${developerNameSlug}/`,
         };
       });
@@ -90,8 +146,9 @@ router.route("/").get(
         // developer_name_slug: developerNameSlug,
         slug: { $in: uniqueCommunities },
         // show_property: true,
+        ...emirateFilter(emirate),
       })
-        .select("_id order name slug images description")
+        .select("_id order name slug images description emirate")
         .exec();
 
       // // Normalize the order array for comparison
@@ -102,7 +159,7 @@ router.route("/").get(
       // Generate regex patterns for each predefined order entry
 
       // Generate regex patterns
-      const regexPatterns = developer?.predefinedCommunitiesOrder?.map(
+      const regexPatterns = (developer?.predefinedCommunitiesOrder ?? []).map(
         (name) => {
           const pattern = name
             .toLowerCase()
@@ -143,6 +200,8 @@ router.route("/").get(
         developerProperties,
         slideShowData,
         developerCommunities: sortedCommunities,
+        emirates,
+        noindex: Boolean(developer?.noindex),
         message: "DONE",
         totalPages: Math.ceil(propertiesCount / limit),
         currentPage: Number(page),

@@ -8,11 +8,21 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const Property = require("../models/properties");
-const axios = require("axios");
 const qs = require("qs");
+const {
+  DUBAI,
+  EMIRATES,
+  parseEmirate,
+  emirateFilter,
+  emirateOf,
+} = require("../utils/emirate");
+const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
-const STRAPI_BASE_URL =
-  process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
+const {
+  fetchStrapiCommunities,
+  emirateOfStrapiArea,
+  mergeCommunities,
+} = require("../utils/strapiCommunities");
 
 /**
  * Canonical form of a community slug.
@@ -27,6 +37,21 @@ const normaliseSlug = (slug) => (slug || "").trim().toLowerCase();
 
 module.exports.normaliseSlug = normaliseSlug;
 
+// Area slugs are unique across both emirates (Area.slug has a unique index);
+// checked up front so the admin panel gets a readable message.
+const communitySlugTaken = (slug, excludeId) => {
+  const safe = normaliseSlug(slug).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return safe
+    ? Community.exists({
+        slug: { $regex: `^\\s*${safe}\\s*$`, $options: "i" },
+        ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+      })
+    : null;
+};
+
+const COMMUNITY_SLUG_CLASH_MESSAGE =
+  "An area with this slug already exists. Choose a different slug.";
+
 // Create a new community
 module.exports.createCommunity = catchAsync(async (req, res) => {
   // const { error } = communityValidationSchema.validate(req.body);
@@ -39,6 +64,13 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
   // }
 
   try {
+    if (await communitySlugTaken(req.body.slug)) {
+      return res.status(200).json({
+        success: false,
+        isCreated: false,
+        message: COMMUNITY_SLUG_CLASH_MESSAGE,
+      });
+    }
     const community = new Community(req.body);
     await community.save();
     return res.status(200).json({
@@ -59,19 +91,46 @@ module.exports.createCommunity = catchAsync(async (req, res) => {
 // Read all communities
 module.exports.getAll = catchAsync(async (req, res) => {
   // const { page = 1, limit = 10 } = req.query;
+  // ?emirate=abu-dhabi for /abu-dhabi/areas/; default Dubai.
+  const emirate = parseEmirate(req.query.emirate);
+  if (!emirate) {
+    return res.status(400).json({ success: false, message: "Invalid emirate" });
+  }
   try {
-    const communities = await Community.find({})
+    const allCommunities = await Community.find({})
       // .limit(limit)
       // .skip((page - 1) * limit)
-      .select("name slug description images");
+      .select("name slug description images emirate");
+
+    let strapiCommunities = [];
+    try {
+      strapiCommunities = await fetchStrapiCommunities();
+    } catch (strapiError) {
+      console.error(
+        "[getAll] Strapi communities fetch failed — serving Mongo-only list:",
+        strapiError.message
+      );
+    }
+    const emirateBySlug = new Map(
+      allCommunities.map((c) => [normaliseSlug(c.slug), emirateOf(c)])
+    );
+    for (const area of strapiCommunities) {
+      const tagged = emirateOfStrapiArea(area);
+      if (tagged) emirateBySlug.set(normaliseSlug(area.community_slug), tagged);
+    }
+    const inEmirate = (slug) => (emirateBySlug.get(slug) || DUBAI) === emirate;
+    const communities = allCommunities.filter((c) =>
+      inEmirate(normaliseSlug(c.slug))
+    );
 
     // Only LIVE properties are counted. The /area/:slug detail page filters on
     // show_property: true, so counting unfiltered here made the listing
     // advertise more projects than the detail page actually renders (Dubai
     // Islands showed "6" but rendered 5).
-    const properties = await Property.find({ show_property: true }).select(
-      "community_name community_name_slug"
-    );
+    const properties = await Property.find({
+      show_property: true,
+      ...emirateFilter(emirate),
+    }).select("community_name community_name_slug");
 
     // Tally live properties per normalised slug — one pass instead of the old
     // O(communities x properties) nested filter.
@@ -80,24 +139,6 @@ module.exports.getAll = catchAsync(async (req, res) => {
       const key = normaliseSlug(property.community_name_slug);
       if (!key) continue;
       propertyCounts.set(key, (propertyCounts.get(key) || 0) + 1);
-    }
-
-    // get the communities from the strapi backend.
-    // Isolated in its own try/catch: a Strapi outage should degrade to the
-    // Mongo-only list, not collapse the endpoint to success:false and blank
-    // the whole /area/ page.
-    let strapiCommunitiesData = null;
-    try {
-      const strapiCommunities = await axios.get(
-        `${STRAPI_BASE_URL}/api/communities-contents?populate=*`,
-        { timeout: 8000 }
-      );
-      strapiCommunitiesData = strapiCommunities?.data;
-    } catch (strapiError) {
-      console.error(
-        "[getAll] Strapi communities-contents fetch failed — serving Mongo-only list:",
-        strapiError.message
-      );
     }
 
     // Make a object containing the community and the properties total number in that community
@@ -109,15 +150,15 @@ module.exports.getAll = catchAsync(async (req, res) => {
       properties: propertyCounts.get(normaliseSlug(community.slug)) || 0,
     }));
 
-    const communityWithPropertiesStrapiData = (
-      strapiCommunitiesData?.data ?? []
-    ).map((community) => ({
-      community_name: (community?.community_name || "").trim(),
-      community_slug: normaliseSlug(community?.community_slug),
-      community_description: community?.seo?.metaDescription,
-      community_images: [{ url: community?.hero_image?.url, description: community?.seo?.metaDescription }],
-      properties: 0,
-    }));
+    const communityWithPropertiesStrapiData = strapiCommunities
+      .filter((community) => inEmirate(normaliseSlug(community?.community_slug)))
+      .map((community) => ({
+        community_name: (community?.community_name || "").trim(),
+        community_slug: normaliseSlug(community?.community_slug),
+        community_description: community?.seo?.metaDescription,
+        community_images: [{ url: community?.hero_image?.url, description: community?.seo?.metaDescription }],
+        properties: 0,
+      }));
 
     // De-duplicate by slug. Both stores hold some of the same communities
     // (Dubai Islands, Downtown Dubai, DAMAC Hills 1/2, ... — 12 slugs in all),
@@ -199,7 +240,36 @@ module.exports.getAllForAdmin = catchAsync(async (req, res) => {
 
 module.exports.getAllCommunities = catchAsync(async (req, res) => {
   try {
-    const communities = await Community.find({});
+    // .lean() does not apply the schema's emirate default to a document
+    // that predates the field — a community created before this expansion
+    // and never re-saved comes back with no emirate key at all, not "Dubai".
+    // Applying it here (not just in the schema) means an editor's save guard
+    // based on this response is correct independently of whether
+    // scripts/backfillEmirate.js has been run.
+    const mongoCommunities = (await Community.find({}).lean()).map((c) => ({
+      ...c,
+      emirate: c.emirate || DUBAI,
+    }));
+
+    // Areas are authored in Strapi now, so Strapi areas without a Mongo record
+    // are appended (see utils/strapiCommunities.js) — otherwise they cannot be
+    // picked when creating a property. A Mongo record still wins on a shared
+    // slug: `name` is stored on every Property and the two stores disagree
+    // about it for most shared areas.
+    //
+    // Strapi-only areas include their populated emirate relation. Untagged
+    // areas remain `emirate: null` so the admin form can require a tag before
+    // a property is saved against them.
+    let strapiCommunities = [];
+    try {
+      strapiCommunities = await fetchStrapiCommunities();
+    } catch (err) {
+      console.warn(
+        "[getAllCommunities] Strapi fetch failed — serving Mongo-only list:",
+        err.message
+      );
+    }
+    const communities = mergeCommunities(mongoCommunities, strapiCommunities);
 
     return res.status(200).json({
       success: true,
@@ -262,28 +332,91 @@ module.exports.updateCommunity = catchAsync(async (req, res) => {
       });
     }
 
-    Object.keys(req.body).forEach((update) => {
-      if (
-        typeof req.body[update] === "object" &&
-        !Array.isArray(req.body[update])
-      ) {
-        Object.keys(req.body[update]).forEach((nestedUpdate) => {
-          community[update][nestedUpdate] = req.body[update][nestedUpdate];
+    if (
+      req.body.slug !== undefined &&
+      (await communitySlugTaken(req.body.slug, community._id))
+    ) {
+      return res.status(200).json({
+        success: false,
+        isUpdated: false,
+        message: COMMUNITY_SLUG_CLASH_MESSAGE,
+      });
+    }
+
+    // Moving the area to another emirate moves its properties with it. Refuse
+    // the move when one of their slugs is already used there, before anything
+    // is saved. The model's pre-save hook repeats this for other save paths.
+    if (
+      EMIRATES.includes(req.body.emirate) &&
+      req.body.emirate !== emirateOf(community)
+    ) {
+      const clashes = await Community.findAreaMoveClashes(
+        community.slug, // still the stored slug: the body is not applied yet
+        req.body.emirate
+      );
+      if (clashes.length) {
+        return res.status(200).json({
+          success: false,
+          isUpdated: false,
+          message: Community.areaMoveClashMessage(req.body.emirate, clashes),
         });
-      } else {
-        community[update] = req.body[update];
       }
+    }
+
+    // Save in a transaction: the post-save hook moves the area's properties,
+    // and a duplicate-key error there must roll back the area write too
+    // (issue #163). transaction() may run this callback more than once, so each
+    // run loads the stored area again and applies the request body to it.
+    let saved;
+    await mongoose.connection.transaction(async (session) => {
+      saved = await Community.findById(community._id, null, { session });
+      if (!saved) throw new Error("Community Not Found");
+      applyCommunityUpdate(saved, req.body);
+      await saved.save({ session });
     });
 
-    await community.save();
-
-    return res
-      .status(200)
-      .json({ success: true, isUpdated: true, community, message: "DONE" });
+    return res.status(200).json({
+      success: true,
+      isUpdated: true,
+      community: saved,
+      message: "DONE",
+    });
   } catch (error) {
-    res.status(200).json({ success: false, isUpdated: false, message: error });
+    // The unique slug index caught a clash that the checks above missed (a
+    // concurrent write). Name the emirate and the slug, as the check does.
+    if (isSlugDuplicateKey(error)) {
+      const { emirate, property_name_slug } = error.keyValue || {};
+      return res.status(200).json({
+        success: false,
+        isUpdated: false,
+        message: Community.areaMoveClashMessage(
+          emirate || req.body.emirate,
+          property_name_slug ? [property_name_slug] : ["(unknown)"]
+        ),
+      });
+    }
+    // An Error object serialises to {}; send its text so the admin can act.
+    res.status(200).json({
+      success: false,
+      isUpdated: false,
+      message: error?.message || String(error),
+    });
   }
 });
+
+// Copies the request body onto a loaded area. Plain objects (seo, location,
+// ...) are merged one key deep; everything else replaces the stored value.
+function applyCommunityUpdate(community, body) {
+  Object.keys(body).forEach((update) => {
+    if (typeof body[update] === "object" && !Array.isArray(body[update])) {
+      Object.keys(body[update]).forEach((nestedUpdate) => {
+        community[update][nestedUpdate] = body[update][nestedUpdate];
+      });
+    } else {
+      community[update] = body[update];
+    }
+  });
+}
 
 // Delete a community by ID
 module.exports.delete = catchAsync(async (req, res) => {

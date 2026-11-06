@@ -1,8 +1,14 @@
 const catchAsync = require("../utils/seedDB/catchAsync");
 const Property = require("../models/properties");
 const propertyTypes = require("../configs/property-types.json");
+const { parseEmirate, emirateFilter } = require("../utils/emirate");
 
 module.exports = catchAsync(async (req, res) => {
+    // Community options for one emirate: Dubai unless ?emirate=abu-dhabi.
+    const emirate = parseEmirate(req.query.emirate);
+    if (!emirate) {
+        return res.status(400).json({ success: false, message: "Invalid emirate" });
+    }
     // Communities for the search dropdown are derived from the PROPERTIES
     // themselves (distinct community_name_slug + its display name), not from the
     // Community/guides collection. This guarantees:
@@ -15,6 +21,7 @@ module.exports = catchAsync(async (req, res) => {
             $match: {
                 show_property: true,
                 community_name_slug: { $nin: [null, ""] },
+                ...emirateFilter(emirate),
             },
         },
         {

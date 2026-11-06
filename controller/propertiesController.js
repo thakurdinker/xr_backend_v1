@@ -13,6 +13,14 @@ const qs = require("qs");
 
 const modifyCloudinaryUrl = require("../utils/modifyCloudinaryUrl.js");
 const { default: axios } = require("axios");
+const {
+  DUBAI,
+  ABU_DHABI,
+  SITE_URL,
+  emirateFilter,
+  propertyPath,
+} = require("../utils/emirate");
+const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
 const mapTypeNameToSlug = {
   "type-apartment": "apartments",
@@ -60,7 +68,8 @@ module.exports.getAllProperties = catchAsync(async (req, res) => {
 module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, sortOrder = 1 } = req.query;
 
-  let query = { show_property: true };
+  // /dubai-properties/ is the Dubai listing — never Abu Dhabi properties.
+  let query = { show_property: true, ...emirateFilter(DUBAI) };
   let pageHeading = "";
 
   let data = null;
@@ -84,7 +93,7 @@ module.exports.getAllPublicProperties = catchAsync(async (req, res) => {
       });
 
       if (foundTypeName !== null) {
-        query = { show_property: true, "type.name": foundTypeName };
+        query = { ...query, "type.name": foundTypeName };
       }
     } catch (e) {
       console.log(e.message);
@@ -151,14 +160,19 @@ module.exports.getById = catchAsync(async (req, res) => {
 // Get properties by sale type and type
 module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
   const { saleType, type } = req.params;
+  // Mounted at /dubai-properties (Dubai) and /abu-dhabi-properties, which sets
+  // req.emirate. Each landing page lists only its own emirate's properties.
+  const emirate = req.emirate || DUBAI;
 
   const { page = 1, limit = 10, sortOrder = 1 } = req.query;
 
 
   let strapiProperties = null;
 
-  // Fetch content data from the strapi api
-  const queryStr = qs.stringify({
+  // Fetch content data from the strapi api. The response also returns this
+  // query as `contentQuery`, so the frontend's draft preview can request the
+  // same Strapi entry (as a draft) without rebuilding the filters.
+  const contentQuery = {
     populate: {
       property_cards: {
         populate: ["card_image", "property_variants"],
@@ -176,11 +190,14 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
       },
       property_type: {
         slug: {
-          $eq: type,
+          // Abu Dhabi pages have their own Strapi entries, keyed by a
+          // "-abu-dhabi" property type, so they never pick up Dubai copy.
+          $eq: emirate === ABU_DHABI ? `${type}-abu-dhabi` : type,
         },
       },
     },
-  }, {
+  };
+  const queryStr = qs.stringify(contentQuery, {
     encodeValuesOnly: true,
   });
 
@@ -194,11 +211,15 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
   foundTypeName = mapTypeNameToSlug[type];
 
   if (foundTypeName !== null && foundTypeName === "off-plan-projects") {
-    query = { show_property: true };
+    query = { show_property: true, ...emirateFilter(emirate) };
   } else if (foundTypeName !== null && saleType === "for-sale") {
-    query = { show_property: true, "type.name": foundTypeName };
+    query = {
+      show_property: true,
+      "type.name": foundTypeName,
+      ...emirateFilter(emirate),
+    };
   } else {
-    return res.status(200).json({ success: true, properties: [], content: strapiProperties?.data });
+    return res.status(200).json({ success: true, properties: [], content: strapiProperties?.data, contentQuery });
   }
 
   try {
@@ -229,7 +250,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
         slug: property?.property_name_slug,
         url:
           property?.seo?.meta_canonical_url ||
-          `https://www.xrealty.ae/property/${property?.property_name_slug}/`,
+          `${SITE_URL}${propertyPath(property?.property_name_slug, emirate)}`,
       });
     });
 
@@ -241,6 +262,7 @@ module.exports.getPropertiesBySaleTypeAndType = catchAsync(async (req, res) => {
       totalPages: Math.ceil(count / limit),
       content: strapiProperties?.data,
       currentPage: Number(page),
+      contentQuery,
     });
   } catch (error) {
     console.log(error);
@@ -398,10 +420,40 @@ async function shiftPropertyOrderFromEnd(newOrder) {
   }
 }
 
+// A property slug must be unique within its emirate (the emirate comes from
+// the chosen community). Returns the clashing property, if any.
+async function findSlugClash(slug, communitySlug, excludeId) {
+  if (!slug) return null;
+  const emirate = await Property.emirateForCommunity(communitySlug);
+  return Property.findOne({
+    property_name_slug: slug,
+    ...emirateFilter(emirate),
+    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+  })
+    .select("_id")
+    .lean();
+}
+
+const SLUG_CLASH_MESSAGE =
+  "A property with this slug already exists in this emirate. Choose a different slug.";
+
 // Create a new property with reordering logic (from end)
 module.exports.createProperty = catchAsync(async (req, res) => {
   try {
     const { order } = req.body;
+
+    if (
+      await findSlugClash(
+        req.body.property_name_slug,
+        req.body.community_name_slug
+      )
+    ) {
+      return res.status(200).json({
+        success: false,
+        isCreated: false,
+        message: SLUG_CLASH_MESSAGE,
+      });
+    }
 
     // Check if the order already exists
     const existingProperty = await Property.findOne({ order });
@@ -422,7 +474,11 @@ module.exports.createProperty = catchAsync(async (req, res) => {
     return res.status(200).json({
       success: false,
       isCreated: false,
-      message: error.message || "Fail to Add Property",
+      // A concurrent write took the slug after findSlugClash ran; the unique
+      // slug index (utils/propertySlugIndex.js) refused this one.
+      message: isSlugDuplicateKey(error)
+        ? SLUG_CLASH_MESSAGE
+        : error.message || "Fail to Add Property",
     });
   }
 });
@@ -447,6 +503,20 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       });
     }
 
+    if (
+      await findSlugClash(
+        req.body.property_name_slug ?? property.property_name_slug,
+        req.body.community_name_slug ?? property.community_name_slug,
+        property._id
+      )
+    ) {
+      return res.status(200).json({
+        success: false,
+        isUpdated: false,
+        message: SLUG_CLASH_MESSAGE,
+      });
+    }
+
     // If order is changing and a property already exists at the new order
     if (property.order !== order) {
       const existingProperty = await Property.findOne({ order });
@@ -467,9 +537,12 @@ module.exports.updateProperty = catchAsync(async (req, res) => {
       .status(200)
       .json({ success: true, isUpdated: true, property, message: "DONE" });
   } catch (error) {
-    res
-      .status(200)
-      .json({ success: false, isUpdated: false, message: error.message });
+    res.status(200).json({
+      success: false,
+      isUpdated: false,
+      // Same as in createProperty: the unique slug index refused the write.
+      message: isSlugDuplicateKey(error) ? SLUG_CLASH_MESSAGE : error.message,
+    });
   }
 });
 

@@ -25,6 +25,8 @@ const newDeveloperSchema = new Schema(
     meta_keywords: { type: String },
     order: Number,
     predefinedCommunitiesOrder: [String],
+    // SEO-controlled: keep this developer page out of search indexes.
+    noindex: { type: Boolean, default: false },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

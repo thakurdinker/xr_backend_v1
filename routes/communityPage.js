@@ -4,6 +4,12 @@
 // const shuffle = require("../utils/shuffleArray");
 // const Property = require("../models/properties");
 // const communityController = require("../controller/communityController");
+const {
+  DUBAI,
+  ABU_DHABI,
+  parseEmirate,
+  emirateFilter,
+} = require("../utils/emirate");
 
 // const router = express.Router({ mergeParams: true });
 
@@ -58,6 +64,10 @@ const communityController = require("../controller/communityController");
 const router = express.Router({ mergeParams: true });
 
 const { normaliseSlug } = communityController;
+const {
+  fetchStrapiCommunities,
+  emirateOfStrapiArea,
+} = require("../utils/strapiCommunities");
 
 // Matches a slug ignoring case and surrounding whitespace. Slugs are
 // denormalised strings shared by the Community collection, Strapi and
@@ -87,6 +97,12 @@ router.route("/:communitySlug").get(
 
     const limit = Math.max(0, Number(propertiesLimit) || 0);
     const page = Math.max(1, Number(propertiesPage) || 1);
+
+    // ?emirate=abu-dhabi for /abu-dhabi/areas/; default Dubai.
+    const emirate = parseEmirate(req.query.emirate);
+    if (!emirate) {
+      return res.status(400).json({ success: false, message: "Invalid emirate" });
+    }
 
     // if (
     //   !req.query.propertiesPage ||
@@ -129,9 +145,49 @@ router.route("/:communitySlug").get(
     // }
 
     try {
+      let strapiArea = null;
+      try {
+        const strapiAreas = await fetchStrapiCommunities();
+        strapiArea = strapiAreas.find(
+          (area) => normaliseSlug(area.community_slug) === communitySlug
+        );
+      } catch (strapiError) {
+        console.warn(
+          "[community] Strapi area lookup failed:",
+          strapiError.message
+        );
+      }
       const community = await Community.findOne({
         slug: slugMatcher(communitySlug),
+        ...emirateFilter(emirate),
       }).populate({ path: "amenities.icons" });
+
+      const strapiEmirate = emirateOfStrapiArea(strapiArea);
+      const strapiMatchesRoute = (strapiEmirate || DUBAI) === emirate;
+      const resolvedCommunity = community || (strapiMatchesRoute
+        ? {
+            name: strapiArea.community_name,
+            slug: communitySlug,
+            emirate: strapiEmirate,
+            source: "strapi",
+          }
+        : null);
+
+      // The area exists, but in the other emirate. The frontend 404s on this
+      // instead of rendering the page from its Strapi copy alone.
+      if (!resolvedCommunity) {
+        const elsewhere = await Community.exists({
+          slug: slugMatcher(communitySlug),
+          ...emirateFilter(emirate === DUBAI ? ABU_DHABI : DUBAI),
+        });
+        if (elsewhere || (strapiEmirate && strapiEmirate !== emirate)) {
+          return res.status(200).json({
+            success: false,
+            wrongEmirate: true,
+            message: "Community belongs to another emirate",
+          });
+        }
+      }
 
       // Disable for now as we are adding new communities from the strapi backend
 
@@ -144,6 +200,7 @@ router.route("/:communitySlug").get(
       const propertyFilter = {
         community_name_slug: slugMatcher(communitySlug),
         show_property: true,
+        ...emirateFilter(emirate),
       };
 
       // Properties in the community. Pagination is opt-in: pass
@@ -171,7 +228,7 @@ router.route("/:communitySlug").get(
 
       return res.status(200).json({
         success: true,
-        community,
+        community: resolvedCommunity,
         properties,
         totalProperties,
         totalPropertiesPages: limit > 0 ? Math.ceil(totalProperties / limit) : 1,

@@ -1,4 +1,11 @@
 const mongoose = require("mongoose");
+const {
+  EMIRATES,
+  DEFAULT_EMIRATE,
+  SITE_URL,
+  propertyPath,
+} = require("../utils/emirate");
+const { fetchStrapiCommunityEmirate } = require("../utils/strapiCommunities");
 
 const Schema = mongoose.Schema;
 
@@ -10,6 +17,9 @@ const newPropertySchema = new Schema(
     price: String,
     developer: String,
     developer_name_slug: String,
+    // Inherited from the property's community on every save — never set by
+    // hand (see the pre-save hook below). Missing on legacy rows = Dubai.
+    emirate: { type: String, enum: EMIRATES, default: DEFAULT_EMIRATE },
     type: [{ _id: false, name: String, bedrooms: String }], // e.g., "townhouse", "semi-detached home"
     location: {
       _id: false,
@@ -117,6 +127,11 @@ const newPropertySchema = new Schema(
       type: { type: String, default: "" },
     },
     order: { type: Number, required: true, unique: true },
+    // Live property slugs are also unique per emirate, through the index
+    // uniq_live_property_slug_per_emirate on { emirate, property_name_slug }.
+    // Do not declare it here: autoIndex would build it at boot, before the
+    // emirate backfill. scripts/createPropertySlugIndex.js creates it (spec in
+    // utils/propertySlugIndex.js, release step in docs/abu-dhabi-expansion.md).
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -233,12 +248,62 @@ function modifyCloudinaryUrl(url) {
 //   }
 // });
 
+// ── Pre-save hook: inherit emirate from the community ──
+// Runs before the schema_org hook below, which builds the URL from it, and on
+// every save of an existing property, not just on create — so it must never
+// throw for an ordinary, long-standing area. A property whose community isn't
+// in Mongo uses Strapi's emirate relation when available; an untagged area,
+// an area Strapi doesn't know, or an unreachable Strapi all fall back to the
+// historical Dubai default alike.
+//
+// This is deliberately permissive: it is not the guard against filing a new
+// Abu Dhabi property under Dubai by mistake. That guard belongs — and
+// already lives — in the admin form (AddProperty.jsx's `emirateUnknown`),
+// which blocks a *new* save against an untagged area before it reaches here.
+// A hook running on every save of every property is the wrong place for a
+// hard block: on the dev database alone, throwing here instead of falling
+// back breaks 20 of 238 existing properties on their next edit — most of
+// them (17) in Dubai Hills Estate, an ordinary, long-established Dubai area
+// that simply has never needed a Strapi tag.
+newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
+  const slug = (communitySlug || "")
+    .trim()
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const community = slug
+    ? await mongoose
+        .model("Community")
+        .findOne({ slug: { $regex: `^${slug}$`, $options: "i" } })
+        .select("emirate")
+        .lean()
+    : null;
+  if (community?.emirate) return community.emirate;
+
+  if (communitySlug) {
+    try {
+      const strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
+      if (strapiEmirate) return strapiEmirate;
+    } catch (error) {
+      console.warn(
+        `[emirateForCommunity] Strapi lookup failed for "${communitySlug}" — falling back to ${DEFAULT_EMIRATE}:`,
+        error.message
+      );
+    }
+  }
+  return DEFAULT_EMIRATE;
+};
+
+newPropertySchema.pre("save", async function () {
+  this.emirate = await this.constructor.emirateForCommunity(
+    this.community_name_slug
+  );
+});
+
 // ── Pre-save hook: auto-generate schema_org if @type is missing/empty ──
 newPropertySchema.pre("save", function (next) {
   // Only act if schema_org.properties is missing @type or has an empty @type
   const schemaProps = this.schema_org?.properties;
   if (!schemaProps || !schemaProps["@type"]) {
-    const propertyUrl = `https://www.xrealty.ae/property/${this.property_name_slug}/`;
+    const propertyUrl = `${SITE_URL}${propertyPath(this.property_name_slug, this.emirate)}`;
     const cleanPrice = (raw) => {
       if (!raw) return "0";
       return raw.replace(/AED/gi, "").replace(/,/g, "").trim() || "0";

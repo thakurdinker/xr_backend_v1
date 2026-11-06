@@ -276,6 +276,24 @@ router
     }
   });
 
+// ── 3a. Abu Dhabi sitemap (frontend serves it as /sitemap-abu-dhabi.xml) ──
+// Written by every generation run; an empty <urlset> until Abu Dhabi content
+// exists. No Strapi kill-switch or file fallback — it has no legacy copy.
+router.route("/sitemap-abu-dhabi").get(async (req, res) => {
+  try {
+    const sitemap = await Sitemap.findOne(Sitemap.ABU_DHABI).lean();
+    if (sitemap?.content) {
+      res.set("Content-Type", "application/xml");
+      res.set("Cache-Control", "public, max-age=3600");
+      res.set("X-Sitemap-Url-Count", String(sitemap.urlCount || 0));
+      return res.send(sitemap.content);
+    }
+  } catch (err) {
+    console.error("[Sitemap] Abu Dhabi sitemap read failed:", err.message);
+  }
+  return res.status(503).json({ error: "Abu Dhabi sitemap unavailable" });
+});
+
 // ── 3. Get current sitemap ───────────────────────────────────────
 router.route("/sitemap").get(async (req, res) => {
   // ── Kill-switch: proxy from Strapi if SITEMAP_SOURCE=strapi ───
@@ -307,7 +325,7 @@ router.route("/sitemap").get(async (req, res) => {
 
   // ── Default: serve from MongoDB (shared across all instances) ──
   try {
-    const sitemap = await Sitemap.findOne({}).lean();
+    const sitemap = await Sitemap.findOne(Sitemap.MAIN).lean();
     if (sitemap?.content) {
       res.set("Content-Type", "application/xml");
       res.set("Cache-Control", "public, max-age=3600");
@@ -336,7 +354,7 @@ router.route("/sitemap").get(async (req, res) => {
   console.log("[Sitemap] No sitemap found, generating...");
   const result = await generateSitemap();
   if (result.success) {
-    const sitemap = await Sitemap.findOne({}).lean();
+    const sitemap = await Sitemap.findOne(Sitemap.MAIN).lean();
     if (sitemap?.content) {
       res.set("Content-Type", "application/xml");
       res.set("Cache-Control", "public, max-age=600");

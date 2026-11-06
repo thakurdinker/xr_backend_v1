@@ -10,6 +10,7 @@ const {
 } = require("../utils/emirate");
 const {
   fetchStrapiDevelopers,
+  strapiEmiratesOf,
   mergeDevelopers,
 } = require("../utils/strapiDevelopers");
 const { isLoggedIn } = require("../middleware/middleware");
@@ -82,6 +83,9 @@ router.route("/developers").get(async (req, res) => {
       mongoDevelopers.map((d) => d.toJSON()),
       strapiDevelopers
     );
+    const strapiEmiratesBySlug = new Map(
+      strapiDevelopers.map((d) => [d.developer_slug, strapiEmiratesOf(d)])
+    );
 
     const liveBySlug = new Map();
     const live = await Property.find({ show_property: true })
@@ -93,8 +97,12 @@ router.route("/developers").get(async (req, res) => {
       }
       liveBySlug.get(p.developer_name_slug).add(emirateOf(p));
     }
-    const emiratesOf = (slug) => {
-      const found = EMIRATES.filter((e) => liveBySlug.get(slug)?.has(e));
+    const emiratesOf = (developer) => {
+      const tagged = strapiEmiratesBySlug.get(developer.developer_slug) ?? [];
+      if (tagged.length) return tagged;
+      const found = EMIRATES.filter((e) =>
+        liveBySlug.get(developer.developer_slug)?.has(e)
+      );
       return found.length ? found : [DUBAI];
     };
 
@@ -103,7 +111,7 @@ router.route("/developers").get(async (req, res) => {
     developers
       .map((developer) => ({
         ...developer,
-        emirates: emiratesOf(developer.developer_slug),
+        emirates: emiratesOf(developer),
       }))
       .filter((developer) => !emirate || developer.emirates.includes(emirate))
       .forEach((developer) => {

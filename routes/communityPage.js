@@ -64,6 +64,10 @@ const communityController = require("../controller/communityController");
 const router = express.Router({ mergeParams: true });
 
 const { normaliseSlug } = communityController;
+const {
+  fetchStrapiCommunities,
+  emirateOfStrapiArea,
+} = require("../utils/strapiCommunities");
 
 // Matches a slug ignoring case and surrounding whitespace. Slugs are
 // denormalised strings shared by the Community collection, Strapi and
@@ -141,19 +145,42 @@ router.route("/:communitySlug").get(
     // }
 
     try {
+      let strapiArea = null;
+      try {
+        const strapiAreas = await fetchStrapiCommunities();
+        strapiArea = strapiAreas.find(
+          (area) => normaliseSlug(area.community_slug) === communitySlug
+        );
+      } catch (strapiError) {
+        console.warn(
+          "[community] Strapi area lookup failed:",
+          strapiError.message
+        );
+      }
       const community = await Community.findOne({
         slug: slugMatcher(communitySlug),
         ...emirateFilter(emirate),
       }).populate({ path: "amenities.icons" });
 
+      const strapiEmirate = emirateOfStrapiArea(strapiArea);
+      const strapiMatchesRoute = (strapiEmirate || DUBAI) === emirate;
+      const resolvedCommunity = community || (strapiMatchesRoute
+        ? {
+            name: strapiArea.community_name,
+            slug: communitySlug,
+            emirate: strapiEmirate,
+            source: "strapi",
+          }
+        : null);
+
       // The area exists, but in the other emirate. The frontend 404s on this
       // instead of rendering the page from its Strapi copy alone.
-      if (!community) {
+      if (!resolvedCommunity) {
         const elsewhere = await Community.exists({
           slug: slugMatcher(communitySlug),
           ...emirateFilter(emirate === DUBAI ? ABU_DHABI : DUBAI),
         });
-        if (elsewhere) {
+        if (elsewhere || (strapiEmirate && strapiEmirate !== emirate)) {
           return res.status(200).json({
             success: false,
             wrongEmirate: true,
@@ -201,7 +228,7 @@ router.route("/:communitySlug").get(
 
       return res.status(200).json({
         success: true,
-        community,
+        community: resolvedCommunity,
         properties,
         totalProperties,
         totalPropertiesPages: limit > 0 ? Math.ceil(totalProperties / limit) : 1,

@@ -4,6 +4,8 @@
 // (Property.developer_name_slug). These helpers let Strapi-only developers be
 // listed and linked like the Mongo ones.
 
+const { parseEmirate } = require("./emirate");
+
 const STRAPI_BASE_URL =
   process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || "";
@@ -22,9 +24,15 @@ async function strapiGet(query) {
   return json?.data ?? [];
 }
 
+function strapiEmiratesOf(developer) {
+  return (developer?.emirates ?? [])
+    .map((relation) => parseEmirate(relation?.name))
+    .filter(Boolean);
+}
+
 /**
  * Every published Strapi developer as { documentId, developer_name,
- * developer_slug }. Throws when Strapi can't be reached; callers decide how
+ * developer_slug, emirates }. Throws when Strapi can't be reached; callers decide how
  * to degrade.
  */
 async function fetchStrapiDevelopers() {
@@ -32,6 +40,7 @@ async function fetchStrapiDevelopers() {
   for (let page = 1; ; page++) {
     const items = await strapiGet(
       "fields[0]=developer_name&fields[1]=developer_slug" +
+        "&populate[emirates][fields][0]=name" +
         `&pagination[page]=${page}&pagination[pageSize]=${PAGE_SIZE}`
     );
     all.push(...items);
@@ -63,10 +72,12 @@ function mergeDevelopers(mongoDevelopers, strapiDevelopers) {
       continue;
     }
     known.add(d.developer_slug);
+    const strapiEmirates = strapiEmiratesOf(d);
     strapiOnly.push({
       id: d.documentId,
       developer_name: d.developer_name,
       developer_slug: d.developer_slug,
+      ...(strapiEmirates.length ? { strapiEmirates } : {}),
       source: "strapi",
     });
   }
@@ -76,6 +87,7 @@ function mergeDevelopers(mongoDevelopers, strapiDevelopers) {
 
 module.exports = {
   fetchStrapiDevelopers,
+  strapiEmiratesOf,
   strapiDeveloperExists,
   mergeDevelopers,
 };

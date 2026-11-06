@@ -14,6 +14,7 @@ const {
   emirateOf,
   propertyPath,
 } = require("../utils/emirate");
+const { fetchStrapiDevelopers, strapiEmiratesOf } = require("../utils/strapiDevelopers");
 const { strapiDeveloperExists } = require("../utils/strapiDevelopers");
 
 const router = express.Router({ mergeParams: true });
@@ -87,8 +88,8 @@ router.route("/").get(
       // Count the number of properties
       const propertiesCount = await Property.countDocuments(liveInEmirate);
 
-      // Which emirates the developer has live projects in. A developer with
-      // none yet counts as Dubai, where every existing developer page lives.
+      // Strapi tags are authoritative when present. Legacy developers without
+      // a Strapi tag retain the live-property fallback.
       const liveEmirates = new Set(
         (
           await Property.find({
@@ -99,7 +100,16 @@ router.route("/").get(
             .lean()
         ).map(emirateOf)
       );
-      const emirates = EMIRATES.filter((e) => liveEmirates.has(e));
+      let emirates = EMIRATES.filter((e) => liveEmirates.has(e));
+      try {
+        const strapiDeveloper = (await fetchStrapiDevelopers()).find(
+          (developer) => developer.developer_slug === developerNameSlug
+        );
+        const tagged = strapiEmiratesOf(strapiDeveloper);
+        if (tagged.length) emirates = tagged;
+      } catch (strapiError) {
+        console.warn("[developer] Strapi developer lookup failed:", strapiError.message);
+      }
       if (emirates.length === 0) emirates.push(DUBAI);
 
       // Find slide_show (Newly Launched) properties

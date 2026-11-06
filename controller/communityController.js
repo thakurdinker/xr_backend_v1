@@ -8,7 +8,6 @@ const catchAsync = require("../utils/seedDB/catchAsync");
 const cloudinary = require("../cloudinary/cloudinaryConfig");
 const extractPublicIdfromUrl = require("../utils/extractPublicIdfromUrl");
 const Property = require("../models/properties");
-const axios = require("axios");
 const qs = require("qs");
 const {
   DUBAI,
@@ -19,10 +18,9 @@ const {
 } = require("../utils/emirate");
 const { isSlugDuplicateKey } = require("../utils/propertySlugIndex");
 
-const STRAPI_BASE_URL =
-  process.env.STRAPI_BASE_URL || "https://admin-v1.xrealty.ae";
 const {
   fetchStrapiCommunities,
+  emirateOfStrapiArea,
   mergeCommunities,
 } = require("../utils/strapiCommunities");
 
@@ -104,11 +102,22 @@ module.exports.getAll = catchAsync(async (req, res) => {
       // .skip((page - 1) * limit)
       .select("name slug description images emirate");
 
-    // An area's emirate lives on its Mongo record. Strapi-only areas have no
-    // record and are Dubai (they predate the Abu Dhabi section).
+    let strapiCommunities = [];
+    try {
+      strapiCommunities = await fetchStrapiCommunities();
+    } catch (strapiError) {
+      console.error(
+        "[getAll] Strapi communities fetch failed — serving Mongo-only list:",
+        strapiError.message
+      );
+    }
     const emirateBySlug = new Map(
       allCommunities.map((c) => [normaliseSlug(c.slug), emirateOf(c)])
     );
+    for (const area of strapiCommunities) {
+      const tagged = emirateOfStrapiArea(area);
+      if (tagged) emirateBySlug.set(normaliseSlug(area.community_slug), tagged);
+    }
     const inEmirate = (slug) => (emirateBySlug.get(slug) || DUBAI) === emirate;
     const communities = allCommunities.filter((c) =>
       inEmirate(normaliseSlug(c.slug))
@@ -132,24 +141,6 @@ module.exports.getAll = catchAsync(async (req, res) => {
       propertyCounts.set(key, (propertyCounts.get(key) || 0) + 1);
     }
 
-    // get the communities from the strapi backend.
-    // Isolated in its own try/catch: a Strapi outage should degrade to the
-    // Mongo-only list, not collapse the endpoint to success:false and blank
-    // the whole /area/ page.
-    let strapiCommunitiesData = null;
-    try {
-      const strapiCommunities = await axios.get(
-        `${STRAPI_BASE_URL}/api/communities-contents?populate=*`,
-        { timeout: 8000 }
-      );
-      strapiCommunitiesData = strapiCommunities?.data;
-    } catch (strapiError) {
-      console.error(
-        "[getAll] Strapi communities-contents fetch failed — serving Mongo-only list:",
-        strapiError.message
-      );
-    }
-
     // Make a object containing the community and the properties total number in that community
     const communityWithProperties = communities.map((community) => ({
       community_name: (community.name || "").trim(),
@@ -159,9 +150,7 @@ module.exports.getAll = catchAsync(async (req, res) => {
       properties: propertyCounts.get(normaliseSlug(community.slug)) || 0,
     }));
 
-    const communityWithPropertiesStrapiData = (
-      strapiCommunitiesData?.data ?? []
-    )
+    const communityWithPropertiesStrapiData = strapiCommunities
       .filter((community) => inEmirate(normaliseSlug(community?.community_slug)))
       .map((community) => ({
         community_name: (community?.community_name || "").trim(),
@@ -259,10 +248,9 @@ module.exports.getAllCommunities = catchAsync(async (req, res) => {
     // slug: `name` is stored on every Property and the two stores disagree
     // about it for most shared areas.
     //
-    // Strapi has no emirate field, so a Strapi-only area arrives with
-    // `emirate: null`. That is "unknown", NOT Dubai — the admin form shows it
-    // as unset and refuses to save a property against it, because
-    // Property.emirateForCommunity() would otherwise silently file it as Dubai.
+    // Strapi-only areas include their populated emirate relation. Untagged
+    // areas remain `emirate: null` so the admin form can require a tag before
+    // a property is saved against them.
     let strapiCommunities = [];
     try {
       strapiCommunities = await fetchStrapiCommunities();

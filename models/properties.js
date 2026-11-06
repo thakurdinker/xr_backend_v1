@@ -269,8 +269,11 @@ newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
     try {
       const strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
       if (strapiEmirate) return strapiEmirate;
+      throw new Error(
+        `Cannot determine emirate for community "${communitySlug}" from Strapi`
+      );
     } catch (error) {
-      // Preserve the historical default when Strapi is unavailable.
+      throw error;
     }
   }
   return DEFAULT_EMIRATE;

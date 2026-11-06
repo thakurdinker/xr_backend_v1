@@ -17,7 +17,7 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 |---|---|
 | `GET /property/:slug?emirate=` | scoped; other emirate → `success:false` |
 | `GET /area/:slug?emirate=` | community + properties scoped; area of the other emirate → `{ success:false, wrongEmirate:true }` |
-| `GET /area/communities?emirate=` | Mongo + Strapi merge scoped; Strapi-only areas are Dubai |
+| `GET /area/communities?emirate=` | Mongo + Strapi merge scoped by the Strapi area emirate tag, with Mongo fallback |
 | `GET /label/:slug?emirate=` | properties, slideshow, communities scoped; adds `emirates`, `noindex`. Serves a developer that is in Mongo **or** Strapi (502 if Strapi can't be checked); 404 otherwise |
 | `GET /admin/developers?emirate=` | unfiltered by default (admin panel uses it); every developer gets `emirates`. Mongo records first, unchanged, then Strapi-only developers (`source: "strapi"`); Mongo-only if Strapi is down |
 | `POST /property-search` (`emirate` in body), `GET /user/search-filters?emirate=` | scoped |
@@ -32,7 +32,7 @@ Abu Dhabi landing slugs live in **`utils/abuDhabiSeoUrlMap.js`** (rewritten by t
 Developers are added in Strapi; the 12 Mongo `Developer` records predate that. Properties link to a developer by slug (`developer_name_slug`), so:
 - `mergeDevelopers()` — the developer list is the Mongo records (order and names unchanged; a Mongo record wins on a shared slug, e.g. Mongo "Beyond" vs Strapi "Beyond Developments") followed by Strapi-only developers by name. Each Strapi-only entry has `id` (its Strapi `documentId`), `developer_name`, `developer_slug`, `source: "strapi"`.
 - `fetchStrapiDevelopers()` / `strapiDeveloperExists()` — read Strapi (`STRAPI_BASE_URL`, optional `STRAPI_API_TOKEN`, 5 s timeout).
-- Live properties alone never make a developer: rows carry stray slugs (`""` on 9 live properties, `Nshama` on 1 in the dev DB).
+- Strapi developer emirate tags are authoritative when present; legacy untagged developers use their live properties and default to Dubai.
 
 To test a Strapi-only developer without touching Strapi, point `STRAPI_BASE_URL` at a local proxy that adds a fake entry to `/api/developers`.
 

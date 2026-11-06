@@ -47,7 +47,7 @@ test("fetchStrapiCommunityEmirate filters by exact community slug", async () => 
 });
 
 const query = (value) => ({ select() { return this; }, lean() { return Promise.resolve(value); } });
-test("Property emirate resolution prefers Mongo, then Strapi, then historical default", async () => {
+test("Property emirate resolution prefers Mongo, then Strapi, and rejects unknown areas", async () => {
   mock.method(Community, "findOne", () => query({ emirate: "Dubai" }));
   mock.method(globalThis, "fetch", async () => response([{ emirate: { name: "Abu Dhabi" } }]));
   assert.equal(await Property.emirateForCommunity("yas-island"), "Dubai");
@@ -58,5 +58,5 @@ test("Property emirate resolution prefers Mongo, then Strapi, then historical de
   mock.restoreAll();
   mock.method(Community, "findOne", () => query(null));
   mock.method(globalThis, "fetch", async () => { throw new Error("offline"); });
-  assert.equal(await Property.emirateForCommunity("yas-island"), "Dubai");
+  await assert.rejects(Property.emirateForCommunity("yas-island"), /offline/);
 });

@@ -17,7 +17,8 @@ const PAGE_SIZE = 100;
 // listing it under `fields` returns nothing.
 const FIELDS =
   "fields[0]=community_name&fields[1]=community_slug" +
-  "&populate[emirate][fields][0]=name";
+  "&populate[emirate][fields][0]=name" +
+  "&populate[hero_image]=true&populate[seo]=true";
 
 const normaliseSlug = (slug) => String(slug || "").trim().toLowerCase();
 

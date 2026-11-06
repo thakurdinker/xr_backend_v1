@@ -3,7 +3,8 @@
  *
  * An Area (Community) belongs to exactly one emirate; Properties inherit it
  * from their community (denormalised onto Property.emirate by a pre-save hook);
- * a Developer's emirates are derived from its live properties.
+ * a Developer's emirates come from Strapi tags when present; legacy untagged
+ * developers may still be inferred from their live properties.
  *
  * Every public endpoint defaults to DUBAI when no `emirate` is requested, and
  * the Dubai filter is "anything that is NOT Abu Dhabi" — so records written

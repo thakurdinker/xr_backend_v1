@@ -16,6 +16,8 @@ const {
   propertyPath,
   areaPath,
 } = require("../emirate");
+const { emirateOfStrapiArea } = require("../strapiCommunities");
+const { strapiEmiratesOf: strapiDeveloperEmiratesOf } = require("../strapiDevelopers");
 
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
@@ -498,7 +500,7 @@ const generateSitemap = async (onProgress) => {
     reportProgress("properties", { message: "Fetching properties from MongoDB…", urlCount: urlMap.size });
     // Abu Dhabi URLs never go in this sitemap; they are collected here and
     // published as the separate Abu Dhabi sitemap (see writeAbuDhabiSitemap).
-    const abuDhabiUrls = [];
+  let abuDhabiUrls = [];
     const properties = await Property.find({ show_property: true }).select(
       "property_name_slug updatedAt emirate type developer_name_slug"
     );
@@ -515,7 +517,8 @@ const generateSitemap = async (onProgress) => {
     reportProgress("communities", { message: "Fetching communities…", urlCount: urlMap.size });
     // First, load MongoDB communities into the map
     // Areas SEO has switched to noindex are left out of both sitemaps; Abu
-    // Dhabi areas go to the Abu Dhabi sitemap. Strapi-only areas are Dubai.
+    // Dhabi areas go to the Abu Dhabi sitemap. Strapi's area tag is used for
+    // Strapi-only areas and overrides Mongo on shared slugs.
     const mongoCommunities = await Community.find({}).select(
       "slug updatedAt emirate noindex"
     );
@@ -535,15 +538,30 @@ const generateSitemap = async (onProgress) => {
     // Then, load Strapi communities — these OVERWRITE MongoDB entries (Strapi priority)
     const strapiCommunities = await fetchStrapiAll(
       "/api/communities-contents",
-      "fields[0]=community_slug&fields[1]=updatedAt"
+      "fields[0]=community_slug&fields[1]=updatedAt&populate[emirate][fields][0]=name"
     );
     for (const c of strapiCommunities) {
       const slug = c.community_slug;
       if (!slug) continue;
-      if (notInMainSitemap.has(slug.trim().toLowerCase())) continue;
+      const taggedEmirate = emirateOfStrapiArea(c);
+      if (notInMainSitemap.has(slug.trim().toLowerCase()) && !taggedEmirate) continue;
 
-      const normalized = normalizePath(`/area/${encodeURIComponent(slug)}/`);
-      const cleanPath = `/area/${encodeURIComponent(slug)}/`;
+      const normalized = normalizePath(
+        `${taggedEmirate === ABU_DHABI ? "/abu-dhabi/areas" : "/area"}/${encodeURIComponent(slug)}/`
+      );
+      const cleanPath =
+        taggedEmirate === ABU_DHABI
+          ? `/abu-dhabi/areas/${encodeURIComponent(slug)}/`
+          : `/area/${encodeURIComponent(slug)}/`;
+
+      if (taggedEmirate === ABU_DHABI) {
+        abuDhabiUrls.push({ path: cleanPath, lastmod: new Date(c.updatedAt).toISOString() });
+        urlMap.delete(normalizePath(`/area/${encodeURIComponent(slug)}/`));
+        continue;
+      }
+      abuDhabiUrls = abuDhabiUrls.filter(
+        (entry) => entry.path !== `/abu-dhabi/areas/${encodeURIComponent(slug)}/`
+      );
 
       // Overwrite MongoDB entry with Strapi data (Strapi has priority)
       urlMap.set(normalized, {
@@ -561,11 +579,11 @@ const generateSitemap = async (onProgress) => {
     reportProgress("developers", { message: "Fetching developers from Strapi…", urlCount: urlMap.size });
     const strapiDevelopers = await fetchStrapiAll(
       "/api/developers",
-      "fields[0]=developer_slug&fields[1]=updatedAt"
+      "fields[0]=developer_slug&fields[1]=updatedAt&populate[emirates][fields][0]=name"
     );
     // Developer pages are shared, so a developer with any Dubai projects (or
     // none yet) stays here; one with only Abu Dhabi projects moves to the Abu
-    // Dhabi sitemap. Emirates come from live Mongo properties.
+    // Dhabi sitemap. Strapi developer tags override live-property inference.
     const developerEmirates = new Map();
     for (const p of properties) {
       const key = p.developer_name_slug;
@@ -586,7 +604,10 @@ const generateSitemap = async (onProgress) => {
       const slug = d.developer_slug;
       if (!slug) continue;
       if (noindexDevelopers.has(slug)) continue;
-      const emirates = developerEmirates.get(slug);
+      const taggedEmirates = strapiDeveloperEmiratesOf(d);
+      const emirates = new Set(
+        taggedEmirates.length ? taggedEmirates : developerEmirates.get(slug) || [DUBAI]
+      );
       if (emirates && !emirates.has(DUBAI)) {
         abuDhabiUrls.push({
           path: `/developer/${encodeURIComponent(slug)}/`,

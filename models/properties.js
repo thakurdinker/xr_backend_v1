@@ -266,15 +266,27 @@ newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
   if (community?.emirate) return community.emirate;
 
   if (communitySlug) {
+    let strapiEmirate;
     try {
-      const strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
-      if (strapiEmirate) return strapiEmirate;
-      throw new Error(
-        `Cannot determine emirate for community "${communitySlug}" from Strapi`
-      );
+      strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
     } catch (error) {
-      throw error;
+      // Strapi itself is unreachable — preserve the historical default so an
+      // outage doesn't block saving in an area that never needed Strapi
+      // before this change (e.g. untagged legacy Dubai areas such as Dubai
+      // Hills Estate, which has no Mongo record either).
+      console.warn(
+        `[emirateForCommunity] Strapi unreachable for "${communitySlug}" — falling back to ${DEFAULT_EMIRATE}:`,
+        error.message
+      );
+      return DEFAULT_EMIRATE;
     }
+    if (strapiEmirate) return strapiEmirate;
+    // Strapi answered but has no emirate for this area (untagged, or Strapi
+    // doesn't know the slug at all) — fail loud rather than silently filing
+    // it under Dubai, which is the entire point of tracking emirate per area.
+    throw new Error(
+      `Cannot determine emirate for community "${communitySlug}" from Strapi`
+    );
   }
   return DEFAULT_EMIRATE;
 };

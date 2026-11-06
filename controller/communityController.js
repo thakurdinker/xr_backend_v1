@@ -240,7 +240,16 @@ module.exports.getAllForAdmin = catchAsync(async (req, res) => {
 
 module.exports.getAllCommunities = catchAsync(async (req, res) => {
   try {
-    const mongoCommunities = await Community.find({}).lean();
+    // .lean() does not apply the schema's emirate default to a document
+    // that predates the field — a community created before this expansion
+    // and never re-saved comes back with no emirate key at all, not "Dubai".
+    // Applying it here (not just in the schema) means an editor's save guard
+    // based on this response is correct independently of whether
+    // scripts/backfillEmirate.js has been run.
+    const mongoCommunities = (await Community.find({}).lean()).map((c) => ({
+      ...c,
+      emirate: c.emirate || DUBAI,
+    }));
 
     // Areas are authored in Strapi now, so Strapi areas without a Mongo record
     // are appended (see utils/strapiCommunities.js) — otherwise they cannot be

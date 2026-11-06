@@ -57,21 +57,25 @@ test("Property emirate resolution prefers Mongo, then Strapi", async () => {
   assert.equal(await Property.emirateForCommunity("yas-island"), "Abu Dhabi");
 });
 
-test("Property emirate resolution rejects a Strapi-only area Strapi can't tag", async () => {
+test("Property emirate resolution falls back to Dubai for a Strapi-only area Strapi can't tag", async () => {
   // Strapi answers, but has no emirate for the area (untagged, or the slug
-  // doesn't exist there) — this must fail loud, not default to Dubai.
+  // doesn't exist there). This must not throw: the hook runs on every save
+  // of an existing property, not just on create, so a hard failure here
+  // would block ordinary edits in a long-standing area that simply has
+  // never needed a Strapi tag (e.g. Dubai Hills Estate). The admin form's
+  // own guard is what should stop a *new* property being added against an
+  // untagged area — not this hook.
   mock.method(Community, "findOne", () => query(null));
   mock.method(globalThis, "fetch", async () => response([]));
-  await assert.rejects(
-    Property.emirateForCommunity("untagged-area"),
-    /Cannot determine emirate/
+  assert.equal(
+    await Property.emirateForCommunity("untagged-area"),
+    "Dubai"
   );
 });
 
 test("Property emirate resolution falls back to Dubai when Strapi is unreachable", async () => {
-  // A network failure is not the same as "Strapi says untagged": today's
-  // outage must not block saving in an area that worked before this Strapi
-  // lookup existed (e.g. an untagged legacy Dubai area with no Mongo record).
+  // Same reasoning as the untagged case above: an outage must not block
+  // saving in an area that worked before this Strapi lookup existed.
   mock.method(Community, "findOne", () => query(null));
   mock.method(globalThis, "fetch", async () => {
     throw new Error("offline");

@@ -249,9 +249,22 @@ function modifyCloudinaryUrl(url) {
 // });
 
 // ── Pre-save hook: inherit emirate from the community ──
-// Runs before the schema_org hook below, which builds the URL from it. A
-// property whose community isn't in Mongo uses Strapi's emirate relation when
-// available, then retains the historical Dubai fallback if Strapi is unavailable.
+// Runs before the schema_org hook below, which builds the URL from it, and on
+// every save of an existing property, not just on create — so it must never
+// throw for an ordinary, long-standing area. A property whose community isn't
+// in Mongo uses Strapi's emirate relation when available; an untagged area,
+// an area Strapi doesn't know, or an unreachable Strapi all fall back to the
+// historical Dubai default alike.
+//
+// This is deliberately permissive: it is not the guard against filing a new
+// Abu Dhabi property under Dubai by mistake. That guard belongs — and
+// already lives — in the admin form (AddProperty.jsx's `emirateUnknown`),
+// which blocks a *new* save against an untagged area before it reaches here.
+// A hook running on every save of every property is the wrong place for a
+// hard block: on the dev database alone, throwing here instead of falling
+// back breaks 20 of 238 existing properties on their next edit — most of
+// them (17) in Dubai Hills Estate, an ordinary, long-established Dubai area
+// that simply has never needed a Strapi tag.
 newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
   const slug = (communitySlug || "")
     .trim()
@@ -266,27 +279,15 @@ newPropertySchema.statics.emirateForCommunity = async function (communitySlug) {
   if (community?.emirate) return community.emirate;
 
   if (communitySlug) {
-    let strapiEmirate;
     try {
-      strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
+      const strapiEmirate = await fetchStrapiCommunityEmirate(communitySlug);
+      if (strapiEmirate) return strapiEmirate;
     } catch (error) {
-      // Strapi itself is unreachable — preserve the historical default so an
-      // outage doesn't block saving in an area that never needed Strapi
-      // before this change (e.g. untagged legacy Dubai areas such as Dubai
-      // Hills Estate, which has no Mongo record either).
       console.warn(
-        `[emirateForCommunity] Strapi unreachable for "${communitySlug}" — falling back to ${DEFAULT_EMIRATE}:`,
+        `[emirateForCommunity] Strapi lookup failed for "${communitySlug}" — falling back to ${DEFAULT_EMIRATE}:`,
         error.message
       );
-      return DEFAULT_EMIRATE;
     }
-    if (strapiEmirate) return strapiEmirate;
-    // Strapi answered but has no emirate for this area (untagged, or Strapi
-    // doesn't know the slug at all) — fail loud rather than silently filing
-    // it under Dubai, which is the entire point of tracking emirate per area.
-    throw new Error(
-      `Cannot determine emirate for community "${communitySlug}" from Strapi`
-    );
   }
   return DEFAULT_EMIRATE;
 };

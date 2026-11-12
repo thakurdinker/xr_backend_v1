@@ -6,7 +6,7 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 - `models/community.js` — `emirate` (`"Dubai" | "Abu Dhabi"`, default Dubai), `noindex`. A post-save hook moves the area's properties when its emirate changes.
 - `models/properties.js` — `emirate`, **always** derived from the community in a pre-save hook (`Property.emirateForCommunity()`); anything sent in the request body is overwritten. The schema_org URL uses the emirate's path.
 - `models/developer.js` — `noindex`. No editor sets it any more: the admin panel's developer pages were removed in May 2026 (admin `e754c04`), and developers are added in Strapi (see below).
-- `models/sitemap.js` — `name`; the Abu Dhabi sitemap is stored as `name: "abu-dhabi"`. Use `Sitemap.MAIN` / `Sitemap.ABU_DHABI` as filters (the original doc has no name).
+- `models/sitemap.js` — `name`. Abu Dhabi no longer has its own sitemap, but a leftover doc named `"abu-dhabi"` may remain, so always filter with `Sitemap.MAIN` (the main doc has no name).
 - No schema indexes on purpose (tiny collections; avoids an index build on production at deploy). The one new index, on live property slugs per emirate, is created by a script (see "Slug index" below).
 
 ## Shared helper — `utils/emirate.js`
@@ -24,7 +24,6 @@ Branch **`feat/abu-dhabi-phase-0`**. The full handover (brief, URL structure, ve
 | `GET /` homepage featured | Dubai only |
 | `/dubai-properties/...` | Dubai only |
 | `/abu-dhabi-properties/:saleType/:type` | **new** — Abu Dhabi landing pages. Strapi copy is looked up under property type `<type>-abu-dhabi` |
-| `GET /admin/sitemap-abu-dhabi` | **new** — Abu Dhabi sitemap XML |
 
 Abu Dhabi landing slugs live in **`utils/abuDhabiSeoUrlMap.js`** (rewritten by the same middleware as `seoUrlMap.js`) and are deliberately **not** in `seoUrlMap.js`, whose keys all go into the main sitemap.
 
@@ -44,7 +43,7 @@ The code checks run before the write, so two concurrent writes can both pass the
 `updateCommunity` saves the area in a transaction (`mongoose.connection.transaction()`). The post-save hook moves the area's properties in the same transaction. A duplicate-key error in that move rolls back the area write too, so a move never stops halfway. Transactions need a replica set: Atlas is one; a local standalone `mongod` now rejects every area update.
 
 ## Sitemap
-`utils/generateSitemap/generateSitemap.js` keeps Abu Dhabi areas/properties and Abu Dhabi-only developers out of `/sitemap.xml` and writes them to the Abu Dhabi sitemap (`writeAbuDhabiSitemap()`), together with the hub/list/landing pages once they have content. `noindex` areas and developers are left out of both.
+There is one sitemap, `/sitemap.xml`, for both emirates. `utils/generateSitemap/generateSitemap.js` lists Abu Dhabi areas and properties at their `/abu-dhabi/` URLs and every developer at its shared `/developer/` URL, plus the hub/list/landing pages once they have content (`abuDhabiSectionPages()`). Abu Dhabi URLs go through the same dedup, redirect pruning and daily health check as Dubai ones. `noindex` areas and developers are left out.
 
 `/abu-dhabi/developers/` is listed when `hasAbuDhabiListDeveloper()` is true. It uses the page's own condition: a developer that is in Strapi and has a live Abu Dhabi project. Both-emirate developers count. So the sitemap never lists the page while it returns 404, and never misses it while it is live.
 

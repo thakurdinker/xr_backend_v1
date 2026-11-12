@@ -72,10 +72,9 @@ const cleanup = async () => { await Property.deleteMany({ property_name_slug: PR
   check("AD off-plan landing renders and links /abu-dhabi/property/", landing.status === 200 && landing.html.includes(`/abu-dhabi/property/${PROP}/`), String(landing.status));
   const dl = await page("/off-plan-projects-for-sale-in-dubai/");
   check("Dubai off-plan landing does not include the AD project", dl.status === 200 && !dl.html.includes(PROP));
-  const sm = await page("/sitemap-abu-dhabi.xml");
-  check("/sitemap-abu-dhabi.xml lists AD URLs", sm.status === 200 && sm.html.includes(`/abu-dhabi/property/${PROP}/`) && sm.html.includes(`/abu-dhabi/areas/${AREA}/`));
   const main = await page("/sitemap.xml");
-  check("/sitemap.xml has no AD URLs", main.status === 200 && !main.html.includes("zz-test"));
+  check("/sitemap.xml lists AD URLs", main.status === 200 && main.html.includes(`/abu-dhabi/property/${PROP}/`) && main.html.includes(`/abu-dhabi/areas/${AREA}/`));
+  check("/sitemap-abu-dhabi.xml is gone (404)", (await page("/sitemap-abu-dhabi.xml")).status === 404);
 
   await cleanup();
   await generateSitemap();

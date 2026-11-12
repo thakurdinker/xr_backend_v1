@@ -114,17 +114,16 @@ async function cleanup() {
   const home = await get("/");
   check("homepage featured excludes AD property (it is featured)", !JSON.stringify(home).includes(PROP));
 
-  // Sitemaps
+  // Sitemap — one for both emirates
   await generateSitemap();
   const main = (await Sitemap.findOne(Sitemap.MAIN).lean()).content;
-  const ad = (await Sitemap.findOne(Sitemap.ABU_DHABI).lean()).content;
-  check("main sitemap has no AD URLs", !main.includes("zz-test") && !main.includes("xrealty.ae/abu-dhabi/"));
-  const adLocs = [...ad.matchAll(/<loc>([^<]+)/g)].map((m) => m[1].replace("https://www.xrealty.ae", ""));
-  check("AD sitemap lists hub, areas list, developers list, area, property and live landings", ["/abu-dhabi/", "/abu-dhabi/areas/", "/abu-dhabi/developers/", `/abu-dhabi/areas/${AREA}/`, `/abu-dhabi/property/${PROP}/`, "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/"].every((u) => adLocs.includes(u)) && !adLocs.includes("/villas-for-sale-in-abu-dhabi/"), JSON.stringify(adLocs));
-  check("emaar (both emirates) stays in main sitemap, not AD", main.includes(`/developer/${DEV}/`) && !adLocs.includes(`/developer/${DEV}/`));
-  check("main sitemap URL count unchanged (910)", (main.match(/<loc>/g) || []).length === 910, String((main.match(/<loc>/g) || []).length));
-  const served = await (await fetch(API + "/admin/sitemap-abu-dhabi")).text();
-  check("/admin/sitemap-abu-dhabi serves it", served.includes(`/abu-dhabi/property/${PROP}/`));
+  const mainLocs = [...main.matchAll(/<loc>([^<]+)/g)].map((m) => m[1].replace("https://www.xrealty.ae", ""));
+  check("sitemap lists hub, areas list, developers list, area, property and live landings", ["/abu-dhabi/", "/abu-dhabi/areas/", "/abu-dhabi/developers/", `/abu-dhabi/areas/${AREA}/`, `/abu-dhabi/property/${PROP}/`, "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/"].every((u) => mainLocs.includes(u)) && !mainLocs.includes("/villas-for-sale-in-abu-dhabi/"), JSON.stringify(mainLocs.filter((u) => u.includes("abu-dhabi") || u.includes("zz-test"))));
+  check("AD area and property are not listed at their Dubai URLs", !mainLocs.includes(`/area/${AREA}/`) && !mainLocs.includes(`/property/${PROP}/`));
+  check("emaar (both emirates) listed once", mainLocs.filter((u) => u === `/developer/${DEV}/`).length === 1);
+  check("no URL listed twice", new Set(mainLocs).size === mainLocs.length, String(mainLocs.length - new Set(mainLocs).size));
+  const served = await (await fetch(API + "/admin/sitemap")).text();
+  check("/admin/sitemap serves the AD URLs", served.includes(`/abu-dhabi/property/${PROP}/`));
 
   // Moving the area to Dubai moves its property
   const area = await Community.findOne({ slug: AREA });
@@ -133,20 +132,12 @@ async function cleanup() {
 
   await cleanup();
   await generateSitemap();
-  const restored = (await Sitemap.findOne(Sitemap.ABU_DHABI).lean()).content;
-  // Empty again, unless other zz-test rows are in the dev db: then only their
-  // URLs and the section pages they fill may remain.
-  const otherTestRows =
-    (await Property.countDocuments({ property_name_slug: /^zz-test-/, emirate: "Abu Dhabi" })) +
-    (await Community.countDocuments({ slug: /^zz-test-/, emirate: "Abu Dhabi" }));
-  const sectionPages = new Set(["/abu-dhabi/", "/abu-dhabi/areas/", "/abu-dhabi/developers/", "/off-plan-projects-for-sale-in-abu-dhabi/", "/apartments-for-sale-in-abu-dhabi/", "/villas-for-sale-in-abu-dhabi/"]);
+  const restored = (await Sitemap.findOne(Sitemap.MAIN).lean()).content;
   const restoredLocs = [...restored.matchAll(/<loc>([^<]+)/g)].map((m) => m[1].replace("https://www.xrealty.ae", ""));
   check(
-    "cleanup: AD sitemap empty again (apart from other zz-test rows)",
-    otherTestRows === 0
-      ? restoredLocs.length === 0
-      : restoredLocs.every((u) => sectionPages.has(u) || u.includes("/zz-test-") || [...testOnlyDevs].some((d) => u === `/developer/${d}/`)),
-    JSON.stringify(restoredLocs)
+    "cleanup: the test's area and property are no longer listed",
+    !restoredLocs.some((u) => u.includes(AREA) || u.includes(PROP)),
+    JSON.stringify(restoredLocs.filter((u) => u.includes("zz-test")))
   );
   await mongoose.disconnect();
   console.log(`\n${pass} passed, ${fail} failed`);

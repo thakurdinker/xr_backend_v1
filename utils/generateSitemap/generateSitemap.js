@@ -10,14 +10,12 @@ const seoUrlMap = require("../seoUrlMap");
 const abuDhabiSeoUrlMap = require("../abuDhabiSeoUrlMap");
 const Developer = require("../../models/developer");
 const {
-  DUBAI,
   ABU_DHABI,
   emirateOf,
   propertyPath,
   areaPath,
 } = require("../emirate");
 const { emirateOfStrapiArea } = require("../strapiCommunities");
-const { strapiEmiratesOf: strapiDeveloperEmiratesOf } = require("../strapiDevelopers");
 
 dotenv.config({ path: path.resolve(__dirname, "../../vars/.env") });
 
@@ -300,7 +298,7 @@ function resolveArticlePath(article, hubBase, slug) {
   return { path: `${hubBase}${encSlug}/`, subSlug: null };
 }
 
-// ── Abu Dhabi sitemap ────────────────────────────────────────────
+// ── Abu Dhabi section pages ──────────────────────────────────────
 // Landing page → the property type it lists (null = every property), matching
 // the listing handler's type mapping for the three Abu Dhabi pages.
 const ABU_DHABI_LANDING_TYPES = {
@@ -310,17 +308,11 @@ const ABU_DHABI_LANDING_TYPES = {
 };
 
 /**
- * Store the Abu Dhabi sitemap (served at /admin/sitemap-abu-dhabi). Section
- * pages are listed only once there is Abu Dhabi content behind them, so the
- * sitemap never advertises a page that 404s; with no Abu Dhabi data it is an
- * empty <urlset>.
- */
-/**
  * Whether /abu-dhabi/developers/ has content. The page lists a developer only
  * when it is in Strapi and has a live Abu Dhabi project, and 404s when none
  * qualify (xr_client src/lib/abuDhabi.ts,
- * getAbuDhabiDevelopers). The Abu Dhabi sitemap lists the page on the same
- * condition, so it never advertises a 404 and never misses a live page.
+ * getAbuDhabiDevelopers). The sitemap lists the page on the same condition,
+ * so it never advertises a 404 and never misses a live page.
  * Both-emirate developers count too.
  *
  * @param {Array<{developer_slug?: string}>} strapiDevelopers
@@ -334,9 +326,17 @@ function hasAbuDhabiListDeveloper(strapiDevelopers, developerEmirates) {
   );
 }
 
-async function writeAbuDhabiSitemap(urls, properties, isoNow, hasDeveloper) {
+/**
+ * The Abu Dhabi hub, list and landing pages that have content behind them.
+ * Each 404s while it has nothing to show, so it is listed only once it does.
+ *
+ * @param {string[]} paths every path already in the sitemap
+ * @param {Array} properties live properties
+ * @param {boolean} hasDeveloper see hasAbuDhabiListDeveloper()
+ */
+function abuDhabiSectionPages(paths, properties, hasDeveloper) {
   const adProperties = properties.filter((p) => emirateOf(p) === ABU_DHABI);
-  const hasArea = urls.some((u) => u.path.startsWith("/abu-dhabi/areas/"));
+  const hasArea = paths.some((p) => p.startsWith("/abu-dhabi/areas/"));
 
   const pages = [];
   if (hasArea || adProperties.length) pages.push("/abu-dhabi/");
@@ -350,31 +350,7 @@ async function writeAbuDhabiSitemap(urls, properties, isoNow, hasDeveloper) {
     );
     if (listed) pages.push(landing);
   }
-
-  const entries = [
-    ...pages.map((p) => urlEntry(p, isoNow, "daily", "0.9")),
-    ...urls.map((u) => urlEntry(u.path, u.lastmod, "daily", "0.9")),
-  ];
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.join("\n")}
-</urlset>`;
-
-  try {
-    await Sitemap.findOneAndUpdate(
-      Sitemap.ABU_DHABI,
-      {
-        name: Sitemap.ABU_DHABI_NAME,
-        content: xml,
-        urlCount: entries.length,
-        generatedAt: new Date(),
-      },
-      { upsert: true }
-    );
-    console.log(`[Sitemap] Abu Dhabi sitemap saved (${entries.length} URLs)`);
-  } catch (err) {
-    console.warn(`[Sitemap] Abu Dhabi sitemap save failed (non-fatal): ${err.message}`);
-  }
+  return pages;
 }
 
 // ── Main generator ───────────────────────────────────────────────
@@ -412,12 +388,15 @@ const generateSitemap = async (onProgress) => {
   // Track all URLs to prevent duplicates — keyed by normalized path
   const urlMap = new Map();
 
-  // seoUrlMap pages are never pruned — the seoUrlMap middleware intercepts
-  // those requests before any redirect or article route can claim them, so
-  // they are always live 200s. Used by both the article-canonical pruning
-  // (section 9) and the redirect-source pruning (section 10).
+  // seoUrlMap and abuDhabiSeoUrlMap pages are never pruned — the seoUrlMap
+  // middleware intercepts those requests before any redirect or article route
+  // can claim them, so they are always live 200s. Used by both the
+  // article-canonical pruning (section 9) and the redirect-source pruning
+  // (section 10).
   const protectedPaths = new Set(
-    Object.keys(seoUrlMap).map((p) => normalizePath(p))
+    [...Object.keys(seoUrlMap), ...Object.keys(abuDhabiSeoUrlMap)].map((p) =>
+      normalizePath(p)
+    )
   );
 
   function addUrl(rawPath, lastmod, changefreq = "daily", priority = "0.9") {
@@ -498,9 +477,8 @@ const generateSitemap = async (onProgress) => {
 
     // ── 3. Properties (from MongoDB) ───────────────────────────
     reportProgress("properties", { message: "Fetching properties from MongoDB…", urlCount: urlMap.size });
-    // Abu Dhabi URLs never go in this sitemap; they are collected here and
-    // published as the separate Abu Dhabi sitemap (see writeAbuDhabiSitemap).
-  let abuDhabiUrls = [];
+    // Both emirates are listed here; propertyPath() gives Abu Dhabi listings
+    // their /abu-dhabi/property/ URL.
     const properties = await Property.find({ show_property: true }).select(
       "property_name_slug updatedAt emirate type developer_name_slug"
     );
@@ -508,31 +486,31 @@ const generateSitemap = async (onProgress) => {
       const emirate = emirateOf(p);
       const loc = propertyPath(encodeURIComponent(p.property_name_slug), emirate);
       const lastmod = new Date(p.updatedAt).toISOString();
-      if (emirate === ABU_DHABI) abuDhabiUrls.push({ path: loc, lastmod });
-      else addUrl(loc, lastmod, "daily", "0.9");
+      addUrl(loc, lastmod, "daily", "0.9");
     }
     console.log(`[Sitemap] Properties: ${properties.length}`);
 
     // ── 4. Communities (Strapi priority, MongoDB fallback) ─────
     reportProgress("communities", { message: "Fetching communities…", urlCount: urlMap.size });
     // First, load MongoDB communities into the map
-    // Areas SEO has switched to noindex are left out of both sitemaps; Abu
-    // Dhabi areas go to the Abu Dhabi sitemap. Strapi's area tag is used for
-    // Strapi-only areas and overrides Mongo on shared slugs.
+    // Areas SEO has switched to noindex are left out; Abu Dhabi areas are
+    // listed at /abu-dhabi/areas/. Strapi's area tag is used for Strapi-only
+    // areas and overrides Mongo on shared slugs.
     const mongoCommunities = await Community.find({}).select(
       "slug updatedAt emirate noindex"
     );
-    const notInMainSitemap = new Set();
+    // Slugs an untagged Strapi entry must not list at /area/: noindex areas,
+    // and Abu Dhabi areas, which are already listed at their own URL.
+    const skipUntaggedStrapi = new Set();
     for (const c of mongoCommunities) {
       const emirate = emirateOf(c);
       if (c.noindex || emirate === ABU_DHABI) {
-        notInMainSitemap.add((c.slug || "").trim().toLowerCase());
+        skipUntaggedStrapi.add((c.slug || "").trim().toLowerCase());
       }
       if (c.noindex) continue;
       const loc = areaPath(encodeURIComponent(c.slug), emirate);
       const lastmod = new Date(c.updatedAt).toISOString();
-      if (emirate === ABU_DHABI) abuDhabiUrls.push({ path: loc, lastmod });
-      else addUrl(loc, lastmod, "daily", "0.9");
+      addUrl(loc, lastmod, "daily", "0.9");
     }
 
     // Then, load Strapi communities — these OVERWRITE MongoDB entries (Strapi priority)
@@ -544,7 +522,7 @@ const generateSitemap = async (onProgress) => {
       const slug = c.community_slug;
       if (!slug) continue;
       const taggedEmirate = emirateOfStrapiArea(c);
-      if (notInMainSitemap.has(slug.trim().toLowerCase()) && !taggedEmirate) continue;
+      if (skipUntaggedStrapi.has(slug.trim().toLowerCase()) && !taggedEmirate) continue;
 
       const normalized = normalizePath(
         `${taggedEmirate === ABU_DHABI ? "/abu-dhabi/areas" : "/area"}/${encodeURIComponent(slug)}/`
@@ -554,13 +532,14 @@ const generateSitemap = async (onProgress) => {
           ? `/abu-dhabi/areas/${encodeURIComponent(slug)}/`
           : `/area/${encodeURIComponent(slug)}/`;
 
-      if (taggedEmirate === ABU_DHABI) {
-        abuDhabiUrls.push({ path: cleanPath, lastmod: new Date(c.updatedAt).toISOString() });
-        urlMap.delete(normalizePath(`/area/${encodeURIComponent(slug)}/`));
-        continue;
-      }
-      abuDhabiUrls = abuDhabiUrls.filter(
-        (entry) => entry.path !== `/abu-dhabi/areas/${encodeURIComponent(slug)}/`
+      // The tag decides which emirate's URL the area lives at, so drop the one
+      // Mongo listed under the other emirate.
+      urlMap.delete(
+        normalizePath(
+          taggedEmirate === ABU_DHABI
+            ? `/area/${encodeURIComponent(slug)}/`
+            : `/abu-dhabi/areas/${encodeURIComponent(slug)}/`
+        )
       );
 
       // Overwrite MongoDB entry with Strapi data (Strapi has priority)
@@ -581,9 +560,9 @@ const generateSitemap = async (onProgress) => {
       "/api/developers",
       "fields[0]=developer_slug&fields[1]=updatedAt&populate[emirates][fields][0]=name"
     );
-    // Developer pages are shared, so a developer with any Dubai projects (or
-    // none yet) stays here; one with only Abu Dhabi projects moves to the Abu
-    // Dhabi sitemap. Strapi developer tags override live-property inference.
+    // Developer pages are shared (/developer/<slug>/ for either emirate), so
+    // every developer is listed here. The emirates of each developer's live
+    // properties decide whether /abu-dhabi/developers/ has content.
     const developerEmirates = new Map();
     for (const p of properties) {
       const key = p.developer_name_slug;
@@ -604,17 +583,6 @@ const generateSitemap = async (onProgress) => {
       const slug = d.developer_slug;
       if (!slug) continue;
       if (noindexDevelopers.has(slug)) continue;
-      const taggedEmirates = strapiDeveloperEmiratesOf(d);
-      const emirates = new Set(
-        taggedEmirates.length ? taggedEmirates : developerEmirates.get(slug) || [DUBAI]
-      );
-      if (emirates && !emirates.has(DUBAI)) {
-        abuDhabiUrls.push({
-          path: `/developer/${encodeURIComponent(slug)}/`,
-          lastmod: new Date(d.updatedAt).toISOString(),
-        });
-        continue;
-      }
       addUrl(
         `/developer/${encodeURIComponent(slug)}/`,
         new Date(d.updatedAt).toISOString(),
@@ -623,6 +591,17 @@ const generateSitemap = async (onProgress) => {
       );
     }
     console.log(`[Sitemap] Developers (Strapi): ${strapiDevelopers.length}`);
+
+    // ── 5b. Abu Dhabi hub, list and landing pages ─────────────
+    const abuDhabiPages = abuDhabiSectionPages(
+      [...urlMap.values()].map((u) => u.path),
+      properties,
+      hasAbuDhabiDeveloper
+    );
+    for (const page of abuDhabiPages) {
+      addUrl(page, isoNow, "daily", "0.9");
+    }
+    console.log(`[Sitemap] Abu Dhabi section pages: ${abuDhabiPages.length}`);
 
     // ── 6. Agents (from Strapi, show_profile=true) ──────────────
     reportProgress("agents", { message: "Fetching agents from Strapi…", urlCount: urlMap.size });
@@ -818,9 +797,6 @@ ${urlEntries.join("\n")}
     } catch (mongoErr) {
       console.warn(`[Sitemap] MongoDB save failed (non-fatal): ${mongoErr.message}`);
     }
-
-    // ── 12b. Abu Dhabi sitemap ────────────────────────────────
-    await writeAbuDhabiSitemap(abuDhabiUrls, properties, isoNow, hasAbuDhabiDeveloper);
 
     // ── 13. Nudge the frontend to drop its cached /sitemap.xml ────
     // Fires on every regen path (admin button, content/redirect auto-trigger,

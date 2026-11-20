@@ -55,14 +55,16 @@ const sendOpenHouseRsvpEmail = (content) => {
 
   for (let i = 0; i < openHouseEmailReceivers.length; i++) {
     try {
-      client.sendEmail({
-        From: "Xperience Realty <donotreply@xrealty.ae>",
-        To: openHouseEmailReceivers[i],
-        Subject: `Open House RSVP — ${content?.eventName || "New Registration"}`,
-        HtmlBody: template,
-        TextBody: `Open House RSVP: ${content?.name} - ${content?.email} - ${content?.phone} - ${content?.preferredDate}`,
-        MessageStream: "broadcast",
-      });
+      client
+        .sendEmail({
+          From: "Xperience Realty <donotreply@xrealty.ae>",
+          To: openHouseEmailReceivers[i],
+          Subject: `Open House RSVP — ${content?.eventName || "New Registration"}`,
+          HtmlBody: template,
+          TextBody: `Open House RSVP: ${content?.name} - ${content?.email} - ${content?.phone} - ${content?.preferredDate}`,
+          MessageStream: "broadcast",
+        })
+        .catch((err) => console.log("[OpenHouseRsvpEmail] Error:", err));
     } catch (err) {
       console.log("[OpenHouseRsvpEmail] Error:", err);
     }

@@ -40,14 +40,16 @@ const sendResetEmail = ({ email, content }) => {
     </html>
   `;
 
-  client.sendEmail({
-    From: "Xperience Realty <donotreply@xrealty.ae>",
-    To: email,
-    Subject: "Password Reset",
-    HtmlBody: content,
-    TextBody: `Hello,\n\nWe received a request to reset your password. Please click the link below to reset your password:\n\n${resetLink}\n\nIf you did not request a password reset, please ignore this email or contact support if you have questions.\n\nThank you,\nXperience Realty Team`,
-    MessageStream: "reset-links",
-  });
+  client
+    .sendEmail({
+      From: "Xperience Realty <donotreply@xrealty.ae>",
+      To: email,
+      Subject: "Password Reset",
+      HtmlBody: content,
+      TextBody: `Hello,\n\nWe received a request to reset your password. Please click the link below to reset your password:\n\n${resetLink}\n\nIf you did not request a password reset, please ignore this email or contact support if you have questions.\n\nThank you,\nXperience Realty Team`,
+      MessageStream: "reset-links",
+    })
+    .catch((err) => console.log(err));
 };
 
 module.exports = {

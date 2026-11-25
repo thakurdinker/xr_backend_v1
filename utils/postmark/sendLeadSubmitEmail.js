@@ -65,14 +65,18 @@ const sendLeadSubmitEmail = (content) => {
 
   for (let i = 0; i < leadSumitEmailReceivers.length; i++) {
     try {
-      client.sendEmail({
-        From: "Xperience Realty <donotreply@xrealty.ae>",
-        To: leadSumitEmailReceivers[i],
-        Subject: "Website Form Submission",
-        HtmlBody: template,
-        TextBody: `Lead Submit`,
-        MessageStream: "broadcast",
-      });
+      // sendEmail returns a promise the try/catch can't see; an unhandled
+      // rejection (bad token, rate limit, outage) would kill the process.
+      client
+        .sendEmail({
+          From: "Xperience Realty <donotreply@xrealty.ae>",
+          To: leadSumitEmailReceivers[i],
+          Subject: "Website Form Submission",
+          HtmlBody: template,
+          TextBody: `Lead Submit`,
+          MessageStream: "broadcast",
+        })
+        .catch((err) => console.log(err));
     } catch (err) {
       console.log(err);
     }
@@ -122,14 +126,16 @@ const sendCareerSubmitEmail = (content) => {
 
   for (let i = 0; i < leadSubmitReceiversCareers.length; i++) {
     try {
-      client.sendEmail({
-        From: "Xperience Realty <donotreply@xrealty.ae>",
-        To: leadSubmitReceiversCareers[i],
-        Subject: "Career Page Form Submission",
-        HtmlBody: template,
-        TextBody: `Lead Submit`,
-        MessageStream: "broadcast",
-      });
+      client
+        .sendEmail({
+          From: "Xperience Realty <donotreply@xrealty.ae>",
+          To: leadSubmitReceiversCareers[i],
+          Subject: "Career Page Form Submission",
+          HtmlBody: template,
+          TextBody: `Lead Submit`,
+          MessageStream: "broadcast",
+        })
+        .catch((err) => console.log(err));
     } catch (err) {
       console.log(err);
     }
@@ -237,14 +243,16 @@ const sendNewsletterSubmitEmail = (email) => {
   `;
 
   try {
-    client.sendEmail({
-      From: "Xperience Realty <donotreply@xrealty.ae>",
-      To: email,
-      Subject: "You're now subscribed",
-      HtmlBody: template,
-      TextBody: `You're now subscribed`,
-      MessageStream: "outbound",
-    });
+    client
+      .sendEmail({
+        From: "Xperience Realty <donotreply@xrealty.ae>",
+        To: email,
+        Subject: "You're now subscribed",
+        HtmlBody: template,
+        TextBody: `You're now subscribed`,
+        MessageStream: "outbound",
+      })
+      .catch((err) => console.log(err));
   } catch (err) {
     console.log(err);
   }
